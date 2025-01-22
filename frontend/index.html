@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZTO Help App</title>
+    <link rel="stylesheet" href="normalize.css" />
+    <link rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+    <div class="container">
+        <form id="loginForm">
+            <input id="email" name="email" type="email" placeholder="Enter your email" required
+                onkeydown="setValue(event, this)" />
+            <input class="hidden" disabled id="token" name="token" type="text" placeholder="Enter your token" required
+                onkeydown="setValue(event, this)" />
+            <input class="hidden" disabled id="order" name="order" type="text" placeholder="Enter your order ID" required
+                onkeydown="setValue(event, this)" />
+
+
+            <button id="sendEmailButton" type="button" onclick="sendEmail()">Send email</button>
+            <div id="validateToken" class="hidden">
+                <button type="button" onclick="validateToken()">Validate Token</button>
+                <button type="button" onclick="changeEmail()">Change Email</button>
+            </div>
+
+            <div id="validateOrder" class="hidden">
+                <button type="button" onclick="validateOrder()">Validate Order</button>
+                <button type="button" onclick="changeEmail()">Change Email</button>
+            </div>
+        </form>
+        <p class="message">We’ll never share your email with anyone else.</p>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast"></div>
+    <script src="./index.js"></script>
+</body>
+
+</html>
