@@ -4,9 +4,14 @@ body {
   padding: 0;
   background: #f4f4f4;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
+}
+
+body > h1 {
+  font-size: 24px;
 }
 
 .container {
@@ -39,18 +44,13 @@ input:focus {
 }
 
 button {
-  background: #007BFF;
-  color: white;
   border: none;
   padding: 10px 15px;
   border-radius: 5px;
   font-size: 16px;
   cursor: pointer;
+  /* background-color: white; */
   transition: background 0.3s;
-}
-
-button:hover {
-  background: #0056b3;
 }
 
 .message {
@@ -68,86 +68,97 @@ form div button {
   flex-grow: 1
 }
 
-/* Toast */
+/* Toastify custom styles */
 .toast {
-  visibility: hidden;
-  min-width: 250px;
   color: #fff;
   text-align: center;
   border-radius: 2px;
   padding: 16px;
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 30px;
+  bottom: 60px;
   font-family: monospace;
-  display: block;
+  display: inline-flex;
   line-height: 12px;
 }
 
-.toast.show {
-  visibility: visible;
-  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
-  animation: fadein 0.5s, fadeout 0.5s 2.5s;
-}
-
 .success {
-  background-color: #198754;
-}
-
-.error {
-  background-color: #dc3545;
+  color: white;
+  background: #198754 !important;
 }
 
 .hidden {
   display: none;
 }
 
-@-webkit-keyframes fadein {
-  from {
-    bottom: 0;
-    opacity: 0;
-  }
-
-  to {
-    bottom: 30px;
-    opacity: 1;
-  }
+/* Fondo oscuro del modal */
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-@keyframes fadein {
-  from {
-    bottom: 0;
-    opacity: 0;
-  }
-
-  to {
-    bottom: 30px;
-    opacity: 1;
-  }
+/* Mostrar el modal */
+.modal_overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
-@-webkit-keyframes fadeout {
-  from {
-    bottom: 30px;
-    opacity: 1;
-  }
-
-  to {
-    bottom: 0;
-    opacity: 0;
-  }
+/* Contenedor del modal */
+.modal {
+  background-color: #fff;
+  border-radius: 12px;
+  max-width: 500px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes fadeout {
-  from {
-    bottom: 30px;
-    opacity: 1;
-  }
+.modal h2 {
+  font-size: 20px;
+  font-weight: normal;
+  background-color: #dc3545;
+  border-radius: 8px 8px 0 0;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+  color: white;
+}
 
-  to {
-    bottom: 0;
-    opacity: 0;
-  }
+.modal p {
+  padding: 0px 20px;
+}
+
+/* Campo de texto */
+.modal input[type="text"] {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 10px 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.modal div {
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  padding: 0px 20px;
+  gap: 10px;
+  margin: 20px 0px;
+}
+
+/* Botones */
+.modal button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }

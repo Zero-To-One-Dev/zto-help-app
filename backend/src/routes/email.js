@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import logger from '../../logger.js';
-import redis from '../redisSetup.js';
 import emailSchema from '../schemas/email.js';
-import { sendMail } from '../services/email.js';
+import Mailer from '../implements/nodemailer.imp.js';
 import handleError from '../middlewares/errorHandle.js';
-import { generateSecureToken } from '../services/token.js';
+import { generateSecureToken, isExpired } from '../services/token.js';
+import DBRepository from '../repositories/redis.repository.js';
 
 const router = Router();
+const dbRepository = new DBRepository();
+const mailer = new Mailer();
 
 /**
  *  @openapi
@@ -26,19 +28,22 @@ const router = Router();
  *      responses:
  *        200:
  *          description: Returns JSON message
+ * 
  */
 router.post('/send', handleError(emailSchema), async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, subscription } = req.body;
+        const objectToken = await dbRepository.getTokenByEmail(email);
+        if (objectToken && !isExpired(objectToken.expireAt)) {
+            throw new Error('Token already generated, please wait 5 minutes');
+        }
         const token = generateSecureToken();
-        // Guardar token con email en base de datos
-        redis.set(email, token);
-        // Enviar el token por correo
-        await sendMail(email, 'email-token', { token });
-        res.json({'message': `Token sent successfully`})
+        await dbRepository.saveToken(email, token, subscription);
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
+        res.json({ message: 'We sent you a token to verify your email, please check your inbox' })
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: err });
+        logger.error(err.message);
+        res.status(500).json({ message: err.message });
     }
 })
 
