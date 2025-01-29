@@ -15,28 +15,29 @@ class SkioImp {
   }
 
   async getSubscription(email, subscription) {
+    email = 'ejimenez@zerotoonegroup.com';
     const client = this.init()
-    return await client.request(gql`
+    return (await client.request(gql`
       query {
-        Subscriptions (limit: 1,where: {
+        Subscriptions (limit: 1, where: {
             id: {_eq: "${subscription}"},	
             StorefrontUser: {email: {_eq: "${email}"}}
           }, ) {
             id
         }
       }
-    `)
+    `)).Subscriptions.length > 0
   }
 
-  async cancelSubscription(email, subscription) {
+  async cancelSubscription(subscription) {
     const client = this.init()
-    return await client.request(gql`
+    return (await client.request(gql`
       mutation {
-        cancelSubscription(subscriptionId: ${subscription}) {
+        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true}) {
           ok
         }
       }
-    `)
+    `)).cancelSubscription.ok
   }
 }
 

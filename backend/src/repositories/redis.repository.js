@@ -26,6 +26,12 @@ class RedisRepository {
         await client.disconnect();
         return Object.keys(data).length === 0 ? null : data;
     }
+
+    async deleteToken(email) {
+        const client = await this.connection();
+        await client.del(email);
+        await client.disconnect();
+    }
 }
 
 export default RedisRepository;

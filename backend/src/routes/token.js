@@ -37,19 +37,15 @@ router.post('/validate', handleError(tokenSchema), async (req, res) => {
     try {
         const { email, token, subscription } = req.body;
         const objectToken = await dbRepository.getTokenByEmail(email);
-        if (!objectToken || isExpired(objectToken.expireAt) || objectToken.token !== token) {
+        if (!objectToken || isExpired(objectToken.expireAt) || objectToken.token !== token)
             throw new Error('Email or Token Not Found');
-        }
 
-        console.log('Email: ', email, 'Token: ', token, 'Subscription: ', subscription);
-        const data = await subscriptionImp.getSubscription(email, subscription);
-        console.log(data);
-        if (data.Subscriptions.length === 0) {
-            throw new Error('Email Or Token Not Found');
-        }
+        const subscriptionExists = await subscriptionImp.getSubscription(email, subscription);
+        if (!subscriptionExists) throw new Error('It is not possible to cancel the subscription');
 
-        // Aqui se debe cancelar la suscripcion
-        // Se debería todo el registro de la base de datos?
+        const subscriptionCancelled = await subscriptionImp.cancelSubscription(subscription);
+        if (!subscriptionCancelled) throw new Error('It is not possible to cancel the subscription');
+        await dbRepository.deleteToken(email);
 
         res.json({message: 'Subscription successfully cancelled'})
     } catch (err) {
