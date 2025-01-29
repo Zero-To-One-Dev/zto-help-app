@@ -1,4 +1,3 @@
-import logger from '../../logger.js';
 import { createClient } from 'redis';
 
 class RedisRepository {

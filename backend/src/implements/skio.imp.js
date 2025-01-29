@@ -15,7 +15,6 @@ class SkioImp {
   }
 
   async getSubscription(email, subscription) {
-    email = 'ejimenez@zerotoonegroup.com';
     const client = this.init()
     return (await client.request(gql`
       query {
