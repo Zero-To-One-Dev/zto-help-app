@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 
 function generateSecureToken() {
-    return crypto.randomBytes(3).toString('hex'); // 34rt56
+    return crypto.randomBytes(3).toString('hex');
 }
 
 function isExpired (expireAt) {
