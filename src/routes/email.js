@@ -3,7 +3,7 @@ import logger from '../../logger.js';
 import { SHOPS_ORIGIN } from '../app.js';
 import { EmailSubscriptionSchema, EmailAddressSchema } from '../schemas/email.js';
 import Mailer from '../implements/nodemailer.imp.js';
-import handleError from '../middlewares/errorHandle.js';
+import handleError from '../middlewares/error-handle.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { generateSecureToken, isExpired } from '../services/token.js';
 
@@ -43,8 +43,7 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token, { subscription });
-        // await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
-        logger.info(`Token: ${token}`)
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
         res.json({ message: 'We sent you a token to verify your email, please check your inbox' })
     } catch (err) {
         logger.error(err.message);

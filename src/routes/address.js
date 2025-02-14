@@ -5,7 +5,7 @@ import { isExpired } from '../services/token.js';
 import Mailer from '../implements/nodemailer.imp.js';
 import ShopifyImp from '../implements/shopify.imp.js';
 import { AddressSchema } from '../schemas/address.js';
-import handleError from '../middlewares/errorHandle.js';
+import handleError from '../middlewares/error-handle.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import SubscriptionImp from '../implements/skio.imp.js';
 
@@ -38,10 +38,8 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
         const { shop, shopAlias } = shopDomain;
-
         const subscriptionImp = new SubscriptionImp(shop, shopAlias);
         const shopifyImp = new ShopifyImp(shop, shopAlias);
-
         const { email, token, id, address1, address2, provinceCode, province, city, zip } = req.body;
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
         if (!objectToken) throw new Error('Email or Token Not Found');
@@ -51,7 +49,6 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         }
 
         const ordersUpdated = await shopifyImp.updateAddress(id, address1, address2, provinceCode, city, zip);
-
         if (ordersUpdated.userErrors.length) {
             res.status(400).json(
                 {
@@ -71,9 +68,7 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
             // Aqui pensaría en almacenar las subscripciones que por alguna razón no fueron actualizadas correctamente
         }        
             
-        if (!allSubscriptionsOk) {
-            throw new Error('There were one or more products in the order that could not be updated, please confirm with technical support.');
-        }
+        if (!allSubscriptionsOk) throw new Error('There were one or more products in the order that could not be updated, please confirm with technical support.');
         res.json({ message: 'The address has been successfully updated' })
     } catch (err) {
         logger.error(err.message);

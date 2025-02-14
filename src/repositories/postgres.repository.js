@@ -90,6 +90,30 @@ class PostgreSQLRepository {
         return res.rows[0];
     }
 
+    async deleteDraftOrder(shopAlias, draftOrder) {
+        const client = await this.init()
+        const query = {
+            name: 'delete-draft-order',
+            text: 'DELETE FROM draft_orders WHERE shop_alias = $1 AND draft_order = $2 LIMIT 1',
+            values: [shopAlias, draftOrder]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
+    }
+
+    async getSubscriptionByDraftOrder(shopAlias, draftOrder) {
+        const client = await this.init()
+        const query = {
+            name: 'get-subscription-by-draft-order',
+            text: 'SELECT * FROM draft_orders WHERE shop_alias = $1 AND draft_order = $2 LIMIT 1',
+            values: [shopAlias, draftOrder]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rows
+    }
+
     async updatePaymentDueDraftOrder(shopAlias, draftOrder, subscription) {
         const client = await this.init()
         let todayDate = new Date(); todayDate.setHours(0, 0, 0, 0); // Se toma la fecha de hoy a las 12 PM
@@ -106,6 +130,35 @@ class PostgreSQLRepository {
         const res = await client.query(query)
         await client.end()
         return res.rowCount > 0;
+    }
+
+    async saveHashApiToken(nameApp, hashApiToken, suffixApiToken) {
+        const client = await this.init();
+        const tenYearsDueDate = new Date(new Date().getTime() + 3650 * 24 * 60 * 60 * 1000);
+        const query = {
+            name: 'save-api-token',
+            text: `
+                    INSERT INTO app_tokens (name_app, hash_api_token, status, due_date, suffix_api_token)
+                    VALUES($1, $2, $3, $4, $5)
+                `,
+            values: [nameApp, hashApiToken, 'ACTIVE', tenYearsDueDate, suffixApiToken],
+        }
+        const res = await client.query(query);
+        await client.end();
+    }
+
+    async validateApiToken(hashedApiToken) {
+        const client = await this.init()
+        const query = {
+            name: 'validate-api-token',
+            text: `
+                SELECT name_app FROM app_tokens WHERE hash_api_token = $1
+            `,
+            values: [hashedApiToken]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res;
     }
 }
 

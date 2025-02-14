@@ -182,7 +182,7 @@ class ShopifyImp {
             id
           }
         }
-      }`)).data.draftOrderInvoiceSend.draftOder.id
+      }`)).data.draftOrderInvoiceSend
   }
 }
 

@@ -136,3 +136,6 @@ dist
 
 # SQL
 *.sql
+
+# Commands
+src/commands/

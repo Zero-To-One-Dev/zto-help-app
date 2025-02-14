@@ -52,7 +52,7 @@ class SkioImp {
     const client = this.init()
     return (await client.request(gql`
       mutation {
-        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true}) {
+        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true, permanentlyCancel : true}) {
           ok
         }
       }
