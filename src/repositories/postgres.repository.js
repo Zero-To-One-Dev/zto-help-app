@@ -9,7 +9,7 @@ class PostgreSQLRepository {
             host: PGHOST,
             port: parseInt(PGPORT),
             database: PGDATABASE,
-            ssl: !(PGHOST === 'localhost')
+            ssl: { rejectUnauthorized: false }
         })
         await client.connect()
         return client;
