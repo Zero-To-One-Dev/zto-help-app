@@ -138,8 +138,10 @@ router.post('/address/validate', handleError(AddressSchema), async (req, res) =>
             throw new Error('Email or Token Not Found');
         }
         if (objectToken.token !== token) throw new Error('Email or Token Not Found');
+        const customerName = await shopifyImp.getCustomerNameByEmail(email);
+        if (!customerName) throw new Error('Customer with given email not found')
         const orders = await shopifyImp.getActiveOrders(email);
-        res.json({ orders })
+        res.json({ customerName, orders })
     } catch (err) {
         console.log(err);
         logger.error(err.message);

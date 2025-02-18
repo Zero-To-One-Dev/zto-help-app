@@ -30,6 +30,7 @@ export const PGPASSWORD = process.env.PGPASSWORD;
 export const PGHOST = process.env.PGHOST;
 export const PGPORT = parseInt(process.env.PGPORT);
 export const PGDATABASE = process.env.PGDATABASE;
+export const PGSSL = process.env.PGSSL === 'true';
 
 // HS
 export const SECRET_HS = process.env.SECRET_HS;

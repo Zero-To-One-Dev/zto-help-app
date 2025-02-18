@@ -1,5 +1,5 @@
 import pg from 'pg'
-import { PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE } from '../app.js'
+import { PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE, PGSSL } from '../app.js'
 
 class PostgreSQLRepository {
     async init() {
@@ -9,7 +9,7 @@ class PostgreSQLRepository {
             host: PGHOST,
             port: parseInt(PGPORT),
             database: PGDATABASE,
-            ssl: { rejectUnauthorized: false }
+            ssl: PGSSL ? { rejectUnauthorized: false } : false
         })
         await client.connect()
         return client;

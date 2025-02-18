@@ -38,6 +38,19 @@ class ShopifyImp {
     return new shopify.clients.Graphql({ session });
   }
 
+  async getCustomerNameByEmail(email) {
+    const client = this.init()
+    const customerByIdentifier = (await client.request(`
+      query {
+        customerByIdentifier
+      (identifier: { emailAddress: "${email}" }) {
+          displayName
+        }
+      } 
+    `)).data.customerByIdentifier
+    return customerByIdentifier ? customerByIdentifier.displayName : null
+  }
+
   async getSubscription(email, subscription) {
     const client = this.init()
     return (await client.request(`
