@@ -6,6 +6,7 @@ import Mailer from '../implements/nodemailer.imp.js';
 import handleError from '../middlewares/error-handle.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { generateSecureToken, isExpired } from '../services/token.js';
+import path from 'node:path';
 
 const router = Router();
 const dbRepository = new DBRepository();
@@ -43,6 +44,9 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token, { subscription });
+
+        __dirname
+
         await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
         res.json({ message: 'We sent you a token to verify your email, please check your inbox' })
     } catch (err) {
@@ -84,7 +88,15 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token);
-        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token },
+            [
+                {
+                    filename: 'top_banner.png',
+                    path: path.resolve() + `/public/imgs/${shopAlias}/top_banner.png`,
+                    cid: 'top_banner'
+                }
+            ]
+        );
         res.json({ message: 'We sent you a token to verify your email, please check your inbox' })
     } catch (err) {
         logger.error(err.message);

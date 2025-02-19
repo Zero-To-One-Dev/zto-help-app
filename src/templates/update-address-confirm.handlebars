@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Address Confirm</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .email_container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            position: relative;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: {{ shopColor }};
+            color: #ffffff;
+            text-align: center;
+        }
+
+        h4 {
+            font-size: 24px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .content {
+            padding: 52px 59px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            font-weight: 500;
+        }
+
+        .b_id {
+            color: {{ shopColor }};
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: {{ shopColor }};
+        }
+
+        .footer {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            font-weight: 500;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #888888;
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email_container">
+        <div class="header">
+            <img width="100%" src="cid:top_banner">
+        </div>
+
+        <div class="content">
+            <h5 class="subject">Subject: Your Shipping Address Has Been Updated</h5>
+            <h4>Dear {{ customerName }},</h4>
+            <p>
+                We hope you're doing well! We're reaching out to confirm that the shipping address for your order
+                <b class="b_id">({{ orderName }})</b> has been successfully updated. Please review the new address below to
+                ensure it is correct.
+                <br><br>
+                <span class="highlight">New Shipping Address:</span><br>
+                {{ newAddress }}
+                <br><br>
+                If this address is correct, no further action is needed, and your order will be shipped as scheduled.
+                However, if there is an issue, please <a href="{{ contactPage }}">contact us</a> as soon as possible so we can assist you.
+                <br><br>
+                At <span class="highlight">{{ shopName }},</span> we value your trust and are committed to providing the
+                best experience for women who prioritize self-care and well-being. If you have any questions or need
+                further assistance, feel free to reach out.
+                <br><br>
+                Thank you for choosing us!
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 ZTO Helper App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

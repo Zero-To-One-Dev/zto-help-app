@@ -28,14 +28,15 @@ class NodemailerMailerImp {
         return transporter;
     }
 
-    async sendEmail(email, template, subject, context) {
+    async sendEmail(email, template, subject, context, attachments = []) {
         const transporter = this.init();
         await transporter.sendMail({
             from: EMAIL_SENDER,
             to: email,  
             subject,
             template,
-            context
+            context,
+            attachments
         });
 
         logger.info(`Mail sent to ${email}`);

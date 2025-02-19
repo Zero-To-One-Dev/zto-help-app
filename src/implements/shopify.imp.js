@@ -38,6 +38,29 @@ class ShopifyImp {
     return new shopify.clients.Graphql({ session });
   }
 
+  async getOrderById(id) {
+    const client = this.init()
+    return (await client.request(`
+      query {
+        order (id: "${id}") {
+          id
+          name
+          displayFinancialStatus
+          shippingAddress {
+            address1
+            address2
+            city
+            provinceCode
+            province
+            country
+            zip
+            name
+          }
+        }
+      }  
+    `)).data.order
+  }
+
   async getCustomerNameByEmail(email) {
     const client = this.init()
     const customerByIdentifier = (await client.request(`
