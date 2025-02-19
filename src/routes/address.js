@@ -71,11 +71,16 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         }        
             
         if (!allSubscriptionsOk) throw new Error('There were one or more products in the order that could not be updated, please confirm with technical support.');
+
+        let newAddress = `${address1}, ` 
+        if (address2) newAddress += `${address2},`;
+        newAddress += `${city}, ${province}, ${order.shippingAddress.country}`;
+
         await mailer.sendEmail(email, 'update-address-confirm', 'Your Shipping Address Has Been Updated',
             {
                 customerName: order.shippingAddress.name,
                 orderName: order.name,
-                newAddress: `${address1}, ${address2}, ${city}, ${province}, ${order.shippingAddress.country}`,
+                newAddress,
                 contactPage,
                 shopName,
                 shopColor

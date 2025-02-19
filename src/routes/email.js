@@ -84,7 +84,10 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
         if (objectToken) {
             if (isExpired(objectToken.expire_at)) {
                 await dbRepository.deleteToken(shopAlias, email);
-            } else throw new Error('Token already generated, please wait 5 minutes');
+            } else {
+                res.json({ message: 'We already sent you a token to verify your email, please check your inbox' })
+                return;
+            }
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token);
