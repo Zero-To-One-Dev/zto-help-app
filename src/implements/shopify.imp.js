@@ -117,7 +117,7 @@ class ShopifyImp {
     const client = this.init();
     return (await client.request(
       `query {
-          orders(first: 100, reverse: true, query: "fulfillment_status:unfulfilled AND financial_status:paid AND email:${email}") {
+          orders(first: 100, reverse: true, query: "fulfillment_status:unfulfilled AND email:${email}") {
             edges {
               node {
                 id
