@@ -49,6 +49,11 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
             throw new Error('Token expired');
         }
 
+        // Actualizar la fecha de caducidad del token
+        const expirationDateUpdated = await dbRepository.updateTokenExpirationDate(shopAlias, email, token);
+        if (expirationDateUpdated) logger.info('Token expiration date updated');
+        else logger.error('Token expiration date not updated');
+
         const order = await shopifyImp.getOrderById(id);
         const ordersUpdated = await shopifyImp.updateAddress(id, address1, address2, provinceCode, city, zip);
         if (ordersUpdated.userErrors.length) {

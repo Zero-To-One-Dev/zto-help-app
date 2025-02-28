@@ -41,6 +41,19 @@ class PostgreSQLRepository {
         return res.rows[0];
     }
 
+    async setSubscriptionToken(shopAlias, email, subscription) {
+        const client = await this.init();
+        const metadata = JSON.stringify({ subscription })
+        const query = {
+            name: 'set-subscription-token',
+            text: 'UPDATE tokens SET metadata = $1 WHERE shop_alias = $2 AND email = $3',
+            values: [metadata, shopAlias, email]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
+    }
+
     async validateToken(shopAlias, email, token) {
         const client = await this.init();
         const query = {
@@ -71,7 +84,7 @@ class PostgreSQLRepository {
         const paymentDue = new Date(todayDate.getTime() + 864E5 * 3);
         const query = {
             name: 'save-draft-order',
-            text: 'INSERT INTO draft_orders (shop_alias, draft_order, subscription) VALUES ($1, $2, $3, $4)',
+            text: 'INSERT INTO draft_orders (shop_alias, draft_order, subscription, payment_due) VALUES ($1, $2, $3, $4)',
             values: [shopAlias, draftOrder, subscription, paymentDue]
         }
         const res = await client.query(query)
@@ -95,7 +108,7 @@ class PostgreSQLRepository {
         const client = await this.init()
         const query = {
             name: 'delete-draft-order',
-            text: 'DELETE FROM draft_orders WHERE shop_alias = $1 AND draft_order = $2 LIMIT 1',
+            text: 'DELETE FROM draft_orders WHERE shop_alias = $1 AND draft_order = $2',
             values: [shopAlias, draftOrder]
         }
         const res = await client.query(query)
@@ -160,6 +173,27 @@ class PostgreSQLRepository {
         const res = await client.query(query)
         await client.end()
         return res;
+    }
+
+    /**
+     * Actualiza la fecha de expiración de un token cuando este es usado.
+     * @param {*} shopAlias 
+     * @param {*} email 
+     * @param {*} token 
+     */
+    async updateTokenExpirationDate(shopAlias, email, token) {
+        const client = await this.init()
+        const expireAt = new Date(new Date().getTime() + (30 * 60 * 1000));
+        const query = {
+            name: 'update-expiration-date-token',
+            text: `
+                UPDATE tokens SET expire_at = $1 WHERE shop_alias = $2 AND email = $3 AND token = $4
+            `,
+            values: [expireAt, shopAlias, email, token]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
     }
 }
 

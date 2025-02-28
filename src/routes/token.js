@@ -4,9 +4,8 @@ import { SHOPS_ORIGIN } from '../app.js';
 import { isExpired } from '../services/token.js';
 import ShopifyImp from '../implements/shopify.imp.js';
 import handleError from '../middlewares/error-handle.js';
-import SubscriptionImp from '../implements/skio.imp.js';
 import DBRepository from '../repositories/postgres.repository.js';
-import { SubscriptionSchema, AddressSchema } from '../schemas/token.js';
+import { TokenSchema } from '../schemas/token.js';
 
 const router = Router();
 const dbRepository = new DBRepository();
@@ -28,22 +27,17 @@ const dbRepository = new DBRepository();
  *                  type: string
  *                token:
  *                  type: string
- *                subscription:
- *                  type: string
  *      responses:
  *        200:
  *          description: Returns JSON message
  */
-router.post('/subscription/validate', handleError(SubscriptionSchema), async (req, res) => {
+router.post('/subscription/validate', handleError(TokenSchema), async (req, res) => {
     try {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shop, shopAlias } = shopDomain;
+        const { shopAlias } = shopDomain;
 
-        const subscriptionImp = new SubscriptionImp(shop, shopAlias);
-        const shopifyImp = new ShopifyImp(shop, shopAlias);
-
-        const { email, token, subscription } = req.body;
+        const { email, token } = req.body;
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
 
         if (!objectToken) throw new Error('Email or Token Not Found');
@@ -52,50 +46,7 @@ router.post('/subscription/validate', handleError(SubscriptionSchema), async (re
             throw new Error('Email or Token Not Found');
         }
         if (objectToken.token !== token) throw new Error('Email or Token Not Found');
-
-        const subscriptionData = await subscriptionImp.getSubscription(email, subscription);
-        if (!subscriptionData) throw new Error('It is not possible to cancel the subscription');
-
-        // Si el estado en la dirección de la orden es de CALIFORNIA, cancelar normal
-        if (subscriptionData.ShippingAddress.province.toUpperCase() === 'CALIFORNIA') {
-            const subscriptionCancelled = await subscriptionImp.cancelSubscription(subscription);
-            if (!subscriptionCancelled) throw new Error('It is not possible to cancel the subscription');
-            await dbRepository.deleteToken(shopAlias, email);
-            res.json({ message: 'Subscription successfully cancelled' })
-            return;
-        }
-
-        // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order.
-        // Primero se debe verificar si ya existe una draft order. Si existe, enviar invoice.
-        const { draft_order: draftOrder  } = await dbRepository.getDraftOrder(shopAlias, subscription);
-        if (draftOrder) {
-            const result = await shopifyImp.sendDraftOrderInvoice(draftOrder);
-            res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription.' })
-        } else {
-            const productSubscription = subscriptionData['SubscriptionLines'][0]['OrderLineItems'][0]['ProductVariant'];
-            const variantId = productSubscription['platformId'].split('/').pop();
-            const subscriptionId = await shopifyImp.productIdByVariant(variantId);
-            const productOneTime = await shopifyImp.oneTimeBySubscription(subscriptionId);
-            const quantity = Math.floor(productOneTime.price - productSubscription.price);
-            const draftOrderInput = {
-                email,
-                shippingAddress: {
-                    address1: subscriptionData.ShippingAddress.address1,
-                    city: subscriptionData.ShippingAddress.city,
-                    province: subscriptionData.ShippingAddress.province,
-                    country: subscriptionData.ShippingAddress.country,
-                    zip: subscriptionData.ShippingAddress.zip,
-                },
-                lineItems: [
-                    {
-                        variantId: 'gid://shopify/ProductVariant/50336271302937', // ID de la variante de 1 dólar
-                        quantity
-                    }
-                ]
-            };
-            const result = await shopifyImp.createDraftOrder(draftOrderInput);
-            res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created.' })
-        }
+        res.json({ message: 'Token confirmed' });
     } catch (err) {
         console.log(err);
         logger.error(err.message);
@@ -124,7 +75,7 @@ router.post('/subscription/validate', handleError(SubscriptionSchema), async (re
  *        200:
  *          description: Returns JSON with Orders
  */
-router.post('/address/validate', handleError(AddressSchema), async (req, res) => {
+router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
     try {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
@@ -137,6 +88,12 @@ router.post('/address/validate', handleError(AddressSchema), async (req, res) =>
             await dbRepository.deleteToken(shopAlias, email);
             throw new Error('Email or Token Not Found');
         }
+
+        // Actualizar la fecha de caducidad del token
+        const expirationDateUpdated = await dbRepository.updateTokenExpirationDate(shopAlias, email, token);
+        if (expirationDateUpdated) logger.info('Token expiration date updated');
+        else logger.error('Token expiration date not updated');
+
         if (objectToken.token !== token) throw new Error('Email or Token Not Found');
         const customerName = await shopifyImp.getCustomerNameByEmail(email);
         if (!customerName) throw new Error('Customer with given email not found')

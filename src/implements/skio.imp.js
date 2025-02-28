@@ -25,7 +25,7 @@ class SkioImp {
         Subscriptions (limit: 1, where: {
             id: {_eq: "${subscription}"},	
             StorefrontUser: {email: {_eq: "${email}"}}
-          }, ) {
+          }) {
             id
             ShippingAddress {
               address1
@@ -35,12 +35,10 @@ class SkioImp {
               zip
             }
             SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}}) {
-              OrderLineItems {
-                ProductVariant {
-                  title
-                  platformId
-                  price
-                }
+              ProductVariant {
+                title
+                platformId
+                price
               }
             }
         }
@@ -52,7 +50,7 @@ class SkioImp {
     const client = this.init()
     return (await client.request(gql`
       mutation {
-        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true, permanentlyCancel : true}) {
+        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true}) {
           ok
         }
       }
@@ -90,6 +88,21 @@ class SkioImp {
         }
       }  
     `)).updateSubscriptionShippingAddress
+  }
+
+  async getSubscriptionInfo(id) {
+    const client = this.init()
+    return (await client.request(gql`
+      query {
+        Subscriptions (limit: 1, where: {id: { _eq: "${id}" }}) {
+          StorefrontUser {
+            email
+            firstName
+          }
+          nextBillingDate
+        }
+      }  
+    `)).Subscriptions[0]
   }
 }
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Address Confirm</title>
+    <title>Subscription Canceled Confirmation</title>
     <style>
         body {
             margin: 0;
@@ -67,35 +67,31 @@
 <body>
     <div class="email_container">
         <div class="header">
-            <img width="100%" src="cid:top_banner">
+            <img width="100%" src="cid:top_banner_subscription_canceled">
         </div>
 
         <div class="content">
-            <h5 class="subject">Subject: Your Shipping Address Has Been Updated</h5>
+            <h5 class="subject">Subject: Your Subscription Has Been Canceled</h5>
             <h4>Dear {{ customerName }},</h4>
             <p>
-                We hope you're doing well! We're reaching out to confirm that the shipping address for your order
-                <b class="b_id">({{ orderName }})</b> has been successfully updated. Please review the new address below to
-                ensure it is correct.
-                <br><br>
-                <span class="highlight">New Shipping Address:</span><br>
-                {{ newAddress }}
-                <br><br>
-                If this address is correct, no further action is needed, and your order will be shipped as scheduled.
-                However, if there is an issue, please <a href="{{ contactPage }}">contact us</a> as soon as possible so we can assist you.
-                <br><br>
-                At <span class="highlight">{{ shopName }},</span> we value your trust and are committed to providing the
-                best experience for women who prioritize self-care and well-being. If you have any questions or need
-                further assistance, feel free to reach out.
-                <br><br>
-                Thank you for choosing us!
+                We’re reaching out to confirm that your subscription has been successfully canceled.
+                Any remaining charges have been processed, and you’ll continue to have access to your benefits until
+                the end of your current billing period on {{ orderEndDate }}
+                <br /><br />
+                We truly appreciate the time you’ve spent with us and hope to welcome you back in the future!
+                If you have any questions or need assistance, please don’t hesitate to reach out—we’re always happy to help.
+                <br /><br />
+                Thank you for being a valued part of the <b>{{ shopName }}</b> community.
+                <br /><br />
+                Best regards,
+                <br />
+                The <b>{{ shopName }}</b> Team
             </p>
         </div>
 
         <div class="footer">
-            <p>&copy; 2025 ZTO Help App. All rights reserved.</p>
+            <p>&copy; 2025 {{ shopName }}. All rights reserved.</p>
         </div>
     </div>
 </body>
-
 </html>

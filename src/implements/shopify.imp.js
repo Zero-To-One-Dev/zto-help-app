@@ -101,7 +101,7 @@ class ShopifyImp {
 
   async createDraftOrder(input) {
     const client = this.init();
-    return await client.request(
+    return (await client.request(
       `mutation draftOrderCreate($input: DraftOrderInput!) {
           draftOrderCreate(input: $input) {
             draftOrder {
@@ -110,7 +110,7 @@ class ShopifyImp {
           }
         }`, {
       variables: { input }
-    });
+    })).data.draftOrderCreate.draftOrder.id;
   }
 
   async getActiveOrders(email) {

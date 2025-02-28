@@ -40,14 +40,23 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         if (objectToken) {
             if (isExpired(objectToken.expire_at)) {
                 await dbRepository.deleteToken(shopAlias, email);
-            } else throw new Error('Token already generated, please wait 5 minutes');
+            } else {
+                await dbRepository.setSubscriptionToken(shopAlias, email, subscription)
+                res.json({ message: 'We already sent you a token to verify your email, please check your inbox' });
+                return;
+            }
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token, { subscription });
-
-        __dirname
-
-        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token });
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token },
+            [
+                {
+                    filename: 'top_banner.png',
+                    path: path.resolve() + `/public/imgs/${shopAlias}/top_banner.png`,
+                    cid: 'top_banner'
+                }
+            ]
+        );
         res.json({ message: 'We sent you a token to verify your email, please check your inbox' })
     } catch (err) {
         logger.error(err.message);
