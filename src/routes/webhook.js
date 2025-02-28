@@ -47,6 +47,7 @@ router.use(bearerToken({
  */
 router.post('/paid', authenticateToken, async (req, res) => {
   try {
+    logger.info('Request body: ', JSON.stringify(req.body));
     const { shop, shopAlias, draftOrder } = req.body;
     let shopDomain = SHOPS_ORIGIN[shop];
     const { shopName, shopColor, contactPage } = shopDomain;
