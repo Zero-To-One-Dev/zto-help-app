@@ -19,7 +19,7 @@ export const APP_TOKEN = process.env.APP_TOKEN;
 // Email
 export const EMAIL_SENDER = process.env.EMAIL_SENDER;
 export const EMAIL_HOST = process.env.EMAIL_HOST;
-export const EMAIL_PORT = process.env.EMAIL_PORT;
+export const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || 465);
 export const EMAIL_USER = process.env.EMAIL_USER;
 export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
 
@@ -28,7 +28,7 @@ export const REDIS_URL = process.env.REDIS_URL;
 export const PGUSER = process.env.PGUSER;
 export const PGPASSWORD = process.env.PGPASSWORD;
 export const PGHOST = process.env.PGHOST;
-export const PGPORT = parseInt(process.env.PGPORT);
+export const PGPORT = parseInt(process.env.PGPORT || 5432);
 export const PGDATABASE = process.env.PGDATABASE;
 export const PGSSL = process.env.PGSSL === 'true';
 
@@ -46,7 +46,7 @@ const EMAIL_SENDER_HS = process.env.EMAIL_SENDER_HS;
 const EMAIL_HOST_HS = process.env.EMAIL_HOST_HS;
 const EMAIL_USER_HS = process.env.EMAIL_USER_HS;
 const EMAIL_PASSWORD_HS = process.env.EMAIL_PASSWORD_HS;
-const EMAIL_PORT_HS = process.env.EMAIL_PORT_HS;
+const EMAIL_PORT_HS = parseInt(process.env.EMAIL_PORT_HS || 587);
 
 // CS
 export const SECRET_CS = process.env.SECRET_CS;
@@ -62,7 +62,7 @@ const EMAIL_SENDER_CS = process.env.EMAIL_SENDER_CS;
 const EMAIL_HOST_CS = process.env.EMAIL_HOST_CS;
 const EMAIL_USER_CS = process.env.EMAIL_USER_CS;
 const EMAIL_PASSWORD_CS = process.env.EMAIL_PASSWORD_CS;
-const EMAIL_PORT_CS = process.env.EMAIL_PORT_CS;
+const EMAIL_PORT_CS = parseInt(process.env.EMAIL_PORT_CS || 587);
 
 // RS
 export const SECRET_RS = process.env.SECRET_RS;
@@ -78,7 +78,7 @@ const EMAIL_SENDER_RS = process.env.EMAIL_SENDER_RS;
 const EMAIL_HOST_RS = process.env.EMAIL_HOST_RS;
 const EMAIL_USER_RS = process.env.EMAIL_USER_RS;
 const EMAIL_PASSWORD_RS = process.env.EMAIL_PASSWORD_RS;
-const EMAIL_PORT_RS = process.env.EMAIL_PORT_RS;
+const EMAIL_PORT_RS = parseInt(process.env.EMAIL_PORT_RS || 587);
 
 // VS
 export const SECRET_VS = process.env.SECRET_VS;
@@ -94,7 +94,7 @@ const EMAIL_SENDER_VS = process.env.EMAIL_SENDER_VS;
 const EMAIL_HOST_VS = process.env.EMAIL_HOST_VS;
 const EMAIL_USER_VS = process.env.EMAIL_USER_VS;
 const EMAIL_PASSWORD_VS = process.env.EMAIL_PASSWORD_VS;
-const EMAIL_PORT_VS = process.env.EMAIL_PORT_VS;
+const EMAIL_PORT_VS = parseInt(process.env.EMAIL_PORT_VS || 587);
 
 // DM
 export const SECRET_DM = process.env.SECRET_DM;
@@ -110,7 +110,7 @@ const EMAIL_SENDER_DM = process.env.EMAIL_SENDER_DM;
 const EMAIL_HOST_DM = process.env.EMAIL_HOST_DM;
 const EMAIL_USER_DM = process.env.EMAIL_USER_DM;
 const EMAIL_PASSWORD_DM = process.env.EMAIL_PASSWORD_DM;
-const EMAIL_PORT_DM = process.env.EMAIL_PORT_DM;
+const EMAIL_PORT_DM = parseInt(process.env.EMAIL_PORT_DM || 587);
 
 // MW
 export const SECRET_MW = process.env.SECRET_MW;
@@ -126,7 +126,7 @@ const EMAIL_SENDER_MW = process.env.EMAIL_SENDER_MW;
 const EMAIL_HOST_MW = process.env.EMAIL_HOST_MW;
 const EMAIL_USER_MW = process.env.EMAIL_USER_MW;
 const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW;
-const EMAIL_PORT_MW = process.env.EMAIL_PORT_MW;
+const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587);
 
 if (NODE_ENV === 'development') app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
@@ -138,10 +138,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#FFF533',
         contactPage: CONTACT_PAGE_HS,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS,
-        emailSender: EMAIL_SENDER_HS,
-        emailHost: EMAIL_HOST_HS,
-        emailUser: EMAIL_USER_HS,
-        emailPassword: EMAIL_PASSWORD_HS
+        emailSender: EMAIL_SENDER_HS
     },
     'https://copperslim.com': {
         shop: SHOPIFY_URL_CS,
@@ -150,10 +147,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#CB8370',
         contactPage: CONTACT_PAGE_CS,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS,
-        emailSender: EMAIL_SENDER_CS,
-        emailHost: EMAIL_HOST_CS,
-        emailUser: EMAIL_USER_CS,
-        emailPassword: EMAIL_PASSWORD_CS
+        emailSender: EMAIL_SENDER_CS
     },
     'https://redusculpt.com': {
         shop: SHOPIFY_URL_RS,
@@ -162,10 +156,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_RS,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS,
-        emailSender: EMAIL_SENDER_RS,
-        emailHost: EMAIL_HOST_RS,
-        emailUser: EMAIL_USER_RS,
-        emailPassword: EMAIL_PASSWORD_RS
+        emailSender: EMAIL_SENDER_RS
     },
     'https://mywayhairdna.com': {
         shop: SHOPIFY_URL_MW,
@@ -174,10 +165,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_MW,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
-        emailSender: EMAIL_SENDER_MW,
-        emailHost: EMAIL_HOST_MW,
-        emailUser: EMAIL_USER_MW,
-        emailPassword: EMAIL_PASSWORD_MW
+        emailSender: EMAIL_SENDER_MW
     },
     'https://drmingtea.com': {
         shop: SHOPIFY_URL_DM,
@@ -186,10 +174,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_DM,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
-        emailSender: EMAIL_SENDER_DM,
-        emailHost: EMAIL_HOST_DM,
-        emailUser: EMAIL_USER_DM,
-        emailPassword: EMAIL_PASSWORD_DM
+        emailSender: EMAIL_SENDER_DM
     },
     'https://vibrosculpt.com': {
         shop: SHOPIFY_URL_VS,
@@ -198,10 +183,7 @@ export const SHOPS_ORIGIN = {
         shopColor: '#5B7793',
         contactPage: CONTACT_PAGE_VS,
         productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS,
-        emailSender: EMAIL_SENDER_VS,
-        emailHost: EMAIL_HOST_VS,
-        emailUser: EMAIL_USER_VS,
-        emailPassword: EMAIL_PASSWORD_VS
+        emailSender: EMAIL_SENDER_VS
     }
 };
 
