@@ -22,7 +22,7 @@ router.use(bearerToken({
 
 /**
  *  @openapi
- *  /webhook/paid:
+ *  /webhook/draft-order-paid:
  *    post:
  *      security:
  *        - BearerAuth:
@@ -45,28 +45,28 @@ router.use(bearerToken({
  *        200:
  *          description: Returns JSON message
  */
-router.post('/paid', authenticateToken, async (req, res) => {
+router.post('/draft-order-paid', authenticateToken, async (req, res) => {
   try {
     logger.info('Request body: ', JSON.stringify(req.body));
     const { shop, shopAlias, draftOrder } = req.body;
     let shopDomain = SHOPS_ORIGIN[shop];
     const { shopName, shopColor, contactPage } = shopDomain;
     const subscriptionImp = new SubscriptionImp(shop, shopAlias);
-    const rows = await dbRepository.getSubscriptionByDraftOrder(shopAlias, draftOrder);
-    const subscriptionId = rows[0].subscription;
-    const subscription = await subscriptionImp.getSubscriptionInfo(subscriptionId);
-    const email = subscription.StorefrontUser.email;
-    const customerName = subscription.StorefrontUser.firstName;
-    const orderEndDate = new Date(subscription.nextBillingDate).toLocaleString();
-    if (!rows.length) throw new Error('Draft order not found');
-    const subscriptionCanceled = await subscriptionImp.cancelSubscription(subscriptionId);
+
+    const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(shopAlias, draftOrder);
+    if (!draftOrderData) throw new Error('Draft order not found');
+
+    const subscription = await subscriptionImp.getSubscriptionInfo(draftOrderData.subscription);
+    const subscriptionCanceled = await subscriptionImp.cancelSubscription(draftOrderData.subscription);
     if (!subscriptionCanceled) throw new Error('Subscription not cancelled');
+
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
-    await mailer.sendEmail(email, 'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
+    await mailer.sendEmail(subscription.StorefrontUser.email,
+      'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
       {
         shopColor,
-        customerName,
-        orderEndDate,
+        customerName: subscription.StorefrontUser.firstName,
+        orderEndDate: new Date(subscription.nextBillingDate).toLocaleString(),
         contactPage,
         shopName
       },

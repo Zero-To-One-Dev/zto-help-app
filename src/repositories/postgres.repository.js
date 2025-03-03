@@ -92,7 +92,7 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
-    async getLastDraftOrder(shopAlias, subscription) {
+    async getLastDraftOrderBySubscription(shopAlias, subscription) {
         const client = await this.init()
         const query = {
             name: 'get-last-draft-order',
@@ -101,7 +101,7 @@ class PostgreSQLRepository {
         }
         const res = await client.query(query)
         await client.end()
-        return res.rows[0];
+        return res.rows.length ? res.rows[0] : null;
     }
 
     async deleteDraftOrder(shopAlias, draftOrder) {
@@ -116,7 +116,7 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
-    async getSubscriptionByDraftOrder(shopAlias, draftOrder) {
+    async getLastDraftOrderByDraftOrder(shopAlias, draftOrder) {
         const client = await this.init()
         const query = {
             name: 'get-subscription-by-draft-order',
@@ -125,7 +125,7 @@ class PostgreSQLRepository {
         }
         const res = await client.query(query)
         await client.end()
-        return res.rows
+        return res.rows.length ? res.rows[0] : null;
     }
 
     async updatePaymentDueDraftOrder(shopAlias, draftOrder, subscription) {

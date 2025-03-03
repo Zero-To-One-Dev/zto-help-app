@@ -13,12 +13,8 @@ const router = Router();
 const dbRepository = new DBRepository();
 
 async function getActiveDraftOrder(shopAlias, subscription) {
-    const draftOrder = await dbRepository.getLastDraftOrder(shopAlias, subscription);
-    if (draftOrder && draftOrder.payment_due > new Date()) {
-        return draftOrder;
-    } else {
-        return null;
-    }
+    const draftOrder = await dbRepository.getLastDraftOrderBySubscription(shopAlias, subscription);
+    return draftOrder && draftOrder.payment_due > new Date() ? draftOrder : null;
 }
 
 /**
