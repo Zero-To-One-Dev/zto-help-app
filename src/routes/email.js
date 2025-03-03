@@ -34,7 +34,7 @@ const mailer = new Mailer();
  */
 router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (req, res) => {
     try {
-        const { shopAlias } = SHOPS_ORIGIN[req.get('origin')];
+        const { shopAlias, shopName } = SHOPS_ORIGIN[req.get('origin')];
         const { email, subscription } = req.body;
         const objectToken = await dbRepository.validateTokenExists(shopAlias, email);
         if (objectToken) {
@@ -48,7 +48,7 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token, { subscription });
-        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token },
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token, shopName },
             [
                 {
                     filename: 'top_banner.png',
@@ -87,7 +87,7 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
     try {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shopAlias } = shopDomain;
+        const { shopAlias, shopName } = shopDomain;
         const { email } = req.body;
         const objectToken = await dbRepository.validateTokenExists(shopAlias, email);
         if (objectToken) {
@@ -100,7 +100,7 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
         }
         const token = generateSecureToken();
         await dbRepository.saveToken(shopAlias, email, token);
-        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token },
+        await mailer.sendEmail(email, 'email-token', 'Verification Code', { token, shopName },
             [
                 {
                     filename: 'top_banner.png',
