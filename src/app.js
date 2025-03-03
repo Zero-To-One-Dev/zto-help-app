@@ -42,6 +42,11 @@ const SHOPIFY_API_KEY_HS = process.env.SHOPIFY_API_KEY_HS;
 const SHOPIFY_API_SECRET_KEY_HS = process.env.SHOPIFY_API_SECRET_KEY_HS;
 const SKIO_API_KEY_HS = process.env.SKIO_API_KEY_HS;
 const PRODUCT_FAKE_VARIANT_ID_HS = process.env.PRODUCT_FAKE_VARIANT_ID_HS;
+const EMAIL_SENDER_HS = process.env.EMAIL_SENDER_HS;
+const EMAIL_HOST_HS = process.env.EMAIL_HOST_HS;
+const EMAIL_USER_HS = process.env.EMAIL_USER_HS;
+const EMAIL_PASSWORD_HS = process.env.EMAIL_PASSWORD_HS;
+const EMAIL_PORT_HS = process.env.EMAIL_PORT_HS;
 
 // CS
 export const SECRET_CS = process.env.SECRET_CS;
@@ -53,6 +58,11 @@ const SHOPIFY_API_KEY_CS = process.env.SHOPIFY_API_KEY_CS;
 const SHOPIFY_API_SECRET_KEY_CS = process.env.SHOPIFY_API_SECRET_KEY_CS;
 const SKIO_API_KEY_CS = process.env.SKIO_API_KEY_CS;
 const PRODUCT_FAKE_VARIANT_ID_CS = process.env.PRODUCT_FAKE_VARIANT_ID_CS;
+const EMAIL_SENDER_CS = process.env.EMAIL_SENDER_CS;
+const EMAIL_HOST_CS = process.env.EMAIL_HOST_CS;
+const EMAIL_USER_CS = process.env.EMAIL_USER_CS;
+const EMAIL_PASSWORD_CS = process.env.EMAIL_PASSWORD_CS;
+const EMAIL_PORT_CS = process.env.EMAIL_PORT_CS;
 
 // RS
 export const SECRET_RS = process.env.SECRET_RS;
@@ -64,6 +74,11 @@ const SHOPIFY_API_KEY_RS = process.env.SHOPIFY_API_KEY_RS;
 const SHOPIFY_API_SECRET_KEY_RS = process.env.SHOPIFY_API_SECRET_KEY_RS;
 const SKIO_API_KEY_RS = process.env.SKIO_API_KEY_RS;
 const PRODUCT_FAKE_VARIANT_ID_RS = process.env.PRODUCT_FAKE_VARIANT_ID_RS;
+const EMAIL_SENDER_RS = process.env.EMAIL_SENDER_RS;
+const EMAIL_HOST_RS = process.env.EMAIL_HOST_RS;
+const EMAIL_USER_RS = process.env.EMAIL_USER_RS;
+const EMAIL_PASSWORD_RS = process.env.EMAIL_PASSWORD_RS;
+const EMAIL_PORT_RS = process.env.EMAIL_PORT_RS;
 
 // VS
 export const SECRET_VS = process.env.SECRET_VS;
@@ -75,6 +90,11 @@ const SHOPIFY_API_KEY_VS = process.env.SHOPIFY_API_KEY_VS;
 const SHOPIFY_API_SECRET_KEY_VS = process.env.SHOPIFY_API_SECRET_KEY_VS;
 const SKIO_API_KEY_VS = process.env.SKIO_API_KEY_VS;
 const PRODUCT_FAKE_VARIANT_ID_VS = process.env.PRODUCT_FAKE_VARIANT_ID_VS;
+const EMAIL_SENDER_VS = process.env.EMAIL_SENDER_VS;
+const EMAIL_HOST_VS = process.env.EMAIL_HOST_VS;
+const EMAIL_USER_VS = process.env.EMAIL_USER_VS;
+const EMAIL_PASSWORD_VS = process.env.EMAIL_PASSWORD_VS;
+const EMAIL_PORT_VS = process.env.EMAIL_PORT_VS;
 
 // DM
 export const SECRET_DM = process.env.SECRET_DM;
@@ -86,6 +106,11 @@ const SHOPIFY_API_KEY_DM = process.env.SHOPIFY_API_KEY_DM;
 const SHOPIFY_API_SECRET_KEY_DM = process.env.SHOPIFY_API_SECRET_KEY_DM;
 const SKIO_API_KEY_DM = process.env.SKIO_API_KEY_DM;
 const PRODUCT_FAKE_VARIANT_ID_DM = process.env.PRODUCT_FAKE_VARIANT_ID_DM;
+const EMAIL_SENDER_DM = process.env.EMAIL_SENDER_DM;
+const EMAIL_HOST_DM = process.env.EMAIL_HOST_DM;
+const EMAIL_USER_DM = process.env.EMAIL_USER_DM;
+const EMAIL_PASSWORD_DM = process.env.EMAIL_PASSWORD_DM;
+const EMAIL_PORT_DM = process.env.EMAIL_PORT_DM;
 
 // MW
 export const SECRET_MW = process.env.SECRET_MW;
@@ -97,6 +122,11 @@ const SHOPIFY_API_KEY_MW = process.env.SHOPIFY_API_KEY_MW;
 const SHOPIFY_API_SECRET_KEY_MW = process.env.SHOPIFY_API_SECRET_KEY_MW;
 const SKIO_API_KEY_MW = process.env.SKIO_API_KEY_MW;
 const PRODUCT_FAKE_VARIANT_ID_MW = process.env.PRODUCT_FAKE_VARIANT_ID_MW;
+const EMAIL_SENDER_MW = process.env.EMAIL_SENDER_MW;
+const EMAIL_HOST_MW = process.env.EMAIL_HOST_MW;
+const EMAIL_USER_MW = process.env.EMAIL_USER_MW;
+const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW;
+const EMAIL_PORT_MW = process.env.EMAIL_PORT_MW;
 
 if (NODE_ENV === 'development') app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
@@ -107,7 +137,11 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_HS,
         shopColor: '#FFF533',
         contactPage: CONTACT_PAGE_HS,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS,
+        emailSender: EMAIL_SENDER_HS,
+        emailHost: EMAIL_HOST_HS,
+        emailUser: EMAIL_USER_HS,
+        emailPassword: EMAIL_PASSWORD_HS
     },
     'https://copperslim.com': {
         shop: SHOPIFY_URL_CS,
@@ -115,7 +149,11 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_CS,
         shopColor: '#CB8370',
         contactPage: CONTACT_PAGE_CS,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS,
+        emailSender: EMAIL_SENDER_CS,
+        emailHost: EMAIL_HOST_CS,
+        emailUser: EMAIL_USER_CS,
+        emailPassword: EMAIL_PASSWORD_CS
     },
     'https://redusculpt.com': {
         shop: SHOPIFY_URL_RS,
@@ -123,7 +161,11 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_RS,
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_RS,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS,
+        emailSender: EMAIL_SENDER_RS,
+        emailHost: EMAIL_HOST_RS,
+        emailUser: EMAIL_USER_RS,
+        emailPassword: EMAIL_PASSWORD_RS
     },
     'https://mywayhairdna.com': {
         shop: SHOPIFY_URL_MW,
@@ -131,7 +173,11 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_MW,
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_MW,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
+        emailSender: EMAIL_SENDER_MW,
+        emailHost: EMAIL_HOST_MW,
+        emailUser: EMAIL_USER_MW,
+        emailPassword: EMAIL_PASSWORD_MW
     },
     'https://drmingtea.com': {
         shop: SHOPIFY_URL_DM,
@@ -139,7 +185,11 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_DM,
         shopColor: '#FF605F',
         contactPage: CONTACT_PAGE_DM,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
+        emailSender: EMAIL_SENDER_DM,
+        emailHost: EMAIL_HOST_DM,
+        emailUser: EMAIL_USER_DM,
+        emailPassword: EMAIL_PASSWORD_DM
     },
     'https://vibrosculpt.com': {
         shop: SHOPIFY_URL_VS,
@@ -147,15 +197,19 @@ export const SHOPS_ORIGIN = {
         shopName: SHOP_NAME_VS,
         shopColor: '#5B7793',
         contactPage: CONTACT_PAGE_VS,
-        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS
+        productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS,
+        emailSender: EMAIL_SENDER_VS,
+        emailHost: EMAIL_HOST_VS,
+        emailUser: EMAIL_USER_VS,
+        emailPassword: EMAIL_PASSWORD_VS
     }
 };
 
 export default {
-    SHOPIFY_API_KEY_HS, SHOPIFY_API_SECRET_KEY_HS, SKIO_API_KEY_HS,
-    SHOPIFY_API_KEY_CS, SHOPIFY_API_SECRET_KEY_CS, SKIO_API_KEY_CS,
-    SHOPIFY_API_KEY_RS, SHOPIFY_API_SECRET_KEY_RS, SKIO_API_KEY_RS,
-    SHOPIFY_API_KEY_VS, SHOPIFY_API_SECRET_KEY_VS, SKIO_API_KEY_VS,
-    SHOPIFY_API_KEY_DM, SHOPIFY_API_SECRET_KEY_DM, SKIO_API_KEY_DM,
-    SHOPIFY_API_KEY_MW, SHOPIFY_API_SECRET_KEY_MW, SKIO_API_KEY_MW
+    SHOPIFY_API_KEY_HS, SHOPIFY_API_SECRET_KEY_HS, SKIO_API_KEY_HS, EMAIL_SENDER_HS, EMAIL_HOST_HS, EMAIL_USER_HS, EMAIL_PASSWORD_HS, EMAIL_PORT_HS,
+    SHOPIFY_API_KEY_CS, SHOPIFY_API_SECRET_KEY_CS, SKIO_API_KEY_CS, EMAIL_SENDER_CS, EMAIL_HOST_CS, EMAIL_USER_CS, EMAIL_PASSWORD_CS, EMAIL_PORT_CS,
+    SHOPIFY_API_KEY_RS, SHOPIFY_API_SECRET_KEY_RS, SKIO_API_KEY_RS, EMAIL_SENDER_RS, EMAIL_HOST_RS, EMAIL_USER_RS, EMAIL_PASSWORD_RS, EMAIL_PORT_RS,
+    SHOPIFY_API_KEY_VS, SHOPIFY_API_SECRET_KEY_VS, SKIO_API_KEY_VS, EMAIL_SENDER_VS, EMAIL_HOST_VS, EMAIL_USER_VS, EMAIL_PASSWORD_VS, EMAIL_PORT_VS,
+    SHOPIFY_API_KEY_DM, SHOPIFY_API_SECRET_KEY_DM, SKIO_API_KEY_DM, EMAIL_SENDER_DM, EMAIL_HOST_DM, EMAIL_USER_DM, EMAIL_PASSWORD_DM, EMAIL_PORT_DM,
+    SHOPIFY_API_KEY_MW, SHOPIFY_API_SECRET_KEY_MW, SKIO_API_KEY_MW, EMAIL_SENDER_MW, EMAIL_HOST_MW, EMAIL_USER_MW, EMAIL_PASSWORD_MW, EMAIL_PORT_MW
 }

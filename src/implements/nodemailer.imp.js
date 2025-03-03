@@ -1,14 +1,23 @@
+import app from '../app.js';
 import path from 'node:path';
 import nodemailer from 'nodemailer';
 import logger from '../../logger.js';
 import hbs from 'nodemailer-express-handlebars';
-import { EMAIL_SENDER, EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD } from '../app.js'
 
 class NodemailerMailerImp {
 
-    constructor() { }
+    constructor(shopAlias) {
+        this.shopAlias = shopAlias
+    }
 
     init() {
+        const {
+              [`EMAIL_HOST_${this.shopAlias}`]: EMAIL_HOST,
+              [`EMAIL_USER_${this.shopAlias}`]: EMAIL_USER,
+              [`EMAIL_PASSWORD_${this.shopAlias}`]: EMAIL_PASSWORD,
+              [`EMAIL_PORT_${this.shopAlias}`]: EMAIL_PORT
+            } = app;
+    
         // Setup Nodemailer
         const transporter = nodemailer.createTransport({
             host: EMAIL_HOST,
@@ -28,10 +37,10 @@ class NodemailerMailerImp {
         return transporter;
     }
 
-    async sendEmail(email, template, subject, context, attachments = []) {
+    async sendEmail(sender, email, template, subject, context, attachments = []) {
         const transporter = this.init();
         await transporter.sendMail({
-            from: EMAIL_SENDER,
+            from: sender,
             to: email,  
             subject,
             template,

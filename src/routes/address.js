@@ -38,7 +38,7 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
     try {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shop, shopAlias, shopName, shopColor, contactPage } = shopDomain;
+        const { shop, shopAlias, shopName, shopColor, contactPage, emailSender } = shopDomain;
         const subscriptionImp = new SubscriptionImp(shop, shopAlias);
         const shopifyImp = new ShopifyImp(shop, shopAlias);
         const { email, token, id, address1, address2, provinceCode, province, city, zip } = req.body;
@@ -81,7 +81,7 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         if (address2) newAddress += `${address2}, `;
         newAddress += `${city}, ${province}, ${order.shippingAddress.country}`;
 
-        await mailer.sendEmail(email, 'update-address-confirm', 'Your Shipping Address Has Been Updated',
+        await mailer.sendEmail(emailSender, email, 'update-address-confirm', 'Your Shipping Address Has Been Updated',
             {
                 customerName: order.shippingAddress.name,
                 orderName: order.name,

@@ -48,7 +48,7 @@ router.use(bearerToken({
 router.post('/draft-order-paid', authenticateToken, async (req, res) => {
   try {
     logger.info('Request body: ', JSON.stringify(req.body));
-    const { shop, shopAlias, draftOrder } = req.body;
+    const { shop, shopAlias, draftOrder, emailSender } = req.body;
     let shopDomain = SHOPS_ORIGIN[shop];
     const { shopName, shopColor, contactPage } = shopDomain;
     const subscriptionImp = new SubscriptionImp(shop, shopAlias);
@@ -61,7 +61,7 @@ router.post('/draft-order-paid', authenticateToken, async (req, res) => {
     if (!subscriptionCanceled) throw new Error('Subscription not cancelled');
 
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
-    await mailer.sendEmail(subscription.StorefrontUser.email,
+    await mailer.sendEmail(emailSender, subscription.StorefrontUser.email,
       'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
       {
         shopColor,
