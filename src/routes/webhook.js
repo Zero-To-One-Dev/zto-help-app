@@ -10,7 +10,6 @@ import path from 'node:path'
 
 const router = Router();
 const dbRepository = new DBRepository();
-const mailer = new Mailer();
 
 router.use(bearerToken({
   bodyKey: 'access_token',
@@ -49,6 +48,7 @@ router.post('/draft-order-paid', authenticateToken, async (req, res) => {
   try {
     logger.info('Request body: ', JSON.stringify(req.body));
     const { shop, shopAlias, draftOrder, emailSender } = req.body;
+    const mailer = new Mailer(shopAlias);
     let shopDomain = SHOPS_ORIGIN[shop];
     const { shopName, shopColor, contactPage } = shopDomain;
     const subscriptionImp = new SubscriptionImp(shop, shopAlias);

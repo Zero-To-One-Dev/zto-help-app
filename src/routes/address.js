@@ -12,7 +12,6 @@ import DBRepository from '../repositories/postgres.repository.js';
 
 const router = Router();
 const dbRepository = new DBRepository();
-const mailer = new Mailer();
 
 /**
  *  @openapi
@@ -39,6 +38,7 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
         const { shop, shopAlias, shopName, shopColor, contactPage, emailSender } = shopDomain;
+        const mailer = new Mailer(shopAlias);
         const subscriptionImp = new SubscriptionImp(shop, shopAlias);
         const shopifyImp = new ShopifyImp(shop, shopAlias);
         const { email, token, id, address1, address2, provinceCode, province, city, zip } = req.body;
