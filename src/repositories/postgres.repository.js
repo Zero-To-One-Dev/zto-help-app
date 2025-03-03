@@ -92,11 +92,11 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
-    async getDraftOrder(shopAlias, subscription) {
+    async getLastDraftOrder(shopAlias, subscription) {
         const client = await this.init()
         const query = {
-            name: 'get-draft-order',
-            text: 'SELECT * FROM draft_orders WHERE shop_alias = $1 AND subscription = $2 LIMIT 1',
+            name: 'get-last-draft-order',
+            text: 'SELECT * FROM draft_orders WHERE shop_alias = $1 AND subscription = $2 ORDER BY payment_due DESC LIMIT 1',
             values: [shopAlias, subscription]
         }
         const res = await client.query(query)

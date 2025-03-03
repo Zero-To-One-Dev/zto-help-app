@@ -12,6 +12,15 @@ import DBRepository from '../repositories/postgres.repository.js';
 const router = Router();
 const dbRepository = new DBRepository();
 
+async function getActiveDraftOrder(shopAlias, subscription) {
+    const draftOrder = await dbRepository.getLastDraftOrder(shopAlias, subscription);
+    if (draftOrder && draftOrder.payment_due > new Date()) {
+        return draftOrder;
+    } else {
+        return null;
+    }
+}
+
 /**
  *  @openapi
  *  /subscription/cancel:
@@ -38,8 +47,8 @@ const dbRepository = new DBRepository();
 router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
     try {
         let shopOrigin = req.get('origin');
-        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shop, shopAlias } = shopDomain;
+        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com']; // Para pruebas en local se usa por defecto Hot Shapers
+        const { shop, shopAlias, productFakeVariantId } = shopDomain;
 
         const subscriptionImp = new SubscriptionImp(shop, shopAlias);
         const shopifyImp = new ShopifyImp(shop, shopAlias);
@@ -68,7 +77,7 @@ router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
 
         // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order.
         // Primero se debe verificar si ya existe una draft order. Si existe, enviar invoice.
-        const draftOrderExists = await dbRepository.getDraftOrder(shopAlias, subscription);
+        const draftOrderExists = await getActiveDraftOrder(shopAlias, subscription);
         if (draftOrderExists) {
             await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);
             res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription.' })
@@ -91,7 +100,7 @@ router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
                 },
                 lineItems: [
                     {
-                        variantId: 'gid://shopify/ProductVariant/50336271302937', // ID de la variante de 1 dólar
+                        variantId: productFakeVariantId, // ID de la variante de 1 dólar
                         quantity
                     }
                 ]
