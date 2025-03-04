@@ -5,6 +5,7 @@ import bearerToken from 'express-bearer-token';
 import Mailer from '../implements/nodemailer.imp.js';
 import { authenticateToken } from '../middlewares/authenticate-token.js';
 import SubscriptionImp from '../implements/skio.imp.js';
+import ShopifyImp from '../implements/shopify.imp.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import path from 'node:path'
 
@@ -47,12 +48,15 @@ router.use(bearerToken({
 router.post('/draft-order-paid', authenticateToken, async (req, res) => {
   try {
     logger.info('Request body: ', JSON.stringify(req.body));
-    const { shop, shopAlias, draftOrder, emailSender } = req.body;
+    const { shop, shopAlias, orderId, events } = req.body;
+    logger.info('Events: ', JSON.stringify(events));
     const mailer = new Mailer(shopAlias);
     let shopDomain = SHOPS_ORIGIN[shop];
-    const { shopName, shopColor, contactPage } = shopDomain;
+    const { shopName, shopColor, contactPage, emailSender } = shopDomain;
+    const shopifyImp = new ShopifyImp(shop, shopAlias);
     const subscriptionImp = new SubscriptionImp(shop, shopAlias);
 
+    const draftOrder = await shopifyImp.getDraftOrderByOrder(orderId);
     const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(shopAlias, draftOrder);
     if (!draftOrderData) throw new Error('Draft order not found');
 
