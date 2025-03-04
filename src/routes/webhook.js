@@ -47,9 +47,9 @@ router.use(bearerToken({
  */
 router.post('/draft-order-paid', authenticateToken, async (req, res) => {
   try {
-    logger.info('Request body: ', JSON.stringify(req.body));
+    logger.info(`Request body: ${JSON.stringify(req.body)}`);
     const { shop, shopAlias, orderId, events } = req.body;
-    logger.info('Events: ', JSON.stringify(events));
+    logger.info(`Events: ${JSON.stringify(events)}`);
     const mailer = new Mailer(shopAlias);
     let shopDomain = SHOPS_ORIGIN[shop];
     const { shopName, shopColor, contactPage, emailSender } = shopDomain;
