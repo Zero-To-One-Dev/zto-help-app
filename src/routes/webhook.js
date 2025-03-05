@@ -1,23 +1,25 @@
-import { Router } from 'express';
-import logger from '../../logger.js';
-import { SHOPS_ORIGIN } from '../app.js';
-import bearerToken from 'express-bearer-token';
-import Mailer from '../implements/nodemailer.imp.js';
-import { authenticateToken } from '../middlewares/authenticate-token.js';
-import SubscriptionImp from '../implements/skio.imp.js';
-import DBRepository from '../repositories/postgres.repository.js';
-import path from 'node:path'
+import { Router } from "express"
+import logger from "../../logger.js"
+import { SHOPS_ORIGIN } from "../app.js"
+import bearerToken from "express-bearer-token"
+import Mailer from "../implements/nodemailer.imp.js"
+import { authenticateToken } from "../middlewares/authenticate-token.js"
+import SubscriptionImp from "../implements/skio.imp.js"
+import DBRepository from "../repositories/postgres.repository.js"
+import path from "node:path"
 
-const router = Router();
-const dbRepository = new DBRepository();
+const router = Router()
+const dbRepository = new DBRepository()
 
-router.use(bearerToken({
-  bodyKey: 'access_token',
-  queryKey: 'access_token',
-  headerKey: 'Bearer',
-  reqKey: 'token',
-  cookie: false,
-}));
+router.use(
+  bearerToken({
+    bodyKey: "access_token",
+    queryKey: "access_token",
+    headerKey: "Bearer",
+    reqKey: "token",
+    cookie: false,
+  })
+)
 
 /**
  *  @openapi
@@ -44,7 +46,7 @@ router.use(bearerToken({
  *        200:
  *          description: Returns JSON message
  */
-router.post('/draft-order-paid', authenticateToken, async (req, res) => {
+router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   try {
     const { shop, shopAlias, draftOrderId } = req.body;
     const mailer = new Mailer(shopAlias);
@@ -56,35 +58,97 @@ router.post('/draft-order-paid', authenticateToken, async (req, res) => {
     const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(shopAlias, draftOrder);
     if (!draftOrderData) throw new Error('Draft order not found');
 
-    const subscription = await subscriptionImp.getSubscriptionInfo(draftOrderData.subscription);
-    const subscriptionCanceled = await subscriptionImp.cancelSubscription(draftOrderData.subscription);
-    if (!subscriptionCanceled) throw new Error('Subscription not cancelled');
+    const subscription = await subscriptionImp.getSubscriptionInfo(
+      draftOrderData.subscription
+    )
+    const subscriptionCanceled = await subscriptionImp.cancelSubscription(
+      draftOrderData.subscription
+    )
+    if (!subscriptionCanceled) throw new Error("Subscription not cancelled")
 
     // Se debería eliminar la Draft Order en Shopify?
-    await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
-    await mailer.sendEmail(emailSender, subscription.StorefrontUser.email,
-      'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
+    await dbRepository.deleteDraftOrder(shopAlias, draftOrder)
+    await mailer.sendEmail(
+      emailSender,
+      subscription.StorefrontUser.email,
+      "cancel-subscription-confirm",
+      "Your Subscription Has Been Canceled",
       {
         shopColor,
         customerName: subscription.StorefrontUser.firstName,
         orderEndDate: new Date(subscription.nextBillingDate).toLocaleString(),
         contactPage,
-        shopName
+        shopName,
       },
       [
         {
-          filename: 'top_banner_subscription_canceled.png',
-          path: path.resolve() + `/public/imgs/${shopAlias}/top_banner_subscription_canceled.png`,
-          cid: 'top_banner_subscription_canceled'
-        }
+          filename: "top_banner_subscription_canceled.png",
+          path:
+            path.resolve() +
+            `/public/imgs/${shopAlias}/top_banner_subscription_canceled.png`,
+          cid: "top_banner_subscription_canceled",
+        },
       ]
-    );
-    res.json({ message: 'Subscription cancelled and draft order deleted from database' })
+    )
+    res.json({
+      message: "Subscription cancelled and draft order deleted from database",
+    })
   } catch (err) {
-    console.log(err);
-    logger.error(err.message);
+    console.log(err)
+    logger.error(err.message)
     res.status(500).send({ message: err.message })
   }
 })
 
-export default router;
+router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
+  try {
+    const { shop, subscriptionId, event } = req.body
+    const { attentiveKey, shopAlias } = SHOPS_ORIGIN[shop]
+    const subscriptionImp = new SubscriptionImp(shop, shopAlias)
+    const subscription = await subscriptionImp.getSubscriptionByContract(
+      subscriptionId
+    )
+
+    if (!subscription) throw new Error("Subscription not found")
+
+    const eventData = {
+      user: {
+        email: subscription.StorefrontUser.email,
+      },
+      event: {
+        name: event,
+        timestamp: new Date().toISOString(),
+        properties: {
+          subscription_id: subscription.id,
+          subscription_status: subscription.status,
+        },
+      },
+    }
+
+    const response = await fetch(
+      "https://api.attentivemobile.com/v1/events/custom",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${attentiveKey}`,
+        },
+        body: JSON.stringify(eventData),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Error en la API: ${response.statusText}`)
+    }
+
+    console.log("Evento enviado con éxito a Attentive")
+
+    res.json({ message: `Attentive event sent (${event})` })
+  } catch (err) {
+    console.log(err)
+    logger.error(err.message)
+    res.status(500).send({ message: err.message })
+  }
+})
+
+export default router
