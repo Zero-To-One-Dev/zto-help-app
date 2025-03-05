@@ -27,6 +27,7 @@ class SkioImp {
             StorefrontUser: {email: {_eq: "${email}"}}
           }) {
             id
+            cyclesCompleted
             ShippingAddress {
               address1
               city

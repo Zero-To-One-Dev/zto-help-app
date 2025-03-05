@@ -61,6 +61,7 @@ router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
         
         const subscriptionData = await subscriptionImp.getSubscription(email, subscription);
         if (!subscriptionData) throw new Error('It is not possible to cancel the subscription');
+        if (subscriptionData.cyclesCompleted > 1) throw new Error('The subscription have more than 1 cycle completed');
 
         // Si el estado en la dirección de la orden es de CALIFORNIA, cancelar normal
         if (subscriptionData.ShippingAddress.province.toUpperCase() === 'CALIFORNIA') {
