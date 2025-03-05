@@ -128,6 +128,9 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
       },
     }
 
+    logger.info(`Sending event to Attentive: ${JSON.stringify(eventData)}`)
+    logger.info(`Attentive key: ${attentiveKey}`)
+
     const response = await fetch(
       "https://api.attentivemobile.com/v1/events/custom",
       {
