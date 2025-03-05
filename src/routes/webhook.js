@@ -115,16 +115,13 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
     if (!subscription) throw new Error("Subscription not found")
 
     const eventData = {
+      type: event,
       user: {
         email: subscription.StorefrontUser.email,
       },
-      event: {
-        name: event,
-        timestamp: new Date().toISOString(),
-        properties: {
-          subscription_id: subscription.id,
-          subscription_status: subscription.status,
-        },
+      properties: {
+        subscription_id: subscription.id,
+        subscription_status: subscription.status,
       },
     }
 
