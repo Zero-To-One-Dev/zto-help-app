@@ -63,7 +63,7 @@ router.post('/draft-order-paid', authenticateToken, async (req, res) => {
 
     // Se debería eliminar la Draft Order en Shopify?
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
-    await mailer.sendEmail(emailSender, 'juandiego14012003@gmail.com',
+    await mailer.sendEmail(emailSender, subscription.StorefrontUser.email,
       'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
       {
         shopColor,
