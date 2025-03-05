@@ -38,7 +38,7 @@ router.use(bearerToken({
  *                  type: string
  *                shopAlias:
  *                  type: string
- *                draftOrder:
+ *                draftOrderId:
  *                  type: string
  *      responses:
  *        200:
@@ -61,8 +61,9 @@ router.post('/draft-order-paid', authenticateToken, async (req, res) => {
     const subscriptionCanceled = await subscriptionImp.cancelSubscription(draftOrderData.subscription);
     if (!subscriptionCanceled) throw new Error('Subscription not cancelled');
 
+    // Se debería eliminar la Draft Order en Shopify?
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
-    await mailer.sendEmail(emailSender, subscription.StorefrontUser.email,
+    await mailer.sendEmail(emailSender, 'juandiego14012003@gmail.com',
       'cancel-subscription-confirm', 'Your Subscription Has Been Canceled',
       {
         shopColor,
