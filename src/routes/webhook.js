@@ -48,15 +48,18 @@ router.use(
  */
 router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   try {
-    const { shop, shopAlias, draftOrderId } = req.body;
-    const mailer = new Mailer(shopAlias);
-    let shopDomain = SHOPS_ORIGIN[shop];
-    const { shopName, shopColor, contactPage, emailSender } = shopDomain;
-    const subscriptionImp = new SubscriptionImp(shop, shopAlias);
-    
-    const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`;
-    const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(shopAlias, draftOrder);
-    if (!draftOrderData) throw new Error('Draft order not found');
+    const { shop, shopAlias, draftOrderId } = req.body
+    const mailer = new Mailer(shopAlias)
+    let shopDomain = SHOPS_ORIGIN[shop]
+    const { shopName, shopColor, contactPage, emailSender } = shopDomain
+    const subscriptionImp = new SubscriptionImp(shop, shopAlias)
+
+    const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`
+    const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(
+      shopAlias,
+      draftOrder
+    )
+    if (!draftOrderData) throw new Error("Draft order not found")
 
     const subscription = await subscriptionImp.getSubscriptionInfo(
       draftOrderData.subscription
@@ -138,6 +141,7 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
     )
 
     if (!response.ok) {
+      logger.error(JSON.stringify(response))
       throw new Error(`Error en la API: ${response.statusText}`)
     }
 
