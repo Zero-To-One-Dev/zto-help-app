@@ -42,6 +42,8 @@ router.use(
  *                  type: string
  *                draftOrderId:
  *                  type: string
+ *                nameApp:
+ *                  type: string
  *      responses:
  *        200:
  *          description: Returns JSON message

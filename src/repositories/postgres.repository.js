@@ -161,14 +161,14 @@ class PostgreSQLRepository {
         await client.end();
     }
 
-    async validateApiToken(hashedApiToken) {
+    async validateApiToken(hashedApiToken, nameApp) {
         const client = await this.init()
         const query = {
             name: 'validate-api-token',
             text: `
-                SELECT name_app FROM app_tokens WHERE hash_api_token = $1
+                SELECT name_app FROM app_tokens WHERE hash_api_token = $1 AND name_app = $2
             `,
-            values: [hashedApiToken]
+            values: [hashedApiToken, nameApp]
         }
         const res = await client.query(query)
         await client.end()
