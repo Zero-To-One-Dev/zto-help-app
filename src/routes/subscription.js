@@ -77,7 +77,7 @@ router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
         const draftOrderExists = await getActiveDraftOrder(shopAlias, subscription);
         if (draftOrderExists) {
             await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);
-            res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription.' })
+            res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription' })
         } else {
             const productSubscription = subscriptionData['SubscriptionLines'][0]['ProductVariant'];
             const variantId = productSubscription['platformId'].split('/').pop();
@@ -105,7 +105,7 @@ router.post('/cancel', handleError(SubscriptionSchema), async (req, res) => {
             const draftOrderId = await shopifyImp.createDraftOrder(draftOrderInput);
             await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription);
             await shopifyImp.sendDraftOrderInvoice(draftOrderId)
-            res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created.' })
+            res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created' })
         }
     } catch (err) {
         console.log(err);
