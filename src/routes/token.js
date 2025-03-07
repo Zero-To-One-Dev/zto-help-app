@@ -4,6 +4,7 @@ import { SHOPS_ORIGIN } from '../app.js';
 import { isExpired } from '../services/token.js';
 import ShopifyImp from '../implements/shopify.imp.js';
 import handleError from '../middlewares/error-handle.js';
+import SubscriptionImp from '../implements/skio.imp.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { TokenSchema } from '../schemas/token.js';
 
