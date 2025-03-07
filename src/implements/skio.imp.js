@@ -54,7 +54,7 @@ class SkioImp {
     return (
       await client.request(gql`
       mutation {
-        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: true}) {
+        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: false, cancelSessionId: "Swap to one time purchase"}) {
           ok
         }
       }
