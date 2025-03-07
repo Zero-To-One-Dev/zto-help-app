@@ -11,6 +11,11 @@ import { TokenSchema } from '../schemas/token.js';
 const router = Router();
 const dbRepository = new DBRepository();
 
+async function getActiveDraftOrder(shopAlias, subscription) {
+    const draftOrder = await dbRepository.getLastDraftOrderBySubscription(shopAlias, subscription);
+    return draftOrder && draftOrder.payment_due > new Date() ? draftOrder : null;
+}
+
 /**
  *  @openapi
  *  /token/subscription/validate:
