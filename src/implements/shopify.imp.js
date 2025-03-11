@@ -175,27 +175,13 @@ class ShopifyImp {
     )).data.orderUpdate
   }
 
-  async productIdByVariant(variantId) {
+  async productsIdsByVariant(variantsQuery) {
     const client = this.init();
     return (await client.request(`query {
-        products (first: 1, query: "variant_id:${variantId}") {
+        products (first: 100, query: "${variantsQuery}") {
           edges {
             node {
               id
-            }
-          }
-        }
-      }`)).data.products.edges[0].node.id
-  }
-
-  async oneTimeBySubscription(subscriptionId) {
-    const client = this.init();
-    return (await client.request(`query {
-        products(first: 1, query: "metafields.custom.product-subscription:\\"${subscriptionId}\\"") {
-          edges {
-            node {
-              id
-              title
               variants (first: 1) {
                 edges {
                   node {
@@ -207,7 +193,46 @@ class ShopifyImp {
             }
           }
         }
-      }`)).data.products.edges[0].node.variants.edges[0].node
+      }`)).data.products.edges
+  }
+
+  async oneTimesBySubscriptions(productsSubQuery) {
+    const client = this.init();
+    return (await client.request(`query {
+        products(first: 100, query: "${productsSubQuery}") {
+          edges {
+            node {
+              id
+              metafields (first: 1, keys: "custom.product-subscription") {
+                edges {
+                  node {
+                    jsonValue
+                    reference {
+                      ... on Product {
+                        variants (first: 1) {
+                          edges {
+                            node {
+                              price
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              variants (first: 1) {
+                edges {
+                  node {
+                    id
+                    price
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`)).data.products.edges
   }
 
   async sendDraftOrderInvoice(draftOrder) {

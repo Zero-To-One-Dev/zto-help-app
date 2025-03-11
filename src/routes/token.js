@@ -76,11 +76,21 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);
             res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription' })
         } else {
-            const productSubscription = subscriptionData['SubscriptionLines'][0]['ProductVariant'];
-            const variantId = productSubscription['platformId'].split('/').pop();
-            const subscriptionId = await shopifyImp.productIdByVariant(variantId);
-            const productOneTime = await shopifyImp.oneTimeBySubscription(subscriptionId);
-            const quantity = Math.floor(productOneTime.price - productSubscription.price);
+            const variantsQuery = ((subscriptionData.SubscriptionLines
+                .map(subs => subs.ProductVariant.platformId.split('/').pop()))
+                .map(variantId => `variant_id:${variantId}`))
+                .join(' OR ');
+            const productsSubQuery = (await shopifyImp
+                .productsIdsByVariant(variantsQuery))
+                .map(product => product.node.id.split('/').pop())
+                .map(id => `metafields.custom.product-subscription:${id}`)
+                .join(' OR ');
+            const quantity = (await shopifyImp
+                .oneTimesBySubscriptions(productsSubQuery))
+                .map(product => Math.floor(
+                    product.node.variants.edges[0].node.price -
+                    product.node.metafields.edges[0].node.reference.variants.edges[0].node.price))
+                .reduce((sum, a) => sum + a, 0);
             const draftOrderInput = {
                 acceptAutomaticDiscounts: false,
                 allowDiscountCodesInCheckout: false,
