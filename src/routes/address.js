@@ -37,15 +37,15 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
     try {
         let shopOrigin = req.get('origin');
         let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shop, shopAlias, shopName, shopColor, contactPage, emailSender } = shopDomain;
+        const { shopAlias, shopName, shopColor, contactPage, emailSender } = shopDomain;
         const mailer = new Mailer(shopAlias);
-        const subscriptionImp = new SubscriptionImp(shop, shopAlias);
-        const shopifyImp = new ShopifyImp(shop, shopAlias);
+        const subscriptionImp = new SubscriptionImp(shopAlias);
+        const shopifyImp = new ShopifyImp(shopAlias);
         const { email, token, id, address1, address2, provinceCode, province, city, zip } = req.body;
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
         if (!objectToken) throw new Error('Email or Token Not Found');
         if (isExpired(objectToken.expire_at)) {
-            await dbRepository.deleteToken(shop, email, token);
+            await dbRepository.deleteToken(shopAlias, email);
             throw new Error('Token expired');
         }
 

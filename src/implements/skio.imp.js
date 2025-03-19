@@ -4,8 +4,7 @@ import { gql, GraphQLClient } from "graphql-request"
 const SKIO_ENDPOINT = "https://graphql.skio.com/v1/graphql"
 
 class SkioImp {
-  constructor(shop, shopAlias) {
-    this.shop = shop
+  constructor(shopAlias) {
     this.shopAlias = shopAlias
   }
 
@@ -37,12 +36,15 @@ class SkioImp {
               zip
             }
             SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}}) {
+              priceWithoutDiscount
+              sellingPlanId
+              subscriptionId
               ProductVariant {
                 title
                 platformId
                 price
               }
-            }
+          }
         }
       }
     `)

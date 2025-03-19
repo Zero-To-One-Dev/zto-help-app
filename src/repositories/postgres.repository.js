@@ -195,6 +195,34 @@ class PostgreSQLRepository {
         await client.end()
         return res.rowCount > 0;
     }
+
+    async getExpiredDraftOrders(shopAlias) {
+        const client = await this.init()
+        const query = {
+            name: 'get-expired-draft-orders',
+            text: `
+                SELECT * FROM draft_orders WHERE shop_alias = $1 AND status IN ('UNPROCESSED', 'ERROR', 'COMPLETED') AND payment_due < $2
+            `,
+            values: [shopAlias, new Date()]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rows
+    }
+
+    async setDraftOrderStatus(draftOrder, status, message = null, retries = null) {
+        const client = await this.init();
+        const query = {
+            name: 'set-draft-order-status',
+            text: `
+                UPDATE draft_orders SET status = $1, message = $2, retries = $3 WHERE shop_alias = $4 AND draft_order = $5
+            `,
+            values: [status, message, retries, draftOrder.shop_alias, draftOrder.draft_order]
+        }
+        const res = await client.query(query)
+        await client.end();
+        return res.rowCount > 0;
+    }
 }
 
 export default PostgreSQLRepository;

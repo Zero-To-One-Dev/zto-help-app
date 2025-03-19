@@ -133,9 +133,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-# SQL
-*.sql
-
-# Commands
-src/commands/

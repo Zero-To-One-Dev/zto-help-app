@@ -4,15 +4,15 @@ import { shopifyApi, Session, LogSeverity } from '@shopify/shopify-api';
 import logger from '../../logger.js';
 
 class ShopifyImp {
-  constructor(shop, shopAlias) {
-    this.shop = shop
+  constructor(shopAlias) {
     this.shopAlias = shopAlias
   }
 
   init() {
     const {
       [`SHOPIFY_API_KEY_${this.shopAlias}`]: SHOPIFY_API_KEY,
-      [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY
+      [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY,
+      [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL
     } = app;
 
     const shopify = shopifyApi({
@@ -29,7 +29,7 @@ class ShopifyImp {
 
     const session = new Session({
       id: '',
-      shop: this.shop,
+      shop: SHOP_URL,
       accessToken: SHOPIFY_API_SECRET_KEY,
       state: '',
       isOnline: false,
@@ -244,6 +244,25 @@ class ShopifyImp {
           }
         }
       }`)).data.draftOrderInvoiceSend
+  }
+
+  async getDraftOrder(draftOrder){
+    const client = this.init();
+    return (await client.request(`query {
+        draftOrder (id: "${draftOrder}") {
+          name
+        }
+      }
+    `)).data.draftOrder
+  }
+
+  async deleteDraftOrder(draftOrder) {
+    const client = this.init();
+    return (await client.request(`mutation {
+      draftOrderDelete (input: { id: "${draftOrder}" }) {
+        deletedId
+      }
+    }`)).data.draftOrderDelete.deletedId
   }
 }
 

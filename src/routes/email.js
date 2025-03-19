@@ -51,8 +51,8 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         await mailer.sendEmail(emailSender, email, 'email-token', 'Verification Code', { token, shopName },
             [
                 {
-                    filename: 'top_banner.png',
-                    path: path.resolve() + `/public/imgs/${shopAlias}/top_banner.png`,
+                    filename: 'verification_code.png',
+                    path: path.resolve() + `/public/imgs/${shopAlias}/verification_code.png`,
                     cid: 'top_banner'
                 }
             ]

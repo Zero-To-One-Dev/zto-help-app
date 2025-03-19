@@ -37,7 +37,7 @@ export const SECRET_HS = process.env.SECRET_HS
 const SHOP_NAME_HS = process.env.SHOP_NAME_HS
 const CONTACT_PAGE_HS = process.env.CONTACT_PAGE_HS
 const SHOPIFY_ALIAS_HS = process.env.SHOPIFY_ALIAS_HS
-const SHOPIFY_URL_HS = process.env.SHOPIFY_URL_HS
+export const SHOPIFY_URL_HS = process.env.SHOPIFY_URL_HS
 const SHOPIFY_API_KEY_HS = process.env.SHOPIFY_API_KEY_HS
 const SHOPIFY_API_SECRET_KEY_HS = process.env.SHOPIFY_API_SECRET_KEY_HS
 const SKIO_API_KEY_HS = process.env.SKIO_API_KEY_HS
@@ -54,7 +54,7 @@ export const SECRET_CS = process.env.SECRET_CS
 const SHOP_NAME_CS = process.env.SHOP_NAME_CS
 const CONTACT_PAGE_CS = process.env.CONTACT_PAGE_CS
 const SHOPIFY_ALIAS_CS = process.env.SHOPIFY_ALIAS_CS
-const SHOPIFY_URL_CS = process.env.SHOPIFY_URL_CS
+export const SHOPIFY_URL_CS = process.env.SHOPIFY_URL_CS
 const SHOPIFY_API_KEY_CS = process.env.SHOPIFY_API_KEY_CS
 const SHOPIFY_API_SECRET_KEY_CS = process.env.SHOPIFY_API_SECRET_KEY_CS
 const SKIO_API_KEY_CS = process.env.SKIO_API_KEY_CS
@@ -71,7 +71,7 @@ export const SECRET_RS = process.env.SECRET_RS
 const SHOP_NAME_RS = process.env.SHOP_NAME_RS
 const CONTACT_PAGE_RS = process.env.CONTACT_PAGE_RS
 const SHOPIFY_ALIAS_RS = process.env.SHOPIFY_ALIAS_RS
-const SHOPIFY_URL_RS = process.env.SHOPIFY_URL_RS
+export const SHOPIFY_URL_RS = process.env.SHOPIFY_URL_RS
 const SHOPIFY_API_KEY_RS = process.env.SHOPIFY_API_KEY_RS
 const SHOPIFY_API_SECRET_KEY_RS = process.env.SHOPIFY_API_SECRET_KEY_RS
 const SKIO_API_KEY_RS = process.env.SKIO_API_KEY_RS
@@ -88,7 +88,7 @@ export const SECRET_VS = process.env.SECRET_VS
 const SHOP_NAME_VS = process.env.SHOP_NAME_VS
 const CONTACT_PAGE_VS = process.env.CONTACT_PAGE_VS
 const SHOPIFY_ALIAS_VS = process.env.SHOPIFY_ALIAS_VS
-const SHOPIFY_URL_VS = process.env.SHOPIFY_URL_VS
+export const SHOPIFY_URL_VS = process.env.SHOPIFY_URL_VS
 const SHOPIFY_API_KEY_VS = process.env.SHOPIFY_API_KEY_VS
 const SHOPIFY_API_SECRET_KEY_VS = process.env.SHOPIFY_API_SECRET_KEY_VS
 const SKIO_API_KEY_VS = process.env.SKIO_API_KEY_VS
@@ -105,7 +105,7 @@ export const SECRET_DM = process.env.SECRET_DM
 const SHOP_NAME_DM = process.env.SHOP_NAME_DM
 const CONTACT_PAGE_DM = process.env.CONTACT_PAGE_DM
 const SHOPIFY_ALIAS_DM = process.env.SHOPIFY_ALIAS_DM
-const SHOPIFY_URL_DM = process.env.SHOPIFY_URL_DM
+export const SHOPIFY_URL_DM = process.env.SHOPIFY_URL_DM
 const SHOPIFY_API_KEY_DM = process.env.SHOPIFY_API_KEY_DM
 const SHOPIFY_API_SECRET_KEY_DM = process.env.SHOPIFY_API_SECRET_KEY_DM
 const SKIO_API_KEY_DM = process.env.SKIO_API_KEY_DM
@@ -122,7 +122,7 @@ export const SECRET_MW = process.env.SECRET_MW
 const SHOP_NAME_MW = process.env.SHOP_NAME_MW
 const CONTACT_PAGE_MW = process.env.CONTACT_PAGE_MW
 const SHOPIFY_ALIAS_MW = process.env.SHOPIFY_ALIAS_MW
-const SHOPIFY_URL_MW = process.env.SHOPIFY_URL_MW
+export const SHOPIFY_URL_MW = process.env.SHOPIFY_URL_MW
 const SHOPIFY_API_KEY_MW = process.env.SHOPIFY_API_KEY_MW
 const SHOPIFY_API_SECRET_KEY_MW = process.env.SHOPIFY_API_SECRET_KEY_MW
 const SKIO_API_KEY_MW = process.env.SKIO_API_KEY_MW
@@ -201,6 +201,12 @@ export const SHOPS_ORIGIN = {
 }
 
 export default {
+  SHOPIFY_URL_HS,
+  SHOPIFY_URL_CS,
+  SHOPIFY_URL_RS,
+  SHOPIFY_URL_MW,
+  SHOPIFY_URL_DM,
+  SHOPIFY_URL_VS,
   SHOPIFY_API_KEY_HS,
   SHOPIFY_API_SECRET_KEY_HS,
   SKIO_API_KEY_HS,

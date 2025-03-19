@@ -7,6 +7,7 @@ import { authenticateToken } from "../middlewares/authenticate-token.js"
 import SubscriptionImp from "../implements/skio.imp.js"
 import DBRepository from "../repositories/postgres.repository.js"
 import path from "node:path"
+import { getExpiredDraftOrders, setDraftOrderStatus, deleteDraftOrder } from "../services/draft-orders.js";
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -36,8 +37,6 @@ router.use(
  *            schema:
  *              type: object
  *              properties:
- *                shop:
- *                  type: string
  *                shopAlias:
  *                  type: string
  *                draftOrderId:
@@ -54,14 +53,14 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     const mailer = new Mailer(shopAlias)
     let shopDomain = SHOPS_ORIGIN[shop]
     const { shopName, shopColor, contactPage, emailSender } = shopDomain
-    const subscriptionImp = new SubscriptionImp(shop, shopAlias)
+    const subscriptionImp = new SubscriptionImp(shopAlias)
 
     const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`
     const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(
       shopAlias,
       draftOrder
     )
-    if (!draftOrderData) throw new Error("Draft order not found")
+    if (!draftOrderData) throw new Error('Draft order not found')
 
     const subscription = await subscriptionImp.getSubscriptionInfo(
       draftOrderData.subscription
@@ -69,7 +68,7 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     const subscriptionCanceled = await subscriptionImp.cancelSubscription(
       draftOrderData.subscription
     )
-    if (!subscriptionCanceled) throw new Error("Subscription not cancelled")
+    if (!subscriptionCanceled) throw new Error('Subscription not cancelled')
 
     // Se debería eliminar la Draft Order en Shopify?
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder)
@@ -87,11 +86,11 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
       },
       [
         {
-          filename: "top_banner_subscription_canceled.png",
+          filename: 'subscription_canceled.png',
           path:
             path.resolve() +
-            `/public/imgs/${shopAlias}/top_banner_subscription_canceled.png`,
-          cid: "top_banner_subscription_canceled",
+            `/public/imgs/${shopAlias}/subscription_canceled.png`,
+          cid: 'top_banner',
         },
       ]
     )
@@ -105,11 +104,12 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   }
 })
 
+
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
   try {
     const { shop, subscriptionId, event } = req.body
     const { attentiveKey, shopAlias } = SHOPS_ORIGIN[shop]
-    const subscriptionImp = new SubscriptionImp(shop, shopAlias)
+    const subscriptionImp = new SubscriptionImp(shopAlias)
     const subscription = await subscriptionImp.getSubscriptionByContract(
       subscriptionId
     )
@@ -156,5 +156,53 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
     res.status(500).send({ message: err.message })
   }
 })
+
+
+/**
+ *  @openapi
+ *  /webhook/draft-orders-expired-delete:
+ *    post:
+ *      security:
+ *        - BearerAuth:
+ *      tags:
+ *        - Webhook
+ *      description: Delete Expired Draft Orders
+ *      requestBody:
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                nameApp:
+ *                  type: string
+ *      responses:
+ *        200:
+ *          description: Returns JSON message
+ */
+router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) => {
+  try {
+    const { shopAlias } = req.body;
+    const expiredDraftOrders = await getExpiredDraftOrders(shopAlias);
+    for (const draftOrder of expiredDraftOrders) {
+        try {
+            await setDraftOrderStatus(draftOrder, 'PROCESSING');
+            const [message, draftOrderId] = await deleteDraftOrder(draftOrder.shop_alias, draftOrder.draft_order);
+            if (!message) {
+                const success_message = `Draft order ${draftOrderId} deleted successfully from DB and from Shopify`;
+                logger.info(success_message);
+                await setDraftOrderStatus(draftOrder, 'COMPLETED', success_message, draftOrder.retries+1);
+            } else throw Error(message);
+        } catch (err) {
+            await setDraftOrderStatus(draftOrder, 'ERROR', err.message, draftOrder.retries+1);
+            logger.error(err.message);
+        }
+    }
+  } catch (err) {
+    console.log(err)
+    logger.error(err.message)
+    res.status(500).send({ message: err.message })
+  }
+})
+
 
 export default router

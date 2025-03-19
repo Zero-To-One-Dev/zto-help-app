@@ -20,6 +20,7 @@
   "homepage": "https://github.com/JuanZTO/zto-help-app#readme",
   "dependencies": {
     "@shopify/shopify-api": "^11.8.1",
+    "commander": "^13.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
