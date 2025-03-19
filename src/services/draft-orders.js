@@ -62,6 +62,9 @@ async function setDraftOrderStatus(draftOrder, status, message=null, retries=nul
 async function getActiveDraftOrder(shopAlias, subscription) {
     try {
         const draftOrder = await dbRepository.getLastDraftOrderBySubscription(shopAlias, subscription);
+
+        console.log('GET LAST DRAFT ORDER SUBSCRIPTION: ')
+        console.log(JSON.stringify(draftOrder))
     
         if (!draftOrder) return null;
         if (draftOrder.payment_due < new Date()) {

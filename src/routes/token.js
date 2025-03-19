@@ -68,6 +68,10 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order.
         // Primero se debe verificar si ya existe una draft order. Si existe, enviar invoice.
+        console.log('GET ACTIVE DRAFT ORDER BEFORE DATA...')
+        console.log(shopAlias)
+        console.log(subscription)
+        console.log('END...')
         const draftOrderExists = await getActiveDraftOrder(shopAlias, subscription);
         if (draftOrderExists) {
             await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);

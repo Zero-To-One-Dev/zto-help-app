@@ -49,6 +49,7 @@ router.use(
  */
 router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   try {
+    console.log(JSON.stringify(req.body))
     const { shop, shopAlias, draftOrderId } = req.body
     const mailer = new Mailer(shopAlias)
     let shopDomain = SHOPS_ORIGIN[shop]
