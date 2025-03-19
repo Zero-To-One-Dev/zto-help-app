@@ -12,7 +12,7 @@ import logger from "../../logger.js";
                 const success_message = `Draft order ${draftOrderId} deleted successfully from DB and from Shopify`;
                 logger.info(success_message);
                 await setDraftOrderStatus(draftOrder, 'COMPLETED', success_message, draftOrder.retries+1);
-            } else throw Error(message);
+            } else throw new Error(message);
         } catch (err) {
             await setDraftOrderStatus(draftOrder, 'ERROR', err.message, draftOrder.retries+1);
             logger.error(err.message);

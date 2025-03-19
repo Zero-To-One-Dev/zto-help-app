@@ -8,10 +8,12 @@ import SubscriptionImp from '../implements/skio.imp.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { TokenSchema } from '../schemas/token.js';
 import { getActiveDraftOrder } from '../services/draft-orders.js';
+import MessageImp from '../implements/slack.imp.js';
 
 
 const router = Router();
 const dbRepository = new DBRepository();
+const messageImp = new MessageImp(); 
 
 
 /**
@@ -68,10 +70,6 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order.
         // Primero se debe verificar si ya existe una draft order. Si existe, enviar invoice.
-        console.log('GET ACTIVE DRAFT ORDER BEFORE DATA...')
-        console.log(shopAlias)
-        console.log(subscription)
-        console.log('END...')
         const draftOrderExists = await getActiveDraftOrder(shopAlias, subscription);
         if (draftOrderExists) {
             await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);
@@ -127,6 +125,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         console.log(err);
         logger.error(err.message);
         res.status(500).json({ message: err.message })
+        const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /token/subscription/validate`;
+        messageImp.sendMessage(messageError,
+            "🔴 ❌ ERROR: Error while trying to create the draft order or delete the subscription");
     }
 })
 
@@ -177,9 +178,11 @@ router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
         const orders = await shopifyImp.getActiveOrders(email);
         res.json({ customerName, orders })
     } catch (err) {
+
         console.log(err);
         logger.error(err.message);
         res.status(500).json({ message: err.message })
+        messageImp.sendMessage(err.message, '❌ Error on /token/address/validate')
     }
 })
 

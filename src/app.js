@@ -134,6 +134,13 @@ const EMAIL_USER_MW = process.env.EMAIL_USER_MW
 const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW
 const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
 
+// Cancel Subscription Channels To Notify
+export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS = process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS;
+
+// Update Address Channels To Notify
+export const UPDATE_ADDRESS_NOTIFY_CHANNELS = process.env.UPDATE_ADDRESS_NOTIFY_CHANNELS;
+
+
 if (NODE_ENV === "development")
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiSpecification))
 

@@ -18,7 +18,7 @@ async function deleteDraftOrder(shopAlias, draftOrder) {
         let message, deletedId = '';
         const shopifyImp = new ShopifyImp(shopAlias);
         const draftOrderExists = await shopifyImp.getDraftOrder(draftOrder);
-        if (draftOrderExists) deletedId = await shopifyImp.deleteDraftOrder(draftOrder);
+        if (draftOrderExists && draftOrderExists.status !== 'COMPLETED') deletedId = await shopifyImp.deleteDraftOrder(draftOrder);
         if (draftOrderExists && !deletedId) {
             message += `Draft order ${draftOrder} NOT deleted from Shopify`;
             return [message, null];
@@ -62,9 +62,6 @@ async function setDraftOrderStatus(draftOrder, status, message=null, retries=nul
 async function getActiveDraftOrder(shopAlias, subscription) {
     try {
         const draftOrder = await dbRepository.getLastDraftOrderBySubscription(shopAlias, subscription);
-
-        console.log('GET LAST DRAFT ORDER SUBSCRIPTION: ')
-        console.log(JSON.stringify(draftOrder))
     
         if (!draftOrder) return null;
         if (draftOrder.payment_due < new Date()) {

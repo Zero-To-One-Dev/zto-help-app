@@ -7,9 +7,13 @@ import handleError from '../middlewares/error-handle.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { generateSecureToken, isExpired } from '../services/token.js';
 import path from 'node:path';
+import MessageImp from '../implements/slack.imp.js'
+
 
 const router = Router();
 const dbRepository = new DBRepository();
+const messageImp = new MessageImp();
+
 
 /**
  *  @openapi
@@ -25,6 +29,8 @@ const dbRepository = new DBRepository();
  *              type: object
  *              properties:
  *                email:
+ *                  type: string
+ *                subscription:
  *                  type: string
  *      responses:
  *        200:
@@ -61,6 +67,9 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
+        const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /email/subscription/send`;
+        messageImp.sendMessage(messageError,
+            "🔴 ❌ ERROR: Error while trying to send the token to the user's email");
     }
 })
 
@@ -114,6 +123,7 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
+        messageImp.sendMessage(err.message, '❌ Error on /email/address/send')
     }
 })
 

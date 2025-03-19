@@ -8,9 +8,13 @@ import SubscriptionImp from "../implements/skio.imp.js"
 import DBRepository from "../repositories/postgres.repository.js"
 import path from "node:path"
 import { getExpiredDraftOrders, setDraftOrderStatus, deleteDraftOrder } from "../services/draft-orders.js";
+import MessageImp from '../implements/slack.imp.js'
+
 
 const router = Router()
 const dbRepository = new DBRepository()
+const messageImp = new MessageImp()
+
 
 router.use(
   bearerToken({
@@ -49,7 +53,6 @@ router.use(
  */
 router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   try {
-    console.log(JSON.stringify(req.body))
     const { shop, shopAlias, draftOrderId } = req.body
     const mailer = new Mailer(shopAlias)
     let shopDomain = SHOPS_ORIGIN[shop]
@@ -102,6 +105,9 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     console.log(err)
     logger.error(err.message)
     res.status(500).send({ message: err.message })
+    const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /webhook/draft-order-paid`;
+    messageImp.sendMessage(messageError,
+      "🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook");
   }
 })
 
@@ -198,10 +204,15 @@ router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) 
             logger.error(err.message);
         }
     }
+
+    res.json({ message: `Draft orders from ${shopAlias} deleted successfully` })
   } catch (err) {
     console.log(err)
     logger.error(err.message)
     res.status(500).send({ message: err.message })
+    const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /webhook/draft-orders-expired-delete`;
+    messageImp.sendMessage(messageError,
+      "🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook");
   }
 })
 

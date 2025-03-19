@@ -251,6 +251,7 @@ class ShopifyImp {
     return (await client.request(`query {
         draftOrder (id: "${draftOrder}") {
           name
+          status
         }
       }
     `)).data.draftOrder
