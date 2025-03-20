@@ -38,20 +38,24 @@ const messageImp = new MessageImp();
  *          description: Returns JSON message
  */
 router.post('/subscription/validate', handleError(TokenSchema), async (req, res) => {
+    let shopAlias, productFakeVariantId, email, token, subscription = '';
     try {
-        let shopOrigin = req.get('origin');
-        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shop, shopAlias, productFakeVariantId } = shopDomain;
-        
-        const { email, token, subscription } = req.body;
+        ({ shopAlias, productFakeVariantId } = SHOPS_ORIGIN[req.get('origin')]);
+        ({ email, token, subscription } = req.body);
+
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
-        
         if (!objectToken) throw new Error('Email or Token Not Found');
         if (isExpired(objectToken.expire_at)) {
             await dbRepository.deleteToken(shopAlias, email);
-            throw new Error('Email or Token Not Found');
+            logger.error(err.message);
+            res.status(500).json({ message: 'Email or Token Not Found' });
+            return;
         }
-        if (objectToken.token !== token) throw new Error('Email or Token Not Found');
+        if (objectToken.token !== token) {
+            logger.error(err.message);
+            res.status(500).json({ message: 'Email or Token Not Found' });
+            return;
+        }
         
         const subscriptionImp = new SubscriptionImp(shopAlias);
         const shopifyImp = new ShopifyImp(shopAlias);
@@ -124,10 +128,16 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
     } catch (err) {
         console.log(err);
         logger.error(err.message);
-        res.status(500).json({ message: err.message })
-        const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /token/subscription/validate`;
-        messageImp.sendMessage(messageError,
-            "🔴 ❌ ERROR: Error while trying to create the draft order or delete the subscription");
+        res.status(500).json({ message: err.message });
+
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;        
+        errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
+        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorRoute = `📌 ROUTE: /token/subscription/validate`;
+        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to create the draft order or delete the subscription";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 
@@ -154,17 +164,22 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
  *          description: Returns JSON with Orders
  */
 router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
+    let shopAlias, email, token = '';
     try {
-        let shopOrigin = req.get('origin');
-        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shopAlias } = shopDomain;
+        (shopAlias = SHOPS_ORIGIN[req.get('origin')]);
+        ({ email, token } = req.body);
         const shopifyImp = new ShopifyImp(shopAlias);
-        const { email, token } = req.body;
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
-        if (!objectToken) throw new Error('Email or Token Not Found');
+        if (!objectToken) {
+            logger.error(err.message);
+            res.status(500).json({ message: 'Email or Token Not Found' });
+            return;
+        };
         if (isExpired(objectToken.expire_at)) {
             await dbRepository.deleteToken(shopAlias, email);
-            throw new Error('Email or Token Not Found');
+            logger.error(err.message);
+            res.status(500).json({ message: 'Email or Token Not Found' });
+            return;
         }
 
         // Actualizar la fecha de caducidad del token
@@ -172,17 +187,27 @@ router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
         if (expirationDateUpdated) logger.info('Token expiration date updated');
         else logger.error('Token expiration date not updated');
 
-        if (objectToken.token !== token) throw new Error('Email or Token Not Found');
+        if (objectToken.token !== token) {
+            logger.error(err.message);
+            res.status(500).json({ message: 'Email or Token Not Found' });
+            return;
+        };
         const customerName = await shopifyImp.getCustomerNameByEmail(email);
         if (!customerName) throw new Error('Customer with given email not found')
         const orders = await shopifyImp.getActiveOrders(email);
         res.json({ customerName, orders })
     } catch (err) {
-
         console.log(err);
         logger.error(err.message);
         res.status(500).json({ message: err.message })
-        messageImp.sendMessage(err.message, '❌ Error on /token/address/validate')
+
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;        
+        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorRoute = `📌 ROUTE: /token/address/validate`;
+        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to validate token to update address";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 

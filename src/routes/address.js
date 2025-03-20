@@ -34,14 +34,14 @@ const dbRepository = new DBRepository();
  * 
  */
 router.post('/update', handleError(AddressSchema), async (req, res) => {
+    let shopAlias, shopName, shopColor, emailSender, email, token, id, address1, address2, provinceCode, province, city, zip = '';
     try {
-        let shopOrigin = req.get('origin');
-        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shopAlias, shopName, shopColor, contactPage, emailSender } = shopDomain;
+        ({ shopAlias, shopName, shopColor, contactPage, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
+        ({ email, token, id, address1, address2, provinceCode, province, city, zip } = req.body);
         const mailer = new Mailer(shopAlias);
         const subscriptionImp = new SubscriptionImp(shopAlias);
         const shopifyImp = new ShopifyImp(shopAlias);
-        const { email, token, id, address1, address2, provinceCode, province, city, zip } = req.body;
+
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
         if (!objectToken) throw new Error('Email or Token Not Found');
         if (isExpired(objectToken.expire_at)) {
@@ -102,6 +102,20 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
+
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;
+        errorData += `ℹ️ ORDER ID: ${id}\\n`;
+        errorData += `ℹ️ ADDRESS1: ${address1}\\n`;
+        errorData += `ℹ️ ADDRESS2: ${address2}\\n`;
+        errorData += `ℹ️ PROVINCE: ${province}\\n`;
+        errorData += `ℹ️ CITY: ${city}\\n`;
+        errorData += `ℹ️ ZIP: ${zip}\\n`;
+        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorRoute = `📌 ROUTE: /token/address/validate`;
+        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to validate token to update address";
+        messageImp.toUpdateAddressErrors(errorFullMessage, errorTitle);
     }
 })
 

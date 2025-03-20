@@ -1,6 +1,6 @@
 import { Router } from "express"
 import logger from "../../logger.js"
-import { SHOPS_ORIGIN } from "../app.js"
+import app, { SHOPS_ORIGIN } from "../app.js"
 import bearerToken from "express-bearer-token"
 import Mailer from "../implements/nodemailer.imp.js"
 import { authenticateToken } from "../middlewares/authenticate-token.js"
@@ -52,19 +52,26 @@ router.use(
  *          description: Returns JSON message
  */
 router.post("/draft-order-paid", authenticateToken, async (req, res) => {
+  let shopAlias, draftOrderId = '';
   try {
-    const { shop, shopAlias, draftOrderId } = req.body
+    ({ shopAlias, draftOrderId } = req.body);
+    const {
+      [`SHOP_NAME_${shopAlias}`]: shopName,
+      [`SHOP_COLOR_${shopAlias}`]: shopColor,
+      [`CONTACT_PAGE_${shopAlias}`]: contactPage,
+      [`EMAIL_SENDER_${shopAlias}`]: emailSender
+    } = app;
     const mailer = new Mailer(shopAlias)
-    let shopDomain = SHOPS_ORIGIN[shop]
-    const { shopName, shopColor, contactPage, emailSender } = shopDomain
     const subscriptionImp = new SubscriptionImp(shopAlias)
-
     const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`
     const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(
       shopAlias,
       draftOrder
     )
-    if (!draftOrderData) throw new Error('Draft order not found')
+    if (!draftOrderData) {
+      res.status(404).json({ 'message': 'Draft order not found' })
+      return;
+    }
 
     const subscription = await subscriptionImp.getSubscriptionInfo(
       draftOrderData.subscription
@@ -74,7 +81,6 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     )
     if (!subscriptionCanceled) throw new Error('Subscription not cancelled')
 
-    // Se debería eliminar la Draft Order en Shopify?
     await dbRepository.deleteDraftOrder(shopAlias, draftOrder)
     await mailer.sendEmail(
       emailSender,
@@ -104,10 +110,15 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   } catch (err) {
     console.log(err)
     logger.error(err.message)
-    res.status(500).send({ message: err.message })
-    const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /webhook/draft-order-paid`;
-    messageImp.sendMessage(messageError,
-      "🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook");
+    res.status(200).send({ message: err.message })
+
+    const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+    const errorData = `ℹ️ DRAFT ORDER ID: ${draftOrderId}\\n`;
+    const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`
+    const errorRoute = `📌 ROUTE: /webhook/draft-order-paid`;
+    const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+    const errorTitle = '🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook';
+    messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
   }
 })
 
@@ -180,6 +191,8 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
  *            schema:
  *              type: object
  *              properties:
+ *                shopAlias:
+ *                  type: string
  *                nameApp:
  *                  type: string
  *      responses:
@@ -187,8 +200,10 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
  *          description: Returns JSON message
  */
 router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) => {
+  let draftOrderErrors = [];
+  let shopAlias = '';
   try {
-    const { shopAlias } = req.body;
+    shopAlias = req.body.shopAlias;
     const expiredDraftOrders = await getExpiredDraftOrders(shopAlias);
     for (const draftOrder of expiredDraftOrders) {
         try {
@@ -200,19 +215,32 @@ router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) 
                 await setDraftOrderStatus(draftOrder, 'COMPLETED', success_message, draftOrder.retries+1);
             } else throw Error(message);
         } catch (err) {
+            draftOrderErrors.push([draftOrder.draftOrder, err.message])
             await setDraftOrderStatus(draftOrder, 'ERROR', err.message, draftOrder.retries+1);
             logger.error(err.message);
         }
     }
 
+    if (draftOrderErrors.length) throw new Error('Error while trying to delete some expired draft orders from the webhook')
     res.json({ message: `Draft orders from ${shopAlias} deleted successfully` })
   } catch (err) {
     console.log(err)
     logger.error(err.message)
-    res.status(500).send({ message: err.message })
-    const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /webhook/draft-orders-expired-delete`;
-    messageImp.sendMessage(messageError,
-      "🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook");
+    res.status(200).send({ message: err.message })
+
+    const errorRoute = '📌 ROUTE: /webhook/draft-orders-expired-delete';
+    const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+
+    let errorData = 'ℹ️ DRAFT ORDERS ERRRORS:'
+    for (const [draftOrder, message] of draftOrderErrors) {
+      errorData += `\\n📃 DO ${draftOrder}: ${message}`;
+    }
+    errorData += '\\n';
+
+    const errorTitle = '🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook';
+    const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+    const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+    messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
   }
 })
 

@@ -38,10 +38,12 @@ const messageImp = new MessageImp();
  * 
  */
 router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (req, res) => {
+    let shopAlias, email, subscription, shopName, emailSender = '';
     try {
-        const { shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')];
+        ({ shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
+        ({ email, subscription } = req.body);
         const mailer = new Mailer(shopAlias);
-        const { email, subscription } = req.body;
+        
         const objectToken = await dbRepository.validateTokenExists(shopAlias, email);
         if (objectToken) {
             if (isExpired(objectToken.expire_at)) {
@@ -67,9 +69,15 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
-        const messageError = `📝 DESCRIPTION: ${err.message}\\n📌 ROUTE: /email/subscription/send`;
-        messageImp.sendMessage(messageError,
-            "🔴 ❌ ERROR: Error while trying to send the token to the user's email");
+
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;
+        errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
+        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorRoute = `📌 ROUTE: /email/subscription/send`;
+        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 
@@ -93,12 +101,12 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
  *          description: Returns JSON message
  */
 router.post('/address/send', handleError(EmailAddressSchema), async (req, res) => {
+    let shopAlias, email, shopName, emailSender = '';
     try {
-        let shopOrigin = req.get('origin');
-        let shopDomain = SHOPS_ORIGIN[shopOrigin !== 'null' ? shopOrigin : 'https://hotshapers.com'];
-        const { shopAlias, shopName, emailSender } = shopDomain;
+        ({ shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
+        ({ email } = req.body);
         const mailer = new Mailer(shopAlias);
-        const { email } = req.body;
+
         const objectToken = await dbRepository.validateTokenExists(shopAlias, email);
         if (objectToken) {
             if (isExpired(objectToken.expire_at)) {
@@ -123,7 +131,14 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
-        messageImp.sendMessage(err.message, '❌ Error on /email/address/send')
+
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        const errorData = `ℹ️ EMAIL: ${email}\\n`;
+        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorRoute = `📌 ROUTE: /email/address/send`;
+        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 

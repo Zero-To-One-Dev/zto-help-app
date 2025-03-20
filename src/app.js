@@ -35,6 +35,7 @@ export const PGSSL = process.env.PGSSL === "true"
 // HS
 export const SECRET_HS = process.env.SECRET_HS
 const SHOP_NAME_HS = process.env.SHOP_NAME_HS
+const SHOP_COLOR_HS = process.env.SHOP_COLOR_HS
 const CONTACT_PAGE_HS = process.env.CONTACT_PAGE_HS
 const SHOPIFY_ALIAS_HS = process.env.SHOPIFY_ALIAS_HS
 export const SHOPIFY_URL_HS = process.env.SHOPIFY_URL_HS
@@ -52,6 +53,7 @@ const EMAIL_PORT_HS = parseInt(process.env.EMAIL_PORT_HS || 587)
 // CS
 export const SECRET_CS = process.env.SECRET_CS
 const SHOP_NAME_CS = process.env.SHOP_NAME_CS
+const SHOP_COLOR_CS = process.env.SHOP_COLOR_CS
 const CONTACT_PAGE_CS = process.env.CONTACT_PAGE_CS
 const SHOPIFY_ALIAS_CS = process.env.SHOPIFY_ALIAS_CS
 export const SHOPIFY_URL_CS = process.env.SHOPIFY_URL_CS
@@ -69,6 +71,7 @@ const EMAIL_PORT_CS = parseInt(process.env.EMAIL_PORT_CS || 587)
 // RS
 export const SECRET_RS = process.env.SECRET_RS
 const SHOP_NAME_RS = process.env.SHOP_NAME_RS
+const SHOP_COLOR_RS = process.env.SHOP_COLOR_RS
 const CONTACT_PAGE_RS = process.env.CONTACT_PAGE_RS
 const SHOPIFY_ALIAS_RS = process.env.SHOPIFY_ALIAS_RS
 export const SHOPIFY_URL_RS = process.env.SHOPIFY_URL_RS
@@ -86,6 +89,7 @@ const EMAIL_PORT_RS = parseInt(process.env.EMAIL_PORT_RS || 587)
 // VS
 export const SECRET_VS = process.env.SECRET_VS
 const SHOP_NAME_VS = process.env.SHOP_NAME_VS
+const SHOP_COLOR_VS = process.env.SHOP_COLOR_VS
 const CONTACT_PAGE_VS = process.env.CONTACT_PAGE_VS
 const SHOPIFY_ALIAS_VS = process.env.SHOPIFY_ALIAS_VS
 export const SHOPIFY_URL_VS = process.env.SHOPIFY_URL_VS
@@ -103,6 +107,7 @@ const EMAIL_PORT_VS = parseInt(process.env.EMAIL_PORT_VS || 587)
 // DM
 export const SECRET_DM = process.env.SECRET_DM
 const SHOP_NAME_DM = process.env.SHOP_NAME_DM
+const SHOP_COLOR_DM = process.env.SHOP_COLOR_DM
 const CONTACT_PAGE_DM = process.env.CONTACT_PAGE_DM
 const SHOPIFY_ALIAS_DM = process.env.SHOPIFY_ALIAS_DM
 export const SHOPIFY_URL_DM = process.env.SHOPIFY_URL_DM
@@ -120,6 +125,7 @@ const EMAIL_PORT_DM = parseInt(process.env.EMAIL_PORT_DM || 587)
 // MW
 export const SECRET_MW = process.env.SECRET_MW
 const SHOP_NAME_MW = process.env.SHOP_NAME_MW
+const SHOP_COLOR_MW = process.env.SHOP_COLOR_MW
 const CONTACT_PAGE_MW = process.env.CONTACT_PAGE_MW
 const SHOPIFY_ALIAS_MW = process.env.SHOPIFY_ALIAS_MW
 export const SHOPIFY_URL_MW = process.env.SHOPIFY_URL_MW
@@ -149,7 +155,7 @@ export const SHOPS_ORIGIN = {
     shop: SHOPIFY_URL_HS,
     shopAlias: SHOPIFY_ALIAS_HS,
     shopName: SHOP_NAME_HS,
-    shopColor: "#FFF533",
+    shopColor: SHOP_COLOR_HS,
     contactPage: CONTACT_PAGE_HS,
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS,
     emailSender: EMAIL_SENDER_HS,
@@ -159,7 +165,7 @@ export const SHOPS_ORIGIN = {
     shop: SHOPIFY_URL_CS,
     shopAlias: SHOPIFY_ALIAS_CS,
     shopName: SHOP_NAME_CS,
-    shopColor: "#CB8370",
+    shopColor: SHOP_COLOR_CS,
     contactPage: CONTACT_PAGE_CS,
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS,
     emailSender: EMAIL_SENDER_CS,
@@ -169,42 +175,42 @@ export const SHOPS_ORIGIN = {
     shop: SHOPIFY_URL_RS,
     shopAlias: SHOPIFY_ALIAS_RS,
     shopName: SHOP_NAME_RS,
-    shopColor: "#FF605F",
+    shopColor: SHOP_COLOR_RS,
     contactPage: CONTACT_PAGE_RS,
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS,
     emailSender: EMAIL_SENDER_RS,
     attentiveKey: ATTENTIVE_API_KEY_RS,
   },
-  "https://mywayhairdna.com": {
-    shop: SHOPIFY_URL_MW,
-    shopAlias: SHOPIFY_ALIAS_MW,
-    shopName: SHOP_NAME_MW,
-    shopColor: "#FF605F",
-    contactPage: CONTACT_PAGE_MW,
-    productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
-    emailSender: EMAIL_SENDER_MW,
-    attentiveKey: ATTENTIVE_API_KEY_MW,
-  },
-  "https://drmingtea.com": {
-    shop: SHOPIFY_URL_DM,
-    shopAlias: SHOPIFY_ALIAS_DM,
-    shopName: SHOP_NAME_DM,
-    shopColor: "#FF605F",
-    contactPage: CONTACT_PAGE_DM,
-    productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
-    emailSender: EMAIL_SENDER_DM,
-    attentiveKey: ATTENTIVE_API_KEY_DM,
-  },
   "https://vibrosculpt.com": {
     shop: SHOPIFY_URL_VS,
     shopAlias: SHOPIFY_ALIAS_VS,
     shopName: SHOP_NAME_VS,
-    shopColor: "#5B7793",
+    shopColor: SHOP_COLOR_VS,
     contactPage: CONTACT_PAGE_VS,
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS,
     emailSender: EMAIL_SENDER_VS,
     attentiveKey: ATTENTIVE_API_KEY_VS,
   },
+  "https://drmingtea.com": {
+    shop: SHOPIFY_URL_DM,
+    shopAlias: SHOPIFY_ALIAS_DM,
+    shopName: SHOP_NAME_DM,
+    shopColor: SHOP_COLOR_DM,
+    contactPage: CONTACT_PAGE_DM,
+    productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
+    emailSender: EMAIL_SENDER_DM,
+    attentiveKey: ATTENTIVE_API_KEY_DM,
+  },
+  "https://mywayhairdna.com": {
+    shop: SHOPIFY_URL_MW,
+    shopAlias: SHOPIFY_ALIAS_MW,
+    shopName: SHOP_NAME_MW,
+    shopColor: SHOP_COLOR_MW,
+    contactPage: CONTACT_PAGE_MW,
+    productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
+    emailSender: EMAIL_SENDER_MW,
+    attentiveKey: ATTENTIVE_API_KEY_MW,
+  }
 }
 
 export default {
