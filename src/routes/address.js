@@ -103,6 +103,7 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         logger.error(err.message);
         res.status(500).json({ message: err.message });
 
+        const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
         const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
         let errorData = `ℹ️ EMAIL: ${email}\\n`;
         errorData += `ℹ️ ORDER ID: ${id}\\n`;
@@ -111,9 +112,9 @@ router.post('/update', handleError(AddressSchema), async (req, res) => {
         errorData += `ℹ️ PROVINCE: ${province}\\n`;
         errorData += `ℹ️ CITY: ${city}\\n`;
         errorData += `ℹ️ ZIP: ${zip}\\n`;
-        const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
+        const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
         const errorRoute = `📌 ROUTE: /token/address/validate`;
-        const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+        const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
         const errorTitle = "🔴 ❌ ERROR: Error while trying to validate token to update address";
         messageImp.toUpdateAddressErrors(errorFullMessage, errorTitle);
     }

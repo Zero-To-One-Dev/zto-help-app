@@ -22,7 +22,7 @@ class SlackImp {
         const cancelSubscriptionChannels = CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS.split(',');
         for (const channel of cancelSubscriptionChannels) {
             try {
-                this.sendMessage(channel, message, title)
+                await this.sendMessage(channel, message, title)
             } catch (err) {}
         }
     }

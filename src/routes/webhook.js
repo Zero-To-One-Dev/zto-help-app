@@ -112,11 +112,12 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     logger.error(err.message)
     res.status(200).send({ message: err.message })
 
+    const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
     const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
     const errorData = `ℹ️ DRAFT ORDER ID: ${draftOrderId}\\n`;
-    const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`
+    const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`
     const errorRoute = `📌 ROUTE: /webhook/draft-order-paid`;
-    const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+    const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
     const errorTitle = '🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook';
     messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
   }
@@ -228,6 +229,7 @@ router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) 
     logger.error(err.message)
     res.status(200).send({ message: err.message })
 
+    const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
     const errorRoute = '📌 ROUTE: /webhook/draft-orders-expired-delete';
     const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
 
@@ -238,8 +240,8 @@ router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) 
     errorData += '\\n';
 
     const errorTitle = '🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook';
-    const errorMessage = `📝 DESCRIPTION: ${err.message}\\n`;
-    const errorFullMessage = `${errorShop}${errorData}${errorMessage}${errorRoute}`;
+    const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
+    const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
     messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
   }
 })
