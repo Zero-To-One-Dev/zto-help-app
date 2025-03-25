@@ -35,7 +35,7 @@ class SkioImp {
               country
               zip
             }
-            SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}}) {
+            SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, sellingPlanId: {_is_null: false}}) {
               priceWithoutDiscount
               sellingPlanId
               subscriptionId
@@ -51,12 +51,12 @@ class SkioImp {
     ).Subscriptions[0]
   }
 
-  async cancelSubscription(subscription) {
+  async cancelSubscription(cancelSessionId, subscription) {
     const client = this.init()
     return (
       await client.request(gql`
       mutation {
-        cancelSubscription(input: {subscriptionId: "${subscription}", shouldSendNotif: false, cancelSessionId: "Swap to one time purchase"}) {
+        cancelSubscription(input: {cancelSessionId: "${cancelSessionId}", subscriptionId: "${subscription}", shouldSendNotif: false}) {
           ok
         }
       }

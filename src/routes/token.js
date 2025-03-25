@@ -38,21 +38,21 @@ const messageImp = new MessageImp();
  *          description: Returns JSON message
  */
 router.post('/subscription/validate', handleError(TokenSchema), async (req, res) => {
-    let shopAlias, productFakeVariantId, email, token, subscription = '';
+    let shopAlias, productFakeVariantId, email, token, subscription, cancelSessionId = '';
     try {
         ({ shopAlias, productFakeVariantId } = SHOPS_ORIGIN[req.get('origin')]);
-        ({ email, token, subscription } = req.body);
+        ({ email, token, subscription, cancelSessionId } = req.body);
 
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
         if (!objectToken) throw new Error('Email or Token Not Found');
         if (isExpired(objectToken.expire_at)) {
             await dbRepository.deleteToken(shopAlias, email);
-            logger.error(err.message);
+            logger.error('Email or Token Not Found');
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         }
         if (objectToken.token !== token) {
-            logger.error(err.message);
+            logger.error('Email or Token Not Found');
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         }
@@ -65,7 +65,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         // Si el estado en la dirección de la orden es de CALIFORNIA, cancelar normal
         if (subscriptionData.ShippingAddress.province.toUpperCase() === 'CALIFORNIA') {
-            const subscriptionCancelled = await subscriptionImp.cancelSubscription(subscription);
+            const subscriptionCancelled = await subscriptionImp.cancelSubscription(cancelSessionId, subscription);
             if (!subscriptionCancelled) throw new Error('It is not possible to cancel the subscription');
             await dbRepository.deleteToken(shopAlias, email);
             res.json({ message: 'Subscription successfully cancelled' })
@@ -121,7 +121,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             };
 
             const draftOrderId = await shopifyImp.createDraftOrder(draftOrderInput);
-            await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription);
+            await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription, cancelSessionId);
             await shopifyImp.sendDraftOrderInvoice(draftOrderId)
             res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created' })
         }
@@ -134,6 +134,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
         let errorData = `ℹ️ EMAIL: ${email}\\n`;        
         errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
+        errorData += `ℹ️ CANCEL SESSION ID: ${cancelSessionId}\\n`;
         const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
         const errorRoute = `📌 ROUTE: /token/subscription/validate`;
         const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
@@ -172,13 +173,13 @@ router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
         const shopifyImp = new ShopifyImp(shopAlias);
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
         if (!objectToken) {
-            logger.error(err.message);
+            logger.error('Email or Token Not Found');
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         };
         if (isExpired(objectToken.expire_at)) {
             await dbRepository.deleteToken(shopAlias, email);
-            logger.error(err.message);
+            logger.error('Email or Token Not Found');
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         }
@@ -189,7 +190,7 @@ router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
         else logger.error('Token expiration date not updated');
 
         if (objectToken.token !== token) {
-            logger.error(err.message);
+            logger.error('Email or Token Not Found');
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         };

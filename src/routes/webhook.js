@@ -69,7 +69,7 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
       draftOrder
     )
     if (!draftOrderData) {
-      res.status(404).json({ 'message': 'Draft order not found' })
+      res.status(404).json({ message: 'Draft order not found' })
       return;
     }
 
@@ -77,6 +77,7 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
       draftOrderData.subscription
     )
     const subscriptionCanceled = await subscriptionImp.cancelSubscription(
+      draftOrderData.cancel_session_id,
       draftOrderData.subscription
     )
     if (!subscriptionCanceled) throw new Error('Subscription not cancelled')

@@ -2,11 +2,12 @@
 CREATE TABLE tokens (
     id SERIAL PRIMARY KEY,
     shop_alias TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
     token TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP::TIMESTAMP,
     expire_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 minutes')::TIMESTAMP,
-    metadata JSON
+    metadata JSON,
+    CONSTRAINT unique_shop_email UNIQUE (shop_alias, email)
 );
 
 /* Crear tipo de draft_order_status */
@@ -15,12 +16,13 @@ CREATE TYPE draft_order_status AS ENUM('UNPROCESSED', 'PROCESSING', 'COMPLETED',
 /* Creación de tabla draft_orders */
 CREATE TABLE draft_orders(
     id SERIAL PRIMARY KEY,
-    shop_alias TEXT NOT NULL,
-    draft_order TEXT NOT NULL,
-    subscription TEXT NOT NULL,
+    shop_alias VARCHAR NOT NULL,
+    draft_order VARCHAR NOT NULL,
+    subscription VARCHAR NOT NULL,
     payment_due TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '3 days')::TIMESTAMP,
     status draft_order_status DEFAULT 'UNPROCESSED',
-    message TEXT NULL
+    message VARCHAR NULL
+    cancel_session_id VARCHAR NOT NULL,
 );
 
 /* Creación de ENUM para status */
@@ -29,8 +31,8 @@ CREATE TYPE token_status AS ENUM ('ACTIVE', 'INACTIVE');
 /* Creación de tabla app_tokens */
 CREATE TABLE app_tokens(
     id SERIAL PRIMARY KEY,
-    name_app TEXT NOT NULL UNIQUE,
-    hash_api_token TEXT NOT NULL,
+    name_app VARCHAR NOT NULL UNIQUE,
+    hash_api_token VARCHAR NOT NULL,
     status token_status NOT NULL,
     due_date TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '10 years')::TIMESTAMP,
     suffix_api_token VARCHAR(4)

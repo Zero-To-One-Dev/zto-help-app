@@ -9,3 +9,6 @@ ALTER TABLE draft_orders ADD COLUMN message VARCHAR NULL;
 
 /* Agregar columna retries */
 ALTER TABLE draft_orders ADD COLUMN retries INTEGER NULL;
+
+/* Agregar columna de cancel_session_id a la tabla draft_orders */
+ALTER TABLE draft_orders ADD COLUMN cancel_session_id VARCHAR NULL;

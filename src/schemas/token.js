@@ -8,5 +8,9 @@ export const TokenSchema = {
         notEmpty: { bail: true },
         isLength: { options: { min: 6, max: 6 }},
         errorMessage: 'Email or Token Not Found'
+    },
+    cancelSessionId: {
+        notEmpty: { bail: true },
+        errorMessage: 'Invalid cancel session id'
     }
 };

@@ -78,14 +78,14 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
-    async saveDraftOrder(shopAlias, draftOrder, subscription) {
+    async saveDraftOrder(shopAlias, draftOrder, subscription, cancelSessionId) {
         const client = await this.init()
         let todayDate = new Date(); todayDate.setHours(0, 0, 0, 0); // Se toma la fecha de hoy a las 12 PM
         const paymentDue = new Date(todayDate.getTime() + 864E5 * 3);
         const query = {
             name: 'save-draft-order',
-            text: 'INSERT INTO draft_orders (shop_alias, draft_order, subscription, payment_due) VALUES ($1, $2, $3, $4)',
-            values: [shopAlias, draftOrder, subscription, paymentDue]
+            text: 'INSERT INTO draft_orders (shop_alias, draft_order, subscription, payment_due, cancel_session_id) VALUES ($1, $2, $3, $4, $5)',
+            values: [shopAlias, draftOrder, subscription, paymentDue, cancelSessionId]
         }
         const res = await client.query(query)
         await client.end()
