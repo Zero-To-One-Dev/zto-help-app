@@ -7,10 +7,12 @@ import logger from '../../logger.js';
 import { SHOPS_ORIGIN } from '../app.js';
 import { isExpired } from '../services/token.js';
 import ShopifyImp from '../implements/shopify.imp.js';
+import MessageImp from '../implements/slack.imp.js';
 
 
 const router = Router();
 const dbRepository = new DBRepository();
+const messageImp = new MessageImp();
 
 
 /**
