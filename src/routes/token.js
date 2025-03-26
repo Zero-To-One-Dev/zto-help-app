@@ -7,13 +7,12 @@ import handleError from '../middlewares/error-handle.js';
 import SubscriptionImp from '../implements/skio.imp.js';
 import DBRepository from '../repositories/postgres.repository.js';
 import { TokenSchema } from '../schemas/token.js';
-import { getActiveDraftOrder } from '../services/draft-orders.js';
 import MessageImp from '../implements/slack.imp.js';
 
 
 const router = Router();
 const dbRepository = new DBRepository();
-const messageImp = new MessageImp(); 
+const messageImp = new MessageImp();
 
 
 /**
@@ -38,9 +37,9 @@ const messageImp = new MessageImp();
  *          description: Returns JSON message
  */
 router.post('/subscription/validate', handleError(TokenSchema), async (req, res) => {
-    let shopAlias, productFakeVariantId, email, token, subscription, cancelSessionId = '';
+    let shopAlias, productFakeVariantId, productSubscriptionMetafieldKey, email, token, subscription, cancelSessionId = '';
     try {
-        ({ shopAlias, productFakeVariantId } = SHOPS_ORIGIN[req.get('origin')]);
+        ({ shopAlias, productFakeVariantId, productSubscriptionMetafieldKey } = SHOPS_ORIGIN[req.get('origin')]);
         ({ email, token, subscription, cancelSessionId } = req.body);
 
         const objectToken = await dbRepository.validateToken(shopAlias, email, token);
@@ -56,7 +55,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             res.status(500).json({ message: 'Email or Token Not Found' });
             return;
         }
-        
+
         const subscriptionImp = new SubscriptionImp(shopAlias);
         const shopifyImp = new ShopifyImp(shopAlias);
         const subscriptionData = await subscriptionImp.getSubscription(email, subscription);
@@ -72,59 +71,52 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             return;
         }
 
-        // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order.
-        // Primero se debe verificar si ya existe una draft order. Si existe, enviar invoice.
-        const draftOrderExists = await getActiveDraftOrder(shopAlias, subscription);
-        if (draftOrderExists) {
-            await shopifyImp.sendDraftOrderInvoice(draftOrderExists.draft_order);
-            res.json({ message: 'The invoice of the order was resent to continue with the cancellation of the subscription' })
-        } else {
-            const variantsQuery = ((subscriptionData.SubscriptionLines
-                .map(subs => subs.ProductVariant.platformId.split('/').pop()))
-                .map(variantId => `variant_id:${variantId}`))
-                .join(' OR ');
-            const productsSubQuery = (await shopifyImp
-                .productsIdsByVariant(variantsQuery))
-                .map(product => product.node.id.split('/').pop())
-                .map(id => `metafields.custom.product-subscription:${id} AND price:>0 AND -product_type:Gift`)
-                .join(' OR ');
-            let quantity = (await shopifyImp
-                .oneTimesBySubscriptions(productsSubQuery))
-            quantity = quantity.map(product => Math.floor(
-                    product.node.variants.edges[0].node.price -
-                    product.node.metafields.edges[0].node.reference.variants.edges[0].node.price))
-                .reduce((sum, a) => sum + a, 0);
-            
-            // Si la cantidad es igual a 0, es porque el producto no cuenta con producto One time
-            // por ende se debe optar por calcular con el descuento del sellign plan
-            // if (quantity == 0) {
-                
-            // }
+        // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order
+        const variantsQuery = ((subscriptionData.SubscriptionLines
+            .map(subs => subs.ProductVariant.platformId.split('/').pop()))
+            .map(variantId => `variant_id:${variantId}`))
+            .join(' OR ');
+        const productsSubQuery = (await shopifyImp
+            .productsIdsByVariant(variantsQuery))
+            .map(product => product.node.id.split('/').pop())
+            .map(id => `metafields.custom.${productSubscriptionMetafieldKey}:${id} AND price:>0 AND -product_type:Gift`)
+            .join(' OR ');
+        let quantity = (await shopifyImp
+            .oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
+        quantity = quantity.map(product => Math.floor(
+            product.node.variants.edges[0].node.price -
+            product.node.metafields.edges[0].node.reference.variants.edges[0].node.price))
+            .reduce((sum, a) => sum + a, 0);
 
-            const draftOrderInput = {
-                acceptAutomaticDiscounts: false,
-                allowDiscountCodesInCheckout: false,
-                email,
-                shippingAddress: {
-                    address1: subscriptionData.ShippingAddress.address1,
-                    city: subscriptionData.ShippingAddress.city,
-                    province: subscriptionData.ShippingAddress.province,
-                    country: subscriptionData.ShippingAddress.country,
-                    zip: subscriptionData.ShippingAddress.zip,
-                },
-                lineItems: [
-                    {
-                        variantId: productFakeVariantId, // ID de la variante de 1 dólar
-                        quantity
-                    }
-                ]
-            };
+        // Si la cantidad es igual a 0, es porque el producto no cuenta con producto One time
+        // por ende se debe optar por calcular con el descuento del sellign plan
+        // if (quantity == 0) {
 
-            const draftOrderId = await shopifyImp.createDraftOrder(draftOrderInput);
-            await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription, cancelSessionId);
-            await shopifyImp.sendDraftOrderInvoice(draftOrderId)
-            res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created' })
-        }
+        // }
+
+        const draftOrderInput = {
+            acceptAutomaticDiscounts: false,
+            allowDiscountCodesInCheckout: false,
+            email,
+            shippingAddress: {
+                address1: subscriptionData.ShippingAddress.address1,
+                city: subscriptionData.ShippingAddress.city,
+                province: subscriptionData.ShippingAddress.province,
+                country: subscriptionData.ShippingAddress.country,
+                zip: subscriptionData.ShippingAddress.zip,
+            },
+            lineItems: [
+                {
+                    variantId: productFakeVariantId, // ID de la variante de 1 dólar
+                    quantity
+                }
+            ]
+        };
+
+        const draftOrderId = await shopifyImp.createDraftOrder(draftOrderInput);
+        await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription, cancelSessionId);
+        await shopifyImp.sendDraftOrderInvoice(draftOrderId)
+        res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created' })
     } catch (err) {
         console.log(err);
         logger.error(err.message);

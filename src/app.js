@@ -44,6 +44,7 @@ const SHOPIFY_API_SECRET_KEY_HS = process.env.SHOPIFY_API_SECRET_KEY_HS
 const SKIO_API_KEY_HS = process.env.SKIO_API_KEY_HS
 const ATTENTIVE_API_KEY_HS = process.env.ATTENTIVE_API_KEY_HS
 const PRODUCT_FAKE_VARIANT_ID_HS = process.env.PRODUCT_FAKE_VARIANT_ID_HS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS
 const EMAIL_SENDER_HS = process.env.EMAIL_SENDER_HS
 const EMAIL_HOST_HS = process.env.EMAIL_HOST_HS
 const EMAIL_USER_HS = process.env.EMAIL_USER_HS
@@ -62,6 +63,7 @@ const SHOPIFY_API_SECRET_KEY_CS = process.env.SHOPIFY_API_SECRET_KEY_CS
 const SKIO_API_KEY_CS = process.env.SKIO_API_KEY_CS
 const ATTENTIVE_API_KEY_CS = process.env.ATTENTIVE_API_KEY_CS
 const PRODUCT_FAKE_VARIANT_ID_CS = process.env.PRODUCT_FAKE_VARIANT_ID_CS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS
 const EMAIL_SENDER_CS = process.env.EMAIL_SENDER_CS
 const EMAIL_HOST_CS = process.env.EMAIL_HOST_CS
 const EMAIL_USER_CS = process.env.EMAIL_USER_CS
@@ -80,6 +82,7 @@ const SHOPIFY_API_SECRET_KEY_RS = process.env.SHOPIFY_API_SECRET_KEY_RS
 const SKIO_API_KEY_RS = process.env.SKIO_API_KEY_RS
 const ATTENTIVE_API_KEY_RS = process.env.ATTENTIVE_API_KEY_RS
 const PRODUCT_FAKE_VARIANT_ID_RS = process.env.PRODUCT_FAKE_VARIANT_ID_RS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS
 const EMAIL_SENDER_RS = process.env.EMAIL_SENDER_RS
 const EMAIL_HOST_RS = process.env.EMAIL_HOST_RS
 const EMAIL_USER_RS = process.env.EMAIL_USER_RS
@@ -98,6 +101,7 @@ const SHOPIFY_API_SECRET_KEY_VS = process.env.SHOPIFY_API_SECRET_KEY_VS
 const SKIO_API_KEY_VS = process.env.SKIO_API_KEY_VS
 const ATTENTIVE_API_KEY_VS = process.env.ATTENTIVE_API_KEY_VS
 const PRODUCT_FAKE_VARIANT_ID_VS = process.env.PRODUCT_FAKE_VARIANT_ID_VS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS
 const EMAIL_SENDER_VS = process.env.EMAIL_SENDER_VS
 const EMAIL_HOST_VS = process.env.EMAIL_HOST_VS
 const EMAIL_USER_VS = process.env.EMAIL_USER_VS
@@ -116,6 +120,7 @@ const SHOPIFY_API_SECRET_KEY_DM = process.env.SHOPIFY_API_SECRET_KEY_DM
 const SKIO_API_KEY_DM = process.env.SKIO_API_KEY_DM
 const ATTENTIVE_API_KEY_DM = process.env.ATTENTIVE_API_KEY_DM
 const PRODUCT_FAKE_VARIANT_ID_DM = process.env.PRODUCT_FAKE_VARIANT_ID_DM
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM
 const EMAIL_SENDER_DM = process.env.EMAIL_SENDER_DM
 const EMAIL_HOST_DM = process.env.EMAIL_HOST_DM
 const EMAIL_USER_DM = process.env.EMAIL_USER_DM
@@ -134,6 +139,7 @@ const SHOPIFY_API_SECRET_KEY_MW = process.env.SHOPIFY_API_SECRET_KEY_MW
 const SKIO_API_KEY_MW = process.env.SKIO_API_KEY_MW
 const ATTENTIVE_API_KEY_MW = process.env.ATTENTIVE_API_KEY_MW
 const PRODUCT_FAKE_VARIANT_ID_MW = process.env.PRODUCT_FAKE_VARIANT_ID_MW
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW
 const EMAIL_SENDER_MW = process.env.EMAIL_SENDER_MW
 const EMAIL_HOST_MW = process.env.EMAIL_HOST_MW
 const EMAIL_USER_MW = process.env.EMAIL_USER_MW
@@ -160,6 +166,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS,
     emailSender: EMAIL_SENDER_HS,
     attentiveKey: ATTENTIVE_API_KEY_HS,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS
   },
   "https://copperslim.com": {
     shop: SHOPIFY_URL_CS,
@@ -170,6 +177,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS,
     emailSender: EMAIL_SENDER_CS,
     attentiveKey: ATTENTIVE_API_KEY_CS,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS
   },
   "https://redusculpt.com": {
     shop: SHOPIFY_URL_RS,
@@ -180,6 +188,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS,
     emailSender: EMAIL_SENDER_RS,
     attentiveKey: ATTENTIVE_API_KEY_RS,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS
   },
   "https://vibrosculpt.com": {
     shop: SHOPIFY_URL_VS,
@@ -190,6 +199,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS,
     emailSender: EMAIL_SENDER_VS,
     attentiveKey: ATTENTIVE_API_KEY_VS,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS
   },
   "https://drmingtea.com": {
     shop: SHOPIFY_URL_DM,
@@ -200,6 +210,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
     emailSender: EMAIL_SENDER_DM,
     attentiveKey: ATTENTIVE_API_KEY_DM,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM
   },
   "https://mywayhairdna.com": {
     shop: SHOPIFY_URL_MW,
@@ -210,6 +221,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
     emailSender: EMAIL_SENDER_MW,
     attentiveKey: ATTENTIVE_API_KEY_MW,
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW
   }
 }
 

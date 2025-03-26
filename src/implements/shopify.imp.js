@@ -196,14 +196,14 @@ class ShopifyImp {
       }`)).data.products.edges
   }
 
-  async oneTimesBySubscriptions(productsSubQuery) {
+  async oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery) {
     const client = this.init();
     return (await client.request(`query {
         products(first: 100, query: "${productsSubQuery}") {
           edges {
             node {
               id
-              metafields (first: 1, keys: "custom.product-subscription") {
+              metafields (first: 1, keys: "custom.${productSubscriptionMetafieldKey}") {
                 edges {
                   node {
                     jsonValue
