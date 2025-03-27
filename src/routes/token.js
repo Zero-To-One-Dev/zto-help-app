@@ -83,10 +83,13 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             .join(' OR ');
         let quantity = (await shopifyImp
             .oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
-        quantity = quantity.map(product => Math.floor(
-            product.node.variants.edges[0].node.price -
-            product.node.metafields.edges[0].node.reference.variants.edges[0].node.price))
-            .reduce((sum, a) => sum + a, 0);
+        quantity = quantity.map(
+            product => Math.round(
+                (
+                    Number(product.node.variants.edges[0].node.price) -
+                    Number(product.node.metafields.edges[0].node.reference.variants.edges[0].node.price)
+                )*100)/100
+            ).reduce((sum, a) => sum + a, 0);
 
         // Si la cantidad es igual a 0, es porque el producto no cuenta con producto One time
         // por ende se debe optar por calcular con el descuento del sellign plan
