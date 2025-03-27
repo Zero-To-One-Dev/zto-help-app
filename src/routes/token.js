@@ -15,6 +15,13 @@ const dbRepository = new DBRepository();
 const messageImp = new MessageImp();
 
 
+const getPriceDifference = (oneTimePrice, subPrice) => {
+    oneTimePrice = Number(oneTimePrice);
+    subPrice = Number(subPrice);
+    return Math.floor(Math.round((oneTimePrice - subPrice)*100)/100);
+}
+
+
 /**
  *  @openapi
  *  /token/subscription/validate:
@@ -84,13 +91,10 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         let quantity = (await shopifyImp
             .oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
         quantity = quantity.map(
-            product => Math.round(
-                (
-                    Number(product.node.variants.edges[0].node.price) -
-                    Number(product.node.metafields.edges[0].node.reference.variants.edges[0].node.price)
-                )*100)/100
-            ).reduce((sum, a) => sum + a, 0);
-
+            product => getPriceDifference(
+                product.node.variants.edges[0].node.price,
+                product.node.metafields.edges[0].node.reference.variants.edges[0].node.price
+            )).reduce((sum, a) => sum + a, 0);
         // Si la cantidad es igual a 0, es porque el producto no cuenta con producto One time
         // por ende se debe optar por calcular con el descuento del sellign plan
         // if (quantity == 0) {
