@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from "cors";
 import logger from '../../logger.js';
 import { SHOPS_ORIGIN } from '../app.js';
 import { EmailSubscriptionSchema, EmailAddressSchema } from '../schemas/email.js';
@@ -73,15 +72,15 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         logger.error(err.message);
         res.status(500).json({ message: err.message });
 
-        // const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
-        // const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
-        // let errorData = `ℹ️ EMAIL: ${email}\\n`;
-        // errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
-        // const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
-        // const errorRoute = `📌 ROUTE: /email/subscription/send`;
-        // const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
-        // const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
-        // messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
+        const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;
+        errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
+        const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
+        const errorRoute = `📌 ROUTE: /email/subscription/send`;
+        const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 
@@ -136,14 +135,14 @@ router.post('/address/send', handleError(EmailAddressSchema), async (req, res) =
         logger.error(err.message);
         res.status(500).json({ message: err.message });
 
-        // const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
-        // const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
-        // const errorData = `ℹ️ EMAIL: ${email}\\n`;
-        // const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
-        // const errorRoute = `📌 ROUTE: /email/address/send`;
-        // const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
-        // const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
-        // messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
+        const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
+        const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+        const errorData = `ℹ️ EMAIL: ${email}\\n`;
+        const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
+        const errorRoute = `📌 ROUTE: /email/address/send`;
+        const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
+        const errorTitle = "🔴 ❌ ERROR: Error while trying to send the token to the user's email";
+        messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
 })
 

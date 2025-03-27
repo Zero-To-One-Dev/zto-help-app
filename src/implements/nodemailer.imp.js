@@ -20,6 +20,7 @@ class NodemailerMailerImp {
     
         // Setup Nodemailer
         const transporter = nodemailer.createTransport({
+            name: EMAIL_HOST,
             host: EMAIL_HOST,
             port: EMAIL_PORT,
             secure: EMAIL_PORT === 465, // true for port 465, false for other ports
