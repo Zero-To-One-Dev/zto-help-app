@@ -102,17 +102,17 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         // por ende se debe optar por calcular con el descuento del sellign plan.
         let quantity = 0;
         for (let { productId, variantId } of productsVariants) {
-            if (!productsSubsIds.includes(productId)) {
-                const productSub = subscriptionData.SubscriptionLines
+            const productSub = subscriptionData.SubscriptionLines
                     .find(e => e.ProductVariant.platformId.split('/').pop() === variantId);
-                quantity += getPriceDifference(productSub.ProductVariant.price, productSub.priceWithoutDiscount);
+            if (!productsSubsIds.includes(productId)) {
+                quantity += getPriceDifference(productSub.ProductVariant.price, productSub.priceWithoutDiscount)*productSub.quantity;
             } else {
                 const productOneTime = oneTimeProducts.find(
                     oneTime => oneTime.node.metafields.edges[0].node.jsonValue.split('/').pop() === productId);
                 quantity += getPriceDifference(
                     productOneTime.node.variants.edges[0].node.price,
                     productOneTime.node.metafields.edges[0].node.reference.variants.edges[0].node.price
-                );
+                )*productSub.quantity;
             }
         }
 

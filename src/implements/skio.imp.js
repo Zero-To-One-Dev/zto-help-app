@@ -21,33 +21,34 @@ class SkioImp {
     const client = this.init()
     return (
       await client.request(gql`
-      query {
-        Subscriptions (limit: 1, where: {
-            id: {_eq: "${subscription}"},	
-            StorefrontUser: {email: {_eq: "${email}"}}
-          }) {
-            id
-            cyclesCompleted
-            ShippingAddress {
-              address1
-              city
-              province
-              country
-              zip
-            }
-            SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, sellingPlanId: {_is_null: false}}) {
-              priceWithoutDiscount
-              sellingPlanId
-              subscriptionId
-              ProductVariant {
-                title
-                platformId
-                price
+        query {
+          Subscriptions (limit: 1, where: {
+              id: {_eq: "${subscription}"},	
+              StorefrontUser: {email: {_eq: "${email}"}}
+            }) {
+              id
+              cyclesCompleted
+              ShippingAddress {
+                address1
+                city
+                province
+                country
+                zip
               }
+              SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, sellingPlanId: {_is_null: false}}) {
+                priceWithoutDiscount
+                sellingPlanId
+                subscriptionId
+                ProductVariant {
+                  title
+                  platformId
+                  price
+                }
+                quantity
+              }
+            }
           }
-        }
-      }
-    `)
+      `)
     ).Subscriptions[0]
   }
 
