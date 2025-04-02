@@ -16,9 +16,12 @@ const messageImp = new MessageImp();
 
 
 const getPriceDifference = (oneTimePrice, subPrice) => {
+    console.log('ARRIVE AT GET PRICE DIFFERENCE: ')
+    console.log('ONE TIME PRICE: ', oneTimePrice);
+    console.log('SUB PRICE: ', subPrice);
     oneTimePrice = Number(oneTimePrice);
     subPrice = Number(subPrice);
-    return Math.floor(Math.round((oneTimePrice - subPrice)*100)/100);
+    return Math.floor(Math.round((oneTimePrice - subPrice) * 100) / 100);
 }
 
 
@@ -79,27 +82,44 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         }
 
         // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order
-        const variantsQuery = ((subscriptionData.SubscriptionLines
-            .map(subs => subs.ProductVariant.platformId.split('/').pop()))
-            .map(variantId => `variant_id:${variantId}`))
-            .join(' OR ');
-        const productsSubQuery = (await shopifyImp
+        const variantsQuery = subscriptionData.SubscriptionLines
+            .map(e => e.ProductVariant.platformId.split('/').pop())
+            .map(variantId => `variant_id:${variantId}`)
+            .join(' OR ');        
+        const productsVariants = (await shopifyImp
             .productsIdsByVariant(variantsQuery))
-            .map(product => product.node.id.split('/').pop())
-            .map(id => `metafields.custom.${productSubscriptionMetafieldKey}:${id} AND price:>0 AND -product_type:Gift`)
-            .join(' OR ');
-        let quantity = (await shopifyImp
+            .map(e => ({
+                productId: e.node.id.split('/').pop(),
+                variantId: e.node.variants.edges[0].node.id.split('/').pop()
+            }))
+        const productsSubQuery = productsVariants
+            .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.productId} AND price:>0 AND -product_type:Gift)`)
+            .join(' OR ');        
+        const oneTimeProducts = (await shopifyImp
             .oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
-        quantity = quantity.map(
-            product => getPriceDifference(
-                product.node.variants.edges[0].node.price,
-                product.node.metafields.edges[0].node.reference.variants.edges[0].node.price
-            )).reduce((sum, a) => sum + a, 0);
-        // Si la cantidad es igual a 0, es porque el producto no cuenta con producto One time
-        // por ende se debe optar por calcular con el descuento del sellign plan
-        // if (quantity == 0) {
+        const productsSubsIds = oneTimeProducts.map(
+            e => e.node.metafields.edges[0].node.jsonValue.split('/').pop());
 
-        // }
+        // Si no contiene un producto one time, es porque es un upsell,
+        // y por lo tanto el producto no cuenta con producto One time,
+        // por ende se debe optar por calcular con el descuento del sellign plan.
+        let quantity = 0;
+        for (let { productId, variantId } of productsVariants) {
+            if (!productsSubsIds.includes(productId)) {
+                const productSub = subscriptionData.SubscriptionLines
+                    .find(e => e.ProductVariant.platformId.split('/').pop() === variantId);
+                quantity += getPriceDifference(productSub.ProductVariant.price, productSub.priceWithoutDiscount);
+            } else {
+                const productOneTime = oneTimeProducts.find(
+                    oneTime => oneTime.node.metafields.edges[0].node.jsonValue.split('/').pop() === productId);
+                quantity += getPriceDifference(
+                    productOneTime.node.variants.edges[0].node.price,
+                    productOneTime.node.metafields.edges[0].node.reference.variants.edges[0].node.price
+                );
+            }
+        }
+
+        if (quantity === 0) throw new Error('It was not possible to calculate the price difference');
 
         const draftOrderInput = {
             acceptAutomaticDiscounts: false,
@@ -122,7 +142,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         const draftOrderId = await shopifyImp.createDraftOrder(draftOrderInput);
         await dbRepository.saveDraftOrder(shopAlias, draftOrderId, subscription, cancelSessionId);
-        await shopifyImp.sendDraftOrderInvoice(draftOrderId)
+        await shopifyImp.sendDraftOrderInvoice(draftOrderId);
         res.json({ message: 'To finalize the subscription cancellation process please pay the draft order that has been created' })
     } catch (err) {
         console.log(err);
@@ -131,7 +151,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
         const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
-        let errorData = `ℹ️ EMAIL: ${email}\\n`;        
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;
         errorData += `ℹ️ SUBSCRIPTION: ${subscription}\\n`;
         errorData += `ℹ️ CANCEL SESSION ID: ${cancelSessionId}\\n`;
         const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
@@ -204,7 +224,7 @@ router.post('/address/validate', handleError(TokenSchema), async (req, res) => {
 
         const errorMessage = err.message.replace(/[^\w\s]/gi, '').replace(/[\n\t]/g, ' ');
         const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
-        let errorData = `ℹ️ EMAIL: ${email}\\n`;        
+        let errorData = `ℹ️ EMAIL: ${email}\\n`;
         const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
         const errorRoute = `📌 ROUTE: /token/address/validate`;
         const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
