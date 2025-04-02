@@ -16,9 +16,6 @@ const messageImp = new MessageImp();
 
 
 const getPriceDifference = (oneTimePrice, subPrice) => {
-    console.log('ARRIVE AT GET PRICE DIFFERENCE: ')
-    console.log('ONE TIME PRICE: ', oneTimePrice);
-    console.log('SUB PRICE: ', subPrice);
     oneTimePrice = Number(oneTimePrice);
     subPrice = Number(subPrice);
     return Math.floor(Math.round((oneTimePrice - subPrice) * 100) / 100);
