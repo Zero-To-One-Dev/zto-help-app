@@ -17,7 +17,9 @@ class SkioImp {
     })
   }
 
-  async getSubscription(email, subscription) {
+  async getSubscription(email, subscription, haveSellingPlan) {
+    let sellingPlanCondition = '';
+    if (haveSellingPlan) sellingPlanCondition = 'sellingPlanId: {_is_null: false}';
     const client = this.init()
     return (
       await client.request(gql`
@@ -35,7 +37,7 @@ class SkioImp {
                 country
                 zip
               }
-              SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, sellingPlanId: {_is_null: false}}) {
+              SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, ${sellingPlanCondition}}) {
                 priceWithoutDiscount
                 sellingPlanId
                 subscriptionId

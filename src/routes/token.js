@@ -65,9 +65,13 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         const subscriptionImp = new SubscriptionImp(shopAlias);
         const shopifyImp = new ShopifyImp(shopAlias);
-        const subscriptionData = await subscriptionImp.getSubscription(email, subscription);
+
+        let subscriptionData = await subscriptionImp.getSubscription(email, subscription, true);;
         if (!subscriptionData) throw new Error('It is not possible to cancel the subscription');
         if (subscriptionData.cyclesCompleted > 1) throw new Error('The subscription have more than 1 cycle completed');
+        if (!subscriptionData.SubscriptionLines.length) {
+            subscriptionData = await subscriptionImp.getSubscription(email, subscription, false);
+        }
 
         // Si el estado en la dirección de la orden es de CALIFORNIA, cancelar normal
         if (subscriptionData.ShippingAddress.province.toUpperCase() === 'CALIFORNIA') {
@@ -82,9 +86,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         const variantsQuery = subscriptionData.SubscriptionLines
             .map(e => e.ProductVariant.platformId.split('/').pop())
             .map(variantId => `variant_id:${variantId}`)
-            .join(' OR ');        
-        const productsVariants = (await shopifyImp
-            .productsIdsByVariant(variantsQuery))
+            .join(' OR ');
+        const productsIds = await shopifyImp.productsIdsByVariant(variantsQuery)
+        const productsVariants = productsIds
             .map(e => ({
                 productId: e.node.id.split('/').pop(),
                 variantId: e.node.variants.edges[0].node.id.split('/').pop()
@@ -92,8 +96,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         const productsSubQuery = productsVariants
             .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.productId} AND price:>0 AND -product_type:Gift)`)
             .join(' OR ');        
-        const oneTimeProducts = (await shopifyImp
-            .oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
+        const oneTimeProducts = (await shopifyImp.oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
         const productsSubsIds = oneTimeProducts.map(
             e => e.node.metafields.edges[0].node.jsonValue.split('/').pop());
 
@@ -116,7 +119,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             }
         }
 
-        if (quantity === 0) throw new Error('It was not possible to calculate the price difference');
+        if (quantity <= 0) throw new Error('It was not possible to calculate the price difference');
 
         const draftOrderInput = {
             acceptAutomaticDiscounts: false,
