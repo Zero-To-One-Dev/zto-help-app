@@ -54,6 +54,28 @@ class SkioImp {
     ).Subscriptions[0]
   }
 
+  async getSubscriptionsByEmail(email) {
+    const client = this.init();
+    return (
+      await client.request(gql`
+        query {
+          Subscriptions (where: {
+            status: {_eq: "ACTIVE"},
+            StorefrontUser: {email: {_eq: "${email}"}}
+          }) {
+            id
+            nextBillingDate 
+            SubscriptionLines {
+              ProductVariant {
+                sku
+              }
+            }
+          }
+        }
+      `)
+    ).Subscriptions
+  }
+
   async cancelSubscription(cancelSessionId, subscription) {
     const client = this.init()
     return (

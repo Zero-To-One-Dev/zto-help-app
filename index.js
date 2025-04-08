@@ -4,6 +4,7 @@ import token from './src/routes/token.js'
 import address from './src/routes/address.js'
 import webhook from './src/routes/webhook.js'
 import draftOrder from './src/routes/draft-order.js'
+import subscriptions from './src/routes/subscriptions.js'
 import logger from './logger.js'
 
 app.use('/email', email);
@@ -11,6 +12,7 @@ app.use('/token', token);
 app.use('/address', address);
 app.use('/webhook', webhook);
 app.use('/draft-order', draftOrder);
+app.use('/subscriptions', subscriptions);
 
 app.listen(PORT, () => {
   logger.info(`Listening on port ${PORT}`)
