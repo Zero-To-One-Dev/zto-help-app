@@ -82,39 +82,43 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             return;
         }
 
-        // Si el estado en la dirección de la orden es diferente de CALIFORNIA, crear draft order
-        const variantsQuery = subscriptionData.SubscriptionLines
+        // Si el estado en la dirección de la suscripción es diferente de CALIFORNIA, crear draft order
+        const subscriptionVariantsQuery = subscriptionData.SubscriptionLines
             .map(e => e.ProductVariant.platformId.split('/').pop())
-            .map(variantId => `variant_id:${variantId}`)
+            .map(variantId => `id:${variantId}`)
             .join(' OR ');
-        const productsIds = await shopifyImp.productsIdsByVariant(variantsQuery)
-        const productsVariants = productsIds
+        const subscriptionProducts = (await shopifyImp.subscriptionProductsIdsBySubscriptionVariant(subscriptionVariantsQuery))
             .map(e => ({
-                productId: e.node.id.split('/').pop(),
-                variantId: e.node.variants.edges[0].node.id.split('/').pop()
+                productId: e.node.product.id.split('/').pop(),
+                variant: {
+                    id: e.node.id.split('/').pop(),
+                    title: e.node.title
+                }
             }))
-        const productsSubQuery = productsVariants
+        const oneTimeBySubscriptionMetafieldQuery = subscriptionProducts
             .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.productId} AND price:>0 AND -product_type:Gift)`)
             .join(' OR ');        
-        const oneTimeProducts = (await shopifyImp.oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery))
-        const productsSubsIds = oneTimeProducts.map(
-            e => e.node.metafields.edges[0].node.jsonValue.split('/').pop());
+        const oneTimeProducts = (await shopifyImp
+            .oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, oneTimeBySubscriptionMetafieldQuery))
+            .map(e => ({
+                subscriptionProductId: e.node.metafields.edges[0].node.jsonValue.split('/').pop(),
+                variants: e.node.variants.edges.map(i => i.node)
+            }))
 
         // Si no contiene un producto one time, es porque es un upsell,
         // y por lo tanto el producto no cuenta con producto One time,
         // por ende se debe optar por calcular con el descuento del sellign plan.
         let quantity = 0;
-        for (let { productId, variantId } of productsVariants) {
-            const productSub = subscriptionData.SubscriptionLines
-                    .find(e => e.ProductVariant.platformId.split('/').pop() === variantId);
-            if (!productsSubsIds.includes(productId)) {
+        for (let { productId, variant } of subscriptionProducts) {
+            const oneTimeData = oneTimeProducts.find(e => e.subscriptionProductId === productId);
+            const productSub = subscriptionData.SubscriptionLines.find(e => e.ProductVariant.platformId.split('/').pop() === variant.id);
+            if (!oneTimeData) {
                 quantity += getPriceDifference(productSub.ProductVariant.price, productSub.priceWithoutDiscount)*productSub.quantity;
             } else {
-                const productOneTime = oneTimeProducts.find(
-                    oneTime => oneTime.node.metafields.edges[0].node.jsonValue.split('/').pop() === productId);
+                const productOneTime = oneTimeData.variants.find(e => e.title === variant.title);
                 quantity += getPriceDifference(
-                    productOneTime.node.variants.edges[0].node.price,
-                    productOneTime.node.metafields.edges[0].node.reference.variants.edges[0].node.price
+                    productOneTime.price,
+                    productSub.ProductVariant.price
                 )*productSub.quantity;
             }
         }

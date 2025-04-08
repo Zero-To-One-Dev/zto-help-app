@@ -175,28 +175,24 @@ class ShopifyImp {
     )).data.orderUpdate
   }
 
-  async productsIdsByVariant(variantsQuery) {
+  async subscriptionProductsIdsBySubscriptionVariant(variantsQuery) {
     const client = this.init();
     return (await client.request(`query {
-        products (first: 100, query: "${variantsQuery}") {
+        productVariants (first: 100, query: "${variantsQuery}") {
           edges {
             node {
               id
-              variants (first: 1) {
-                edges {
-                  node {
-                    id
-                    price
-                  }
-                }
+              title
+              product {
+                id
               }
             }
           }
         }
-      }`)).data.products.edges
+      }`)).data.productVariants.edges
   }
 
-  async oneTimesBySubscriptions(productSubscriptionMetafieldKey, productsSubQuery) {
+  async oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, productsSubQuery) {
     const client = this.init();
     return (await client.request(`query {
         products(first: 100, query: "${productsSubQuery}") {
@@ -207,24 +203,14 @@ class ShopifyImp {
                 edges {
                   node {
                     jsonValue
-                    reference {
-                      ... on Product {
-                        variants (first: 1) {
-                          edges {
-                            node {
-                              price
-                            }
-                          }
-                        }
-                      }
-                    }
                   }
                 }
               }
-              variants (first: 1) {
+              variants (first: 200) {
                 edges {
                   node {
                     id
+                    title
                     price
                   }
                 }
