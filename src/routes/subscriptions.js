@@ -44,6 +44,7 @@ router.get('/', handleError(SubscriptionsSchema), async (req, res) => {
     // Si no existen suscripciones
     if (!subscriptions.length) {
       res.status(404).json({ message: 'Customer has no active subscriptions' })
+      return;
     }
 
     let subscription = null;
