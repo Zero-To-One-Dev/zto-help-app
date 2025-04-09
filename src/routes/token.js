@@ -97,7 +97,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             }))
         const oneTimeBySubscriptionMetafieldQuery = subscriptionProducts
             .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.productId} AND price:>0 AND -product_type:Gift)`)
-            .join(' OR ');        
+            .join(' OR ');
         const oneTimeProducts = (await shopifyImp
             .oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, oneTimeBySubscriptionMetafieldQuery))
             .map(e => ({

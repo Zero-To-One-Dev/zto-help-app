@@ -37,7 +37,18 @@ class SkioImp {
                 country
                 zip
               }
-              SubscriptionLines (where: {Subscription: {id: {_eq: "${subscription}"}}, ${sellingPlanCondition}}) {
+              SubscriptionLines (where:
+                {
+                  Subscription: {
+                    id: {
+                      _eq: "${subscription}"
+                    }
+                  },
+                  ${sellingPlanCondition},
+                  removedAt: {
+                    _is_null: true
+                  }
+              }) {
                 priceWithoutDiscount
                 sellingPlanId
                 subscriptionId
