@@ -12,12 +12,12 @@ class NodemailerMailerImp {
 
     init() {
         const {
-              [`EMAIL_HOST_${this.shopAlias}`]: EMAIL_HOST,
-              [`EMAIL_USER_${this.shopAlias}`]: EMAIL_USER,
-              [`EMAIL_PASSWORD_${this.shopAlias}`]: EMAIL_PASSWORD,
-              [`EMAIL_PORT_${this.shopAlias}`]: EMAIL_PORT
-            } = app;
-    
+            [`EMAIL_HOST_${this.shopAlias}`]: EMAIL_HOST,
+            [`EMAIL_USER_${this.shopAlias}`]: EMAIL_USER,
+            [`EMAIL_PASSWORD_${this.shopAlias}`]: EMAIL_PASSWORD,
+            [`EMAIL_PORT_${this.shopAlias}`]: EMAIL_PORT
+        } = app;
+
         // Setup Nodemailer
         const transporter = nodemailer.createTransport({
             name: EMAIL_HOST,
@@ -42,7 +42,7 @@ class NodemailerMailerImp {
         const transporter = this.init();
         await transporter.sendMail({
             from: sender,
-            to: email,  
+            to: email,
             subject,
             template,
             context,

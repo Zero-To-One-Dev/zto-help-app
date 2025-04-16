@@ -84,7 +84,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
         let lineItems = (await shopifyImp.getLineItemsByOrder(subscriptionData.originOrder.platformId))
             .map(e => e.node);
-        
+
         // Si no contiene un producto one time, es porque es un upsell,
         // y por lo tanto el producto no cuenta con producto One time,
         // por ende se debe optar por calcular con el descuento del sellign plan.
@@ -110,7 +110,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
 
             if (!eachUpsell) continue;
             quantity += getPriceDifference(eachUpsell.ProductVariant.price,
-                eachUpsell.priceWithoutDiscount)*eachUpsell.quantity;
+                eachUpsell.priceWithoutDiscount) * eachUpsell.quantity;
         }
 
         // Si el estado en la dirección de la suscripción es diferente de CALIFORNIA, crear draft order
@@ -123,7 +123,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                 subscriptionProductId: e.node.metafields.edges[0].node.jsonValue,
                 variants: e.node.variants.edges.map(i => i.node)
             }))
-        
+
         let productSub = null;
         let productOneTime = null;
         for (let oneTime of oneTimeProducts) {
@@ -137,7 +137,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                 productOneTime = oneTime.variants.find(e => e.title.toLowerCase() === productSub.variant.title.toLowerCase());
             }
 
-            quantity += getPriceDifference(productOneTime.price, productSub.variant.price)*productSub.quantity;
+            quantity += getPriceDifference(productOneTime.price, productSub.variant.price) * productSub.quantity;
         }
 
         if (quantity <= 0) throw new Error('It was not possible to calculate the price difference');

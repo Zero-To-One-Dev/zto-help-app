@@ -45,7 +45,7 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
         ({ shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
         ({ email, subscription } = req.body);
         const mailer = new Mailer(shopAlias);
-        
+
         const objectToken = await dbRepository.validateTokenExists(shopAlias, email);
         if (objectToken) {
             if (isExpired(objectToken.expire_at)) {
