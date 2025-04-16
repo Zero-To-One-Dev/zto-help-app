@@ -195,7 +195,7 @@ class ShopifyImp {
   async oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, productsSubQuery) {
     const client = this.init();
     return (await client.request(`query {
-        products(first: 100, query: "${productsSubQuery}") {
+        products(first: 100, query: "${productsSubQuery} AND status:ACTIVE") {
           edges {
             node {
               id
@@ -250,6 +250,31 @@ class ShopifyImp {
         deletedId
       }
     }`)).data.draftOrderDelete.deletedId
+  }
+
+  async getLineItemsByOrder (orderId) {
+    const client = this.init();
+    return (await client.request(`query {
+        order (id: "${orderId}") {
+          lineItems (first: 100) {
+            edges {
+              node {
+                quantity
+                product {
+                  id
+                  productType
+                }
+                variant {
+                  id
+                  price
+                  title
+                }
+              }
+            }
+          }
+        }  
+      }`
+    )).data.order.lineItems.edges
   }
 }
 

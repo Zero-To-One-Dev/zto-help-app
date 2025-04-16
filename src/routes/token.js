@@ -82,45 +82,62 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             return;
         }
 
-        // Si el estado en la dirección de la suscripción es diferente de CALIFORNIA, crear draft order
-        const subscriptionVariantsQuery = subscriptionData.SubscriptionLines
-            .map(e => e.ProductVariant.platformId.split('/').pop())
-            .map(variantId => `id:${variantId}`)
-            .join(' OR ');
-        const subscriptionProducts = (await shopifyImp.subscriptionProductsIdsBySubscriptionVariant(subscriptionVariantsQuery))
-            .map(e => ({
-                productId: e.node.product.id.split('/').pop(),
-                variant: {
-                    id: e.node.id.split('/').pop(),
-                    title: e.node.title
+        let lineItems = (await shopifyImp.getLineItemsByOrder(subscriptionData.originOrder.platformId))
+            .map(e => e.node);
+        
+        // Si no contiene un producto one time, es porque es un upsell,
+        // y por lo tanto el producto no cuenta con producto One time,
+        // por ende se debe optar por calcular con el descuento del sellign plan.
+        let noUpsells = [];
+        let upsells = [];
+        let productType = '';
+        let quantity = 0;
+        for (let lineItem of lineItems) {
+            productType = lineItem.product.productType.toLowerCase();
+            if (!productType.includes('gift')) {
+                if (productType.includes('upsell')) {
+                    upsells.push(lineItem);
+                } else {
+                    noUpsells.push(lineItem);
                 }
-            }))
-        const oneTimeBySubscriptionMetafieldQuery = subscriptionProducts
-            .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.productId} AND price:>0 AND -product_type:Gift)`)
+            }
+        }
+
+        let eachUpsell = null;
+        for (let upsell of upsells) {
+            eachUpsell = subscriptionData.SubscriptionLines.find(
+                e => e.ProductVariant.platformId === upsell.variant.id);
+
+            if (!eachUpsell) continue;
+            quantity += getPriceDifference(eachUpsell.ProductVariant.price,
+                eachUpsell.priceWithoutDiscount)*eachUpsell.quantity;
+        }
+
+        // Si el estado en la dirección de la suscripción es diferente de CALIFORNIA, crear draft order
+        const oneTimeBySubscriptionMetafieldQuery = noUpsells
+            .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.product.id.split('/').pop()} AND price:>0 AND -product_type:Gift)`)
             .join(' OR ');
         const oneTimeProducts = (await shopifyImp
             .oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, oneTimeBySubscriptionMetafieldQuery))
             .map(e => ({
-                subscriptionProductId: e.node.metafields.edges[0].node.jsonValue.split('/').pop(),
+                subscriptionProductId: e.node.metafields.edges[0].node.jsonValue,
                 variants: e.node.variants.edges.map(i => i.node)
             }))
+        
+        let productSub = null;
+        let productOneTime = null;
+        for (let oneTime of oneTimeProducts) {
+            productSub = lineItems.find(e => e.product.id === oneTime.subscriptionProductId)
 
-        // Si no contiene un producto one time, es porque es un upsell,
-        // y por lo tanto el producto no cuenta con producto One time,
-        // por ende se debe optar por calcular con el descuento del sellign plan.
-        let quantity = 0;
-        for (let { productId, variant } of subscriptionProducts) {
-            const oneTimeData = oneTimeProducts.find(e => e.subscriptionProductId === productId);
-            const productSub = subscriptionData.SubscriptionLines.find(e => e.ProductVariant.platformId.split('/').pop() === variant.id);
-            if (!oneTimeData) {
-                quantity += getPriceDifference(productSub.ProductVariant.price, productSub.priceWithoutDiscount)*productSub.quantity;
+            if (!productSub) continue;
+
+            if (oneTime.variants.length === 1) {
+                productOneTime = oneTime.variants[0];
             } else {
-                const productOneTime = oneTimeData.variants.find(e => e.title === variant.title);
-                quantity += getPriceDifference(
-                    productOneTime.price,
-                    productSub.ProductVariant.price
-                )*productSub.quantity;
+                productOneTime = oneTime.variants.find(e => e.title.toLowerCase() === productSub.variant.title.toLowerCase());
             }
+
+            quantity += getPriceDifference(productOneTime.price, productSub.variant.price)*productSub.quantity;
         }
 
         if (quantity <= 0) throw new Error('It was not possible to calculate the price difference');

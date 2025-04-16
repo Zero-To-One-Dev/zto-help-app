@@ -37,6 +37,9 @@ class SkioImp {
                 country
                 zip
               }
+              originOrder {
+                platformId
+              }
               SubscriptionLines (where:
                 {
                   Subscription: {
