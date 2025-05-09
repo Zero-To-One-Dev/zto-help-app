@@ -88,12 +88,15 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         // Si no contiene un producto one time, es porque es un upsell,
         // y por lo tanto el producto no cuenta con producto One time,
         // por ende se debe optar por calcular con el descuento del sellign plan.
+        // Adicionalmente se ignoran los Fake Products.
         let noUpsells = [];
         let upsells = [];
         let productType = '';
         let quantity = 0;
         for (let lineItem of lineItems) {
-            productType = lineItem.product.productType.toLowerCase();
+            productType = lineItem.product.productType.replace(/\s/g, '').toLowerCase();
+            lineItem.variant.title = lineItem.variant.title.replace(/\s/g, '').toLowerCase();
+            if (productType.includes('fake')) { continue }
             if (!productType.includes('gift')) {
                 if (productType.includes('upsell')) {
                     upsells.push(lineItem);
@@ -113,7 +116,6 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                 eachUpsell.priceWithoutDiscount) * eachUpsell.quantity;
         }
 
-        // Si el estado en la dirección de la suscripción es diferente de CALIFORNIA, crear draft order
         const oneTimeBySubscriptionMetafieldQuery = noUpsells
             .map(e => `(metafields.custom.${productSubscriptionMetafieldKey}:${e.product.id.split('/').pop()} AND price:>0 AND -product_type:Gift)`)
             .join(' OR ');
@@ -121,7 +123,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             .oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, oneTimeBySubscriptionMetafieldQuery))
             .map(e => ({
                 subscriptionProductId: e.node.metafields.edges[0].node.jsonValue,
-                variants: e.node.variants.edges.map(i => i.node)
+                variants: e.node.variants.edges
+                    .map(i => i.node)
+                    .map(i => { i.title = i.title.replace(/\s/g, '').toLowerCase(); return i })
             }))
 
         let productSub = null;
@@ -130,11 +134,20 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             productSub = lineItems.find(e => e.product.id === oneTime.subscriptionProductId)
 
             if (!productSub) continue;
-
             if (oneTime.variants.length === 1) {
                 productOneTime = oneTime.variants[0];
             } else {
-                productOneTime = oneTime.variants.find(e => e.title.toLowerCase() === productSub.variant.title.toLowerCase());
+                productOneTime = oneTime.variants.find(e => e.title === productSub.variant.title);
+
+                if (!productOneTime) {
+                    productOneTime = oneTime.variants.find(e => {
+                        if (productSub.variant.title.length > e.title.length) {
+                            return productSub.variant.title.includes(e.title);
+                        } else {
+                            return e.title.includes(productSub.variant.title);
+                        }
+                    });
+                }
             }
 
             quantity += getPriceDifference(productOneTime.price, productSub.variant.price) * productSub.quantity;
