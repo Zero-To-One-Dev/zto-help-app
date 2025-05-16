@@ -287,10 +287,14 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
     const { title, code, percentage, collection, email, shopAlias } = req.body;
 
     const shopifyImp = new ShopifyImp(shopAlias);
+
+    let today = new Date();
+    today.setHours(0,0,0,0);
+    
     const inputMutation = `{
       title: "${title}",
       code: "${code}",
-      startsAt: "2025-05-16T00:00:00Z",
+      startsAt: "${today.toISOString()}",
       endsAt: null,
       combinesWith: {
         productDiscounts: false,
