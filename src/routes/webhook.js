@@ -285,11 +285,12 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
   
   try {
     const { title, code, percentage, collection, email, shopAlias } = req.body;
+
     const shopifyImp = new ShopifyImp(shopAlias);
-    const inputMutation = {
-      title,
-      code,
-      startsAt: new Date(),
+    const inputMutation = `{
+      title: "${title}",
+      code: "${code}",
+      startsAt: "${new Date()}",
       endsAt: null,
       combinesWith: {
         productDiscounts: false,
@@ -308,12 +309,12 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
       },
       customerGets: {
         value: {
-          percentage
+          percentage: ${percentage}
         },
         items: {
           all: false,
           collections: {
-            add: [`gid://shopify/Collection/${collection}`],
+            add: ["gid://shopify/Collection/${collection}"],
             remove: []
           },
           products: {
@@ -327,7 +328,9 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
         appliesOnSubscription: false
       },
       recurringCycleLimit: 1
-    }
+    }`
+
+    logger.info(`INPUT MUTATION: ${inputMutation}`);
     const codeDiscountNode = await shopifyImp.createDiscountCode(inputMutation);
 
     // Si ocurre un error al crear el código en Shopify
