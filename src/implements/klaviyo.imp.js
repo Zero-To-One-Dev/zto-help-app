@@ -8,11 +8,12 @@ class KlaviyoImp {
 
   init() {
     const { [`KLAVIYO_TOKEN_${this.shopAlias}`]: KLAVIYO_TOKEN } = app;
-    client = new Klaviyo(KLAVIYO_TOKEN);
+    const client = new Klaviyo(KLAVIYO_TOKEN);
     return client;
   }
 
   sendEvent (name, email, properties) {
+    const client = this.init();
     client.track(
       name,
       { '$email': email },      // Identificador de usuario
