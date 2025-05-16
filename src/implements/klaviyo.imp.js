@@ -16,7 +16,7 @@ class KlaviyoImp {
     const client = this.init();
     client.track(
       name,
-      { '$email': email },      // Identificador de usuario
+      email,      // Identificador de usuario
       properties        // Propiedades del evento
     )
     .then(() => console.log('Evento trackeado'))
