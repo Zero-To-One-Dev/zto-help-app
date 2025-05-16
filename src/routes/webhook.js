@@ -9,6 +9,8 @@ import DBRepository from "../repositories/postgres.repository.js"
 import path from "node:path"
 import { getExpiredDraftOrders, setDraftOrderStatus, deleteDraftOrder } from "../services/draft-orders.js";
 import MessageImp from '../implements/slack.imp.js'
+import ShopifyImp from "../implements/shopify.imp.js"
+import KlaviyoImp from "../implements/klaviyo.imp.js"
 
 
 const router = Router()
@@ -244,6 +246,103 @@ router.post("/draft-orders-expired-delete", authenticateToken, async (req, res) 
     const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
     const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
     messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
+  }
+})
+
+
+/**
+ *  @openapi
+ *  /webhook/create-cross-discount:
+ *    post:
+ *      security:
+ *        - BearerAuth:
+ *      tags:
+ *        - Webhook
+ *      description: Create cross discount
+ *      requestBody:
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                shopAlias:
+ *                  type: string
+ *                title:
+ *                  type: string
+ *                code:
+ *                  type: string
+ *                percentage:
+ *                  type: string
+ *                collection:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *      responses:
+ *        200:
+ *          description: Returns JSON message
+ */
+router.post("/create-cross-discount", authenticateToken, async (req, res) => {
+  
+  try {
+    const { title, code, percentage, collection, email, shopAlias } = req.body;
+    const shopifyImp = new ShopifyImp(shopAlias);
+    const inputMutation = {
+      title,
+      code,
+      startsAt: new Date(),
+      endsAt: null,
+      combinesWith: {
+        productDiscounts: false,
+        orderDiscounts: false,
+        shippingDiscounts: false
+      },
+      appliesOncePerCustomer: true,
+      usageLimit: 1,
+      customerSelection: {
+        all: true
+      },
+      minimumRequirement: {
+        subtotal: {
+          greaterThanOrEqualToSubtotal: null
+        }
+      },
+      customerGets: {
+        value: {
+          percentage
+        },
+        items: {
+          all: false,
+          collections: {
+            add: [`gid://shopify/Collection/${collection}`],
+            remove: []
+          },
+          products: {
+            productsToAdd: [],
+            productsToRemove: [],
+            productVariantsToAdd: [],
+            productVariantsToRemove: []
+          }
+        },
+        appliesOnOneTimePurchase: true,
+        appliesOnSubscription: false
+      },
+      recurringCycleLimit: 1
+    }
+    const codeDiscountNode = await shopifyImp.createDiscountCode(inputMutation);
+
+    // Si ocurre un error al crear el código en Shopify
+    if (!codeDiscountNode) {
+      res.status(200).json({ message: "Error" })
+      return;
+    }
+
+    const klaviyo = new KlaviyoImp(shopAlias);
+    const response = klaviyo.sendEvent('Cross discount', email, { discountCode: code });
+    res.json({ message: 'Cross discount sent successfully to Klaviyo' });
+  } catch (err) {
+    console.log(err)
+    logger.error(err.message)
+    res.status(200).send({ message: err.message })
   }
 })
 

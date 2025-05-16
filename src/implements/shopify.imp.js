@@ -276,6 +276,21 @@ class ShopifyImp {
       }`
     )).data.order.lineItems.edges
   }
+
+  async createDiscountCode (input) {
+    const client = this.init();
+    return (await client.request(`mutation {
+    	discountCodeBasicCreate (basicCodeDiscount: ${input}) {
+        codeDiscountNode {
+          id
+        }
+        userErrors {
+          code
+        }
+      }
+    }`
+    )).data.discountCodeBasicCreate.codeDiscountNode
+  }
 }
 
 export default ShopifyImp;

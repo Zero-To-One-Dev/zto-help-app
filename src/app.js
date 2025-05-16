@@ -62,6 +62,7 @@ const EMAIL_HOST_HS = process.env.EMAIL_HOST_HS
 const EMAIL_USER_HS = process.env.EMAIL_USER_HS
 const EMAIL_PASSWORD_HS = process.env.EMAIL_PASSWORD_HS
 const EMAIL_PORT_HS = parseInt(process.env.EMAIL_PORT_HS || 587)
+const KLAVIYO_TOKEN_HS = process.env.KLAVIYO_TOKEN_HS;
 
 // CS
 export const SECRET_CS = process.env.SECRET_CS
@@ -81,6 +82,7 @@ const EMAIL_HOST_CS = process.env.EMAIL_HOST_CS
 const EMAIL_USER_CS = process.env.EMAIL_USER_CS
 const EMAIL_PASSWORD_CS = process.env.EMAIL_PASSWORD_CS
 const EMAIL_PORT_CS = parseInt(process.env.EMAIL_PORT_CS || 587)
+const KLAVIYO_TOKEN_CS = process.env.KLAVIYO_TOKEN_CS;
 
 // RS
 export const SECRET_RS = process.env.SECRET_RS
@@ -100,6 +102,7 @@ const EMAIL_HOST_RS = process.env.EMAIL_HOST_RS
 const EMAIL_USER_RS = process.env.EMAIL_USER_RS
 const EMAIL_PASSWORD_RS = process.env.EMAIL_PASSWORD_RS
 const EMAIL_PORT_RS = parseInt(process.env.EMAIL_PORT_RS || 587)
+const KLAVIYO_TOKEN_RS = process.env.KLAVIYO_TOKEN_RS;
 
 // VS
 export const SECRET_VS = process.env.SECRET_VS
@@ -119,6 +122,7 @@ const EMAIL_HOST_VS = process.env.EMAIL_HOST_VS
 const EMAIL_USER_VS = process.env.EMAIL_USER_VS
 const EMAIL_PASSWORD_VS = process.env.EMAIL_PASSWORD_VS
 const EMAIL_PORT_VS = parseInt(process.env.EMAIL_PORT_VS || 587)
+const KLAVIYO_TOKEN_VS = process.env.KLAVIYO_TOKEN_VS;
 
 // DM
 export const SECRET_DM = process.env.SECRET_DM
@@ -138,6 +142,7 @@ const EMAIL_HOST_DM = process.env.EMAIL_HOST_DM
 const EMAIL_USER_DM = process.env.EMAIL_USER_DM
 const EMAIL_PASSWORD_DM = process.env.EMAIL_PASSWORD_DM
 const EMAIL_PORT_DM = parseInt(process.env.EMAIL_PORT_DM || 587)
+const KLAVIYO_TOKEN_DM = process.env.KLAVIYO_TOKEN_DM;
 
 // MW
 export const SECRET_MW = process.env.SECRET_MW
@@ -157,6 +162,7 @@ const EMAIL_HOST_MW = process.env.EMAIL_HOST_MW
 const EMAIL_USER_MW = process.env.EMAIL_USER_MW
 const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW
 const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
+const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW;
 
 // Cancel Subscription Channels To Notify
 export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS = process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS;
@@ -310,4 +316,10 @@ export default {
   EMAIL_USER_MW,
   EMAIL_PASSWORD_MW,
   EMAIL_PORT_MW,
+  KLAVIYO_TOKEN_HS,
+  KLAVIYO_TOKEN_CS,
+  KLAVIYO_TOKEN_RS,
+  KLAVIYO_TOKEN_VS,
+  KLAVIYO_TOKEN_DM,
+  KLAVIYO_TOKEN_MW
 }
