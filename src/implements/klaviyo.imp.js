@@ -17,7 +17,7 @@ class KlaviyoImp {
     client.track(
       name,
       { '$email': email },      // Identificador de usuario
-      ...properties        // Propiedades del evento
+      properties        // Propiedades del evento
     )
     .then(() => console.log('Evento trackeado'))
     .catch(err => console.error('Error:', err));
