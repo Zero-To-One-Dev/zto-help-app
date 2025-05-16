@@ -290,7 +290,7 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
     const inputMutation = `{
       title: "${title}",
       code: "${code}",
-      startsAt: "${new Date()}",
+      startsAt: "2025-05-16T00:00:00Z",
       endsAt: null,
       combinesWith: {
         productDiscounts: false,
