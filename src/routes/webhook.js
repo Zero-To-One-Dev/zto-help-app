@@ -382,4 +382,27 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
   }
 })
 
+// GORGIAS API
+// apir_url: https://b2cresponse.gorgias.com/api/
+// user_name:jbecerra@zerotoonegroup.com
+// api_key: dcf04654f6ea2c7631c67fadd2ada87f255e262fdfb507485c437a1efecabc16
+router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
+  try {
+
+    const { ticket_id, data } = req.body
+    console.log({
+      ticket_id,
+      data,
+    });
+
+
+    res.json({ message: "Cross discount sent successfully to Klaviyo" })
+  } catch (err) {
+    console.log(err)
+    logger.error(err.message)
+    res.status(200).send({ message: err.message })
+  }
+})
+
+
 export default router
