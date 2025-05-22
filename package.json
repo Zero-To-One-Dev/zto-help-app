@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "tunnel": "ngrok http 3000",
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -27,10 +28,12 @@
     "express-bearer-token": "^3.0.0",
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
+    "googleapis": "^149.0.0",
     "graphql-request": "^7.1.2",
     "handlebars": "^4.7.8",
     "js-sha512": "^0.9.0",
     "klaviyo-node": "^1.0.8",
+    "ngrok": "^5.0.0-beta.2",
     "nodemailer": "^6.9.16",
     "nodemailer-express-handlebars": "^7.0.0",
     "pg": "^8.13.1",

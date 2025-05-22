@@ -92,6 +92,42 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
+    async saveTicket(ticketId, ticketTags, status, retries) {
+        const client = await this.init()
+        const query = {
+            name: 'save-ticket',
+            text: 'INSERT INTO gorgias_tickets (ticket_id, ticket_tags, status, retries) VALUES ($1, $2)',
+            values: [ticketId, ticketTags, status, retries]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
+    }
+
+    async getTicketById(ticketId) {
+        const client = await this.init()
+        const query = {
+            name: 'get-ticket-by-id',
+            text: 'SELECT * FROM gorgias_tickets WHERE ticket_id = $1 LIMIT 1',
+            values: [ticketId]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rows.length ? res.rows[0] : null;
+    }
+
+    async getTicketByStatus(status) {
+        const client = await this.init()
+        const query = {
+            name: 'get-ticket-by-id',
+            text: 'SELECT * FROM gorgias_tickets WHERE status = $1 LIMIT 1',
+            values: [status]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rows.length ? res.rows[0] : null;
+    }
+
     async getLastDraftOrderBySubscription(shopAlias, subscription) {
         const client = await this.init()
         const query = {

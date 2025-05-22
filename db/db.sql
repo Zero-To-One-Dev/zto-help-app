@@ -21,8 +21,8 @@ CREATE TABLE draft_orders(
     subscription VARCHAR NOT NULL,
     payment_due TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '3 days')::TIMESTAMP,
     status draft_order_status DEFAULT 'UNPROCESSED',
-    message VARCHAR NULL
-    cancel_session_id VARCHAR NOT NULL,
+    message VARCHAR NULL,
+    cancel_session_id VARCHAR NOT NULL
 );
 
 /* Creación de ENUM para status */
@@ -36,6 +36,13 @@ CREATE TABLE app_tokens(
     status token_status NOT NULL,
     due_date TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '10 years')::TIMESTAMP,
     suffix_api_token VARCHAR(4)
+);
+
+/* Creación de tabla tickets */
+CREATE TABLE gorgias_tickets (
+    id SERIAL PRIMARY KEY,
+    ticket_id VARCHAR NOT NULL UNIQUE,
+    ticket_tags VARCHAR NOT NULL
 );
 
 

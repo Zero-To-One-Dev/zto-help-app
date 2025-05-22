@@ -12,6 +12,8 @@ import {
   setDraftOrderStatus,
   deleteDraftOrder,
 } from "../services/draft-orders.js"
+import { getTicket, cleanMessage, sendMessageTicket, emailSender } from "../services/gorgias.js"
+import { openAIMessage, extractInfluencerData } from "../services/openai.js"
 import MessageImp from "../implements/slack.imp.js"
 import ShopifyImp from "../implements/shopify.imp.js"
 import KlaviyoImp from "../implements/klaviyo.imp.js"
@@ -382,21 +384,62 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
   }
 })
 
-// GORGIAS API
-// apir_url: https://b2cresponse.gorgias.com/api/
-// user_name:jbecerra@zerotoonegroup.com
-// api_key: dcf04654f6ea2c7631c67fadd2ada87f255e262fdfb507485c437a1efecabc16
 router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
   try {
+    const ticketId = req.body.ticket_id
 
-    const { ticket_id, data } = req.body
-    console.log({
-      ticket_id,
-      data,
-    });
+    const ticket = await getTicket(ticketId)
+    if (!ticket) {
+      res.status(404).json({ message: "Ticket not found" })
+      return
+    }
+
+    const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
+    const ticketStatus = ticket.status
+    const ticketMessages = ticket.messages
+    const ticketMessagesStr = ticket.messages.map((message, i) => {
+      if(i == 0) {
+        return cleanMessage(`Customer: ${ticket.customer.name}.\nMessage: ${message.body_text}.`)
+      } else if (ticket.customer.name == message.sender.name) {
+        return cleanMessage(`Customer: ${message.sender.name}.\nMessage: ${message.body_text}.`)
+      } else {
+        return cleanMessage(`${message.body_text}.`)
+      }
+    }).join("\n")
+    const lastSender = ticketMessages[ticketMessages.length - 1].sender.email || ""
+    const firstMessage = ticketMessages[0]
+    const ticketChannel = ticket.channel
+    const ticketSource = {
+      from: {
+        name: firstMessage.source.to[0].name,
+        address: firstMessage.source.to[0].address,
+      },
+      type: `${ticketChannel}`,
+      to: [
+        {
+          name: firstMessage.source.from.name,
+          address: firstMessage.source.from.address,
+        },
+      ]
+    }
+    const reciever = { 
+      id: ticket.customer.id,
+      name: ticket.customer.name 
+    }
 
 
-    res.json({ message: "Cross discount sent successfully to Klaviyo" })
+    if (ticketTags.toLowerCase().includes("test juanma")) {
+      if (lastSender != emailSender) {
+        // const message = await openAIMessage(ticketMessagesStr)
+        // console.log(message);
+        // await sendMessageTicket(ticketId, message, ticketChannel, ticketSource, reciever)
+      }
+      // const customerData = await extractInfluencerData(ticketMessagesStr)
+      // console.log(customerData);
+      // console.log(ticketMessagesStr);
+    }
+
+    res.json({ message: "Influencer ticket successfully respond" })
   } catch (err) {
     console.log(err)
     logger.error(err.message)
