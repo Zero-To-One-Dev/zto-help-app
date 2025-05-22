@@ -1,10 +1,14 @@
+import { WebClient } from "@slack/web-api"
 import {
   CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS,
   UPDATE_ADDRESS_NOTIFY_CHANNELS,
 } from "../app.js"
 
 class SlackImp {
-  init() {}
+  init() {
+    const client = new WebClient(process.env.SLACK_BOT_TOKEN)
+    return client
+  }
 
   async sendMessage(channel, message, title) {
     try {
