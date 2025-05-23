@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "tunnel": "ngrok http 3000",
+    "processTicket": "",
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -96,7 +96,7 @@ class PostgreSQLRepository {
         const client = await this.init()
         const query = {
             name: 'save-ticket',
-            text: 'INSERT INTO gorgias_tickets (ticket_id, ticket_tags, status, retries) VALUES ($1, $2)',
+            text: 'INSERT INTO gorgias_tickets (ticket_id, tags, status, retries) VALUES ($1, $2, $3, $4) ON CONFLICT (ticket_id) DO NOTHING',
             values: [ticketId, ticketTags, status, retries]
         }
         const res = await client.query(query)
@@ -126,6 +126,42 @@ class PostgreSQLRepository {
         const res = await client.query(query)
         await client.end()
         return res.rows.length ? res.rows[0] : null;
+    }
+
+    async updateTicketStatus(ticketId, status) {
+        const client = await this.init()
+        const query = {
+            name: 'update-ticket-status',
+            text: 'UPDATE gorgias_tickets SET status = $1 WHERE ticket_id = $2',
+            values: [status, ticketId]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
+    }
+
+    async incrementRetries(ticketId) {
+        const client = await this.init()
+        const query = {
+          name: 'increment-ticket-retries',
+          text: 'UPDATE gorgias_tickets SET retries = retries + 1 WHERE ticket_id = $1',
+          values: [ticketId]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0;
+    }
+
+    async getErroredTicketsToRetry(maxRetries = 3) {
+        const client = await this.init()
+        const query = {
+          name: 'get-errored-tickets-to-retry',
+          text: 'SELECT * FROM gorgias_tickets WHERE status = $1 AND retries < $2',
+          values: ['ERROR', maxRetries]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rows;
     }
 
     async getLastDraftOrderBySubscription(shopAlias, subscription) {

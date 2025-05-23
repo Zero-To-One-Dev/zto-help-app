@@ -38,11 +38,16 @@ CREATE TABLE app_tokens(
     suffix_api_token VARCHAR(4)
 );
 
+/* Crear tipo de ticket_status */
+CREATE TYPE ticket_status AS ENUM('UNPROCESSED', 'PROCESSING', 'COMPLETED', 'ERROR');
+
 /* Creación de tabla tickets */
 CREATE TABLE gorgias_tickets (
-    id SERIAL PRIMARY KEY,
-    ticket_id VARCHAR NOT NULL UNIQUE,
-    ticket_tags VARCHAR NOT NULL
+  id SERIAL PRIMARY KEY,
+  ticket_id TEXT NOT NULL UNIQUE,
+  tags TEXT NOT NULL,
+  status ticket_status DEFAULT 'UNPROCESSED',
+  retries INTEGER DEFAULT 0
 );
 
 
