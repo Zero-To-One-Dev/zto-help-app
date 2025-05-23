@@ -12,7 +12,12 @@ import {
   setDraftOrderStatus,
   deleteDraftOrder,
 } from "../services/draft-orders.js"
-import { getTicket, cleanMessage, sendMessageTicket, emailSender } from "../services/gorgias.js"
+import {
+  getTicket,
+  cleanMessage,
+  sendMessageTicket,
+  emailSender,
+} from "../services/gorgias.js"
 import { openAIMessage, extractInfluencerData } from "../services/openai.js"
 import MessageImp from "../implements/slack.imp.js"
 import ShopifyImp from "../implements/shopify.imp.js"
@@ -313,7 +318,15 @@ router.post(
  */
 router.post("/create-cross-discount", authenticateToken, async (req, res) => {
   try {
-    const { title, code, percentage, endDate, email, shopAlias } = req.body
+    const {
+      title,
+      code,
+      percentage,
+      endDate,
+      email,
+      shopAlias,
+      klaviyoShopAlias,
+    } = req.body
 
     const shopifyImp = new ShopifyImp(shopAlias)
 
@@ -372,8 +385,8 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
       return
     }
 
-    const klaviyo = new KlaviyoImp(shopAlias)
-    const response = klaviyo.sendEvent("Cross discount", email, {
+    const klaviyo = new KlaviyoImp(klaviyoShopAlias)
+    klaviyo.sendEvent("Cross discount", email, {
       discountCode: code,
     })
     res.json({ message: "Cross discount sent successfully to Klaviyo" })
@@ -384,68 +397,77 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
   }
 })
 
-router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
-  try {
-    const ticketId = req.body.ticket_id
+router.post(
+  "/check-influencers-mesagges",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const ticketId = req.body.ticket_id
 
-    const ticket = await getTicket(ticketId)
-    if (!ticket) {
-      res.status(404).json({ message: "Ticket not found" })
-      return
-    }
-
-    const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
-    const ticketStatus = ticket.status
-    const ticketMessages = ticket.messages
-    const ticketMessagesStr = ticket.messages.map((message, i) => {
-      if(i == 0) {
-        return cleanMessage(`Customer: ${ticket.customer.name}.\nMessage: ${message.body_text}.`)
-      } else if (ticket.customer.name == message.sender.name) {
-        return cleanMessage(`Customer: ${message.sender.name}.\nMessage: ${message.body_text}.`)
-      } else {
-        return cleanMessage(`${message.body_text}.`)
+      const ticket = await getTicket(ticketId)
+      if (!ticket) {
+        res.status(404).json({ message: "Ticket not found" })
+        return
       }
-    }).join("\n")
-    const lastSender = ticketMessages[ticketMessages.length - 1].sender.email || ""
-    const firstMessage = ticketMessages[0]
-    const ticketChannel = ticket.channel
-    const ticketSource = {
-      from: {
-        name: firstMessage.source.to[0].name,
-        address: firstMessage.source.to[0].address,
-      },
-      type: `${ticketChannel}`,
-      to: [
-        {
-          name: firstMessage.source.from.name,
-          address: firstMessage.source.from.address,
+
+      const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
+      const ticketStatus = ticket.status
+      const ticketMessages = ticket.messages
+      const ticketMessagesStr = ticket.messages
+        .map((message, i) => {
+          if (i == 0) {
+            return cleanMessage(
+              `Customer: ${ticket.customer.name}.\nMessage: ${message.body_text}.`
+            )
+          } else if (ticket.customer.name == message.sender.name) {
+            return cleanMessage(
+              `Customer: ${message.sender.name}.\nMessage: ${message.body_text}.`
+            )
+          } else {
+            return cleanMessage(`${message.body_text}.`)
+          }
+        })
+        .join("\n")
+      const lastSender =
+        ticketMessages[ticketMessages.length - 1].sender.email || ""
+      const firstMessage = ticketMessages[0]
+      const ticketChannel = ticket.channel
+      const ticketSource = {
+        from: {
+          name: firstMessage.source.to[0].name,
+          address: firstMessage.source.to[0].address,
         },
-      ]
-    }
-    const reciever = { 
-      id: ticket.customer.id,
-      name: ticket.customer.name 
-    }
-
-
-    if (ticketTags.toLowerCase().includes("test juanma")) {
-      if (lastSender != emailSender) {
-        // const message = await openAIMessage(ticketMessagesStr)
-        // console.log(message);
-        // await sendMessageTicket(ticketId, message, ticketChannel, ticketSource, reciever)
+        type: `${ticketChannel}`,
+        to: [
+          {
+            name: firstMessage.source.from.name,
+            address: firstMessage.source.from.address,
+          },
+        ],
       }
-      // const customerData = await extractInfluencerData(ticketMessagesStr)
-      // console.log(customerData);
-      // console.log(ticketMessagesStr);
+      const reciever = {
+        id: ticket.customer.id,
+        name: ticket.customer.name,
+      }
+
+      if (ticketTags.toLowerCase().includes("test juanma")) {
+        if (lastSender != emailSender) {
+          // const message = await openAIMessage(ticketMessagesStr)
+          // console.log(message);
+          // await sendMessageTicket(ticketId, message, ticketChannel, ticketSource, reciever)
+        }
+        // const customerData = await extractInfluencerData(ticketMessagesStr)
+        // console.log(customerData);
+        // console.log(ticketMessagesStr);
+      }
+
+      res.json({ message: "Influencer ticket successfully respond" })
+    } catch (err) {
+      console.log(err)
+      logger.error(err.message)
+      res.status(200).send({ message: err.message })
     }
-
-    res.json({ message: "Influencer ticket successfully respond" })
-  } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(200).send({ message: err.message })
   }
-})
-
+)
 
 export default router
