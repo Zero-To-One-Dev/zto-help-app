@@ -12,10 +12,14 @@ const generateHashApiToken = async (nameApp, secret) => {
 }
 
 (async () => {
+    /*
     await generateHashApiToken('hotshapers', SECRET_HS);
     await generateHashApiToken('copperslim', SECRET_CS);
     await generateHashApiToken('redusculpt', SECRET_RS);
     await generateHashApiToken('vibrosculpt', SECRET_VS);
     await generateHashApiToken('drming', SECRET_DM);
     await generateHashApiToken('myway', SECRET_MW);
+    */
+   // This is for Shopify, for HS
+   await generateHashApiToken('shopify_hs', 'zerotoonegroup');
 })();
