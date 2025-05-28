@@ -391,7 +391,52 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
     logger.error(err.message)
     res.status(200).send({ message: err.message })
   }
-})
+});
+
+/**
+ *  @openapi
+ *  /webhook/purchase-camihotsize-m:
+ *    post:
+ *      security:
+ *        - BearerAuth:
+ *      tags:
+ *        - Webhook
+ *      description: Purchase CamiHotSize M. Send a email to customers who buy CamiHotSize M.
+ *      requestBody:
+ *        content:
+ *          application/json: 
+ *            schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                  description: The email of the customer
+ *                shortNameStore:
+ *                  type: string
+ *                  description: The shortname of the source store
+ *      responses:
+ *        200:
+ *          description: Returns JSON message
+ */
+router.post("/purchase-camihotsize-m", authenticateToken, async (req, res) => {
+  try {
+    const {
+      email,
+      shortNameStore,
+    } = req.body;
+    const klaviyo = new KlaviyoImp(shortNameStore);
+    const nameEvent = "ZTO: HS CamiHotSize M";
+    await klaviyo.sendEvent(nameEvent, email, {
+      nameEvent: nameEvent,
+    });
+
+    res.json({ message: "'ZTO: HS CamiHotSize M' event sent successfully to Klaviyo." })
+  } catch (err) {
+    console.log(err)
+    logger.error(err.message)
+    res.status(200).send({ message: err.message })
+  }
+});
 
 router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
   //classes
