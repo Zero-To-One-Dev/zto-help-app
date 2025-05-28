@@ -425,12 +425,12 @@ router.post("/purchase-camihotsize-m", authenticateToken, async (req, res) => {
       shortNameStore,
     } = req.body;
     const klaviyo = new KlaviyoImp(shortNameStore);
-    const nameEvent = "ZTO: HS CamiHotSize M";
+    const nameEvent = "ZTO HS CamiHotSize M";
     await klaviyo.sendEvent(nameEvent, email, {
       nameEvent: nameEvent,
     });
 
-    res.json({ message: "'ZTO: HS CamiHotSize M' event sent successfully to Klaviyo." })
+    res.json({ message: "'ZTO HS CamiHotSize M' event sent successfully to Klaviyo." })
   } catch (err) {
     console.log(err)
     logger.error(err.message)
