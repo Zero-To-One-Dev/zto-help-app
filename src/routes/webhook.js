@@ -620,6 +620,41 @@ router.post(
 
 router.post("/slack-app", async (req, res) => {
   console.log({ req, res })
+  const modal = {
+    trigger_id: "survey_report",
+    view: {
+      type: "modal",
+      callback_id: "url_submission",
+      title: { type: "plain_text", text: "Enviar URL" },
+      submit: { type: "plain_text", text: "Enviar" },
+      close: { type: "plain_text", text: "Cancelar" },
+      blocks: [
+        {
+          type: "input",
+          block_id: "url_input",
+          label: { type: "plain_text", text: "Ingresa una URL" },
+          element: {
+            type: "plain_text_input",
+            action_id: "url",
+            placeholder: { type: "plain_text", text: "https://ejemplo.com" },
+          },
+        },
+      ],
+    },
+  }
+
+  await fetch("https://slack.com/api/views.open", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(modal),
+  })
+
+  return res.status(200).json({
+    message: "Slack app successfully processed.",
+  })
 })
 
 export default router
