@@ -624,7 +624,7 @@ router.post("/slack-app", async (req, res) => {
     trigger_id: "survey_report",
     view: {
       type: "modal",
-      callback_id: "url_submission",
+      callback_id: "survey_report",
       title: { type: "plain_text", text: "Enviar URL" },
       submit: { type: "plain_text", text: "Enviar" },
       close: { type: "plain_text", text: "Cancelar" },
