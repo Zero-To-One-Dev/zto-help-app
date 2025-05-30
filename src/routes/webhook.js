@@ -618,7 +618,7 @@ router.post(
   }
 )
 
-router.post("/slack-app", null, async (req, res) => {
+router.post("/slack-app", async (req, res) => {
   console.log(req.body)
 })
 
