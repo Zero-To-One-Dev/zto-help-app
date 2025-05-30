@@ -527,27 +527,20 @@ router.post(
       if (dbTicket) {
         // 1.1 Ya existe: validar si puede continuar
         if (dbTicket.status === "COMPLETED") {
-          return res
-            .status(200)
-            .json({
-              message: `Ticket ${ticketId} is already ${dbTicket.status}. Skipping.`,
-            })
+          return res.status(200).json({
+            message: `Ticket ${ticketId} is already ${dbTicket.status}. Skipping.`,
+          })
         } else if (dbTicket.status === "ERROR" && dbTicket.retries >= 3) {
-          return res
-            .status(200)
-            .json({
-              message: `Ticket ${ticketId} failed too many times. Skipping.`,
-            })
+          return res.status(200).json({
+            message: `Ticket ${ticketId} failed too many times. Skipping.`,
+          })
         }
 
         // 1.2 Si viene sin el tag de test juanma, no lo procesamos
         if (!ticketTags.toLowerCase().includes("test juanma")) {
-          return res
-            .status(200)
-            .json({
-              message:
-                "Ticket already exists but does not match tag. Skipping.",
-            })
+          return res.status(200).json({
+            message: "Ticket already exists but does not match tag. Skipping.",
+          })
         }
         // 1.3 Pasa ticket a processing
         await dbRepository.updateTicketStatus(ticketId, "PROCESSING")
@@ -556,11 +549,9 @@ router.post(
         await dbRepository.saveTicket(ticketId, ticketTags, "UNPROCESSED", 0)
         // 1.5 Si aún no tiene el tag, se ignora
         if (!ticketTags.toLowerCase().includes("test juanma")) {
-          return res
-            .status(200)
-            .json({
-              message: "Ticket saved as UNPROCESSED. Tag not matched yet.",
-            })
+          return res.status(200).json({
+            message: "Ticket saved as UNPROCESSED. Tag not matched yet.",
+          })
         }
       }
 
@@ -627,7 +618,7 @@ router.post(
   }
 )
 
-router.post("/slack-app", authenticateToken, async (req, res) => {
+router.post("/slack-app", null, async (req, res) => {
   console.log(req.body)
 })
 
