@@ -662,10 +662,12 @@ router.post(
       const google = new GoogleImp()
       const slack = new SlackImp()
 
-      const [sheetUrl, sheetName] = text.split(" ")
+      let [sheetUrl, sheetName] = text.split(" ")
       const spreadsheetId = sheetUrl
         .replace("https://docs.google.com/spreadsheets/d/", "")
         .split("/")[0]
+
+      sheetName = sheetName.replace("*", "")
 
       res.status(200).json({
         response_type: "ephemeral",
