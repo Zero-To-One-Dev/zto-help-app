@@ -1,6 +1,8 @@
 import { Router } from "express"
+import express from "express"
 import logger from "../../logger.js"
 import app, { SHOPS_ORIGIN } from "../app.js"
+import fs from "fs"
 import bearerToken from "express-bearer-token"
 import Mailer from "../implements/nodemailer.imp.js"
 import { authenticateToken } from "../middlewares/authenticate-token.js"
@@ -18,6 +20,12 @@ import {
 import MessageImp from "../implements/slack.imp.js"
 import ShopifyImp from "../implements/shopify.imp.js"
 import KlaviyoImp from "../implements/klaviyo.imp.js"
+import SlackImp from "../implements/slack.imp.js"
+import {
+  analyzeSurvey,
+  generateExcelReport,
+  parseSurveyData,
+} from "../services/survey-utils.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -618,43 +626,83 @@ router.post(
   }
 )
 
-router.post("/slack-app", async (req, res) => {
-  console.log({ req, res })
-  const modal = {
-    trigger_id: "survey_report",
-    view: {
-      type: "modal",
-      callback_id: "survey_report",
-      title: { type: "plain_text", text: "Enviar URL" },
-      submit: { type: "plain_text", text: "Enviar" },
-      close: { type: "plain_text", text: "Cancelar" },
-      blocks: [
-        {
-          type: "input",
-          block_id: "url_input",
-          label: { type: "plain_text", text: "Ingresa una URL" },
-          element: {
-            type: "plain_text_input",
-            action_id: "url",
-            placeholder: { type: "plain_text", text: "https://ejemplo.com" },
-          },
-        },
-      ],
-    },
+/**
+ *  @openapi
+ *  /slack-app:
+ *    post:
+ *      tags:
+ *        - Webhook
+ *      description: Slack App. Send a email to customers who buy CamiHotSize M.
+ *      requestBody:
+ *        content:
+ *          application/x-www-form-urlencoded:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                command:
+ *                  type: string
+ *                  description: The command of the webhook
+ *                text:
+ *                  type: string
+ *                  description: The text of the webhook
+ *                channel_id:
+ *                  type: string
+ *                  description: The channel id of the webhook
+ *      responses:
+ *        200:
+ *          description: Returns JSON message
+ */
+router.post(
+  "/slack-app",
+  express.urlencoded({ extended: true }),
+  async (req, res) => {
+    const { command, text, channel_id } = req.body
+
+    if (command === "/survey-report") {
+      const google = new GoogleImp()
+      const slack = new SlackImp()
+
+      const [sheetUrl, sheetName] = text.split(" ")
+      const spreadsheetId = sheetUrl
+        .replace("https://docs.google.com/spreadsheets/d/", "")
+        .split("/")[0]
+
+      res.status(200).json({
+        response_type: "ephemeral",
+        text: `El reporte para ${sheetName} será enviado en breve 👨🏻‍💻`,
+      })
+
+      const rawData = await google.getValues(
+        spreadsheetId,
+        `${sheetName}!A1:HZ`
+      )
+
+      const parsedData = parseSurveyData(rawData)
+      const stats = analyzeSurvey(parsedData)
+
+      const filePath = await generateExcelReport(stats, parsedData)
+
+      await slack.uploadFile(
+        filePath,
+        channel_id,
+        "Aqui tienes tu reporte de encuestas ✅",
+        "survey-report.xlsx",
+        sheetName
+      )
+
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`Error deleting file ${filePath}:`, err)
+        } else {
+          console.log(`Deleted file: ${filePath}`)
+        }
+      })
+
+      return null
+    }
+
+    return res.status(200).json({ message: "Comando no reconocido." })
   }
-
-  await fetch("https://slack.com/api/views.open", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(modal),
-  })
-
-  return res.status(200).json({
-    message: "Slack app successfully processed.",
-  })
-})
+)
 
 export default router

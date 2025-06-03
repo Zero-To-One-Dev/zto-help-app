@@ -2,16 +2,16 @@ import { google } from "googleapis"
 
 class GoogleImp {
   async init() {
-    const client = await google.auth.getClient({
+    const auth = await google.auth.getClient({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       },
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
-    const sheets = await google.sheets({ version: "v4", auth: client })
+    const sheets = await google.sheets({ version: "v4", auth })
 
-    return { client, sheets }
+    return { auth, sheets }
   }
   async appendValues(spreadsheetId, range, values) {
     const { sheets } = await this.init()

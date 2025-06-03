@@ -1,3 +1,4 @@
+import fs from "fs"
 import { WebClient } from "@slack/web-api"
 import {
   CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS,
@@ -8,6 +9,23 @@ class SlackImp {
   init() {
     const client = new WebClient(process.env.SLACK_BOT_TOKEN)
     return client
+  }
+
+  async uploadFile(filePath, channel_id, message = "", filename, title) {
+    const client = await this.init()
+    const result = await client.files.uploadV2({
+      channel_id,
+      initial_comment: message,
+      file: fs.createReadStream(filePath),
+      filename,
+      title,
+    })
+
+    if (!result.ok) {
+      throw new Error(`Error subiendo archivo a Slack: ${result.error}`)
+    }
+
+    return result.file
   }
 
   async sendMessage(channel, message, title) {
