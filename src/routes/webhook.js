@@ -667,7 +667,7 @@ router.post(
       const spreadsheetId = sheetUrl
         .replace("https://docs.google.com/spreadsheets/d/", "")
         .split("/")[0]
-      sheetName = text.replace(`${url} `, "").replace("*", "")
+      sheetName = text.replace(`${sheetUrl} `, "").replace("*", "")
 
       res.status(200).json({
         response_type: "ephemeral",
