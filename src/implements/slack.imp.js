@@ -22,7 +22,7 @@ class SlackImp {
     })
 
     if (!result.ok) {
-      throw new Error(`Error subiendo archivo a Slack: ${result.error}`)
+      throw new Error(`Error uploading file: ${result.error}`)
     }
 
     return result.file
