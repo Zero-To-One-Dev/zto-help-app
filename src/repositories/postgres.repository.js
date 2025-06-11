@@ -140,6 +140,18 @@ class PostgreSQLRepository {
         return res.rowCount > 0;
     }
 
+    async updateTicketTags(ticketId, tags) {
+        const client = await this.init()
+        const query = {
+          name: 'update-ticket-tags',
+          text: 'UPDATE gorgias_tickets SET tags = $1 WHERE ticket_id = $2',
+          values: [tags, ticketId]
+        }
+        const res = await client.query(query)
+        await client.end()
+        return res.rowCount > 0
+      }
+
     async incrementRetries(ticketId) {
         const client = await this.init()
         const query = {
@@ -150,6 +162,44 @@ class PostgreSQLRepository {
         const res = await client.query(query)
         await client.end()
         return res.rowCount > 0;
+    }
+
+    async getTicketsByStatus(statuses = []) {
+        const client = await this.init();
+        const placeholders = statuses.map((_, i) => `$${i + 1}`).join(', ');
+        const query = {
+          name: 'get-tickets-by-status-list',
+          text: `SELECT * FROM gorgias_tickets WHERE status IN (${placeholders})`,
+          values: statuses
+        };
+        const res = await client.query(query);
+        await client.end();
+        return res.rows;
+    }
+
+    async getTicketsByStatusAndTags(statuses = [], tags = []) {
+        const client = await this.init();
+
+        // Generar placeholders para status
+        const statusPlaceholders = statuses.map((_, i) => `$${i + 1}`).join(', ');
+
+        // Generar condiciones para tags usando ILIKE
+        const tagConditions = tags.map((_, i) => `tags ILIKE $${i + 1 + statuses.length}`).join(' OR ');
+
+        const whereClause = `
+            status IN (${statusPlaceholders})
+            ${tags.length ? `AND (${tagConditions})` : ''}
+        `;
+
+        const query = {
+            name: 'get-tickets-by-status-and-tags',
+            text: `SELECT * FROM gorgias_tickets WHERE ${whereClause}`,
+            values: [...statuses, ...tags.map(tag => `%${tag}%`)]
+        };
+
+        const res = await client.query(query);
+        await client.end();
+        return res.rows;
     }
 
     async getErroredTicketsToRetry(maxRetries = 3) {

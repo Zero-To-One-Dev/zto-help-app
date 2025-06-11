@@ -9,7 +9,6 @@ import { authenticateToken } from "../middlewares/authenticate-token.js"
 import SubscriptionImp from "../implements/skio.imp.js"
 import GorgiasImp from "../implements/gorgias.imp.js"
 import GoogleImp from "../implements/google.imp.js"
-import OpenAIImp from "../implements/openai.imp.js"
 import DBRepository from "../repositories/postgres.repository.js"
 import path from "node:path"
 import {
@@ -445,186 +444,36 @@ router.post("/purchase-camihotsize-m", authenticateToken, async (req, res) => {
   }
 })
 
-router.post(
-  "/check-influencers-mesagges",
-  authenticateToken,
-  async (req, res) => {
-    //classes
-    const gorgias = new GorgiasImp()
-    const openAI = new OpenAIImp()
-    const google = new GoogleImp()
-    //utils
-    const emailSender = gorgias.emailSender
-    const spreadsheetId = process.env.SHEET_ID
-    const createMessagePromt = `
-    You are a professional customer service assistant specialized in responding to influencer collaboration messages. You always respond with kindness, professionalism, and clarity.
+router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
+  const gorgias = new GorgiasImp();
+  const ticketId = req.body.ticket_id;
 
-    Your tasks:
-    1. Respond to the customer based on the conversation history provided.
-    2. Always reply in the **same language** as the customer. If the last customer message is in English, you must respond in English. If in Spanish, respond in Spanish.
-    3. Always capitalize the **first letter of each sentence**.
-    4. Do NOT include labels like "Sender:" or "Message:" in your reply.
-    5. Never mention that you are an AI, assistant, or bot.
-    6. If the customer has already provided a name and at least one social media (Instagram or TikTok), thank them and confirm that the info was received. Do NOT ask for more info.
-    7. If the customer has not provided that, ask politely and concisely for the missing info (name and at least one social media), dont forget to ask about their email or phone number too but keep in mind that email and phone number are optional.
-    8. Keep your response short and friendly, and never sign with a name or role.
+  try {
+    const ticketDB = await dbRepository.getTicketById(ticketId);
+    const ticketDBTags = ticketDB ? ticketDB.tags : null;
 
-    Now write the appropriate response to the customer based on this conversation:
-  `
-    const extractDataPromt = `
-    Your task is to extract structured data from influencer/customer messages. Return the information as a single JSON object with the following keys: "name", "email", "instagram", "tiktok", "phone", and "notes".
-    If any field is not present, set its value to ''.
-    If the same information appears more than once in the message history (e.g., the same email or Instagram), and it is clearly the same user, return only one JSON object, not duplicates.
-    If the user provides the same social media twice (e.g., two Instagram accounts), return only the last one.
-    If the user has provided a name and at least one social media (Instagram or TikTok), create a key called "confirmed" with a value of true as a boolean not string, otherwise is false.
-    The data that you extract has to be only one object and it's keys values most be strings strings values, not arrays or objects.
-  `
-    try {
-      //getting ticket data
-      const ticketId = req.body.ticket_id
-      const ticket = await gorgias.getTicket(ticketId)
-      if (!ticket) return res.status(404).json({ message: "Ticket not found" })
+    const ticket = await gorgias.getTicket(ticketId);
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    const ticketTags = ticket.tags.map(tag => tag.name).join(", ");
+    console.log({ ticketId, ticketTags })
 
-      const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
-      const ticketMessages = ticket.messages
-      let ticketMessagesStr = ""
-      if (ticketMessages.length > 0) {
-        ticketMessagesStr = ticketMessages
-          .map((message, index) => {
-            if (index == 0) {
-              return gorgias.cleanMessage(
-                `Customer: ${ticket.customer.name}.\nMessage: ${message.body_text}.`
-              )
-            } else if (ticket.customer.name == message.sender.name) {
-              return gorgias.cleanMessage(
-                `Customer: ${message.sender.name}.\nMessage: ${message.body_text}.`
-              )
-            } else {
-              return gorgias.cleanMessage(`${message.body_text}.`)
-            }
-          })
-          .join("\n")
+    if (ticketDB) {
+      if (ticketDBTags != ticketTags) {
+        await dbRepository.updateTicketTags(ticketId, ticketTags);
+        console.log(`✅ Ticket ${ticketId} updated in DB`);
       }
-      const lastSender =
-        ticketMessages[ticketMessages.length - 1].sender.email || ""
-      const firstMessage = ticketMessages[0]
-      const ticketChannel = ticket.channel
-      const ticketSource = {
-        from: {
-          name: firstMessage.source.to[0].name,
-          address: firstMessage.source.to[0].address,
-        },
-        type: `${ticketChannel}`,
-        to: [
-          {
-            name: firstMessage.source.from.name,
-            address: firstMessage.source.from.address,
-          },
-        ],
-      }
-      const reciever = {
-        id: ticket.customer.id,
-        name: ticket.customer.name,
-      }
-
-      console.log({ ticketId, ticketTags })
-      //COMIENZA EL PROCESO
-      // 1. Consultar ticket en base de datos
-      const dbTicket = await dbRepository.getTicketById(ticketId)
-
-      if (dbTicket) {
-        // 1.1 Ya existe: validar si puede continuar
-        if (dbTicket.status === "COMPLETED") {
-          return res.status(200).json({
-            message: `Ticket ${ticketId} is already ${dbTicket.status}. Skipping.`,
-          })
-        } else if (dbTicket.status === "ERROR" && dbTicket.retries >= 3) {
-          return res.status(200).json({
-            message: `Ticket ${ticketId} failed too many times. Skipping.`,
-          })
-        }
-
-        // 1.2 Si viene sin el tag de test juanma, no lo procesamos
-        if (!ticketTags.toLowerCase().includes("test juanma")) {
-          return res.status(200).json({
-            message: "Ticket already exists but does not match tag. Skipping.",
-          })
-        }
-        // 1.3 Pasa ticket a processing
-        await dbRepository.updateTicketStatus(ticketId, "PROCESSING")
-      } else {
-        // 1.4 No existe aún: guardar como UNPROCESSED
-        await dbRepository.saveTicket(ticketId, ticketTags, "UNPROCESSED", 0)
-        // 1.5 Si aún no tiene el tag, se ignora
-        if (!ticketTags.toLowerCase().includes("test juanma")) {
-          return res.status(200).json({
-            message: "Ticket saved as UNPROCESSED. Tag not matched yet.",
-          })
-        }
-      }
-
-      // 2. Procesar ticket
-      // 2.1 Responder automáticamente si el último mensaje no fue del bot
-      if (lastSender !== emailSender) {
-        const messageReply = await openAI.openAIMessage(
-          createMessagePromt,
-          ticketMessagesStr
-        )
-        await gorgias.sendMessageTicket(
-          ticketId,
-          messageReply,
-          ticketChannel,
-          ticketSource,
-          reciever
-        )
-      }
-      // 2.2 Extraer datos del cliente
-      const customerData = await openAI.extractInfluencerData(
-        extractDataPromt,
-        ticketMessagesStr
-      )
-      console.log(customerData)
-      // 2.3 Validar y guardar en Google Sheets
-      if (
-        customerData.confirmed === true ||
-        customerData.confirmed === "true"
-      ) {
-        await google.appendValues(spreadsheetId, "Hoja 2", [
-          [
-            ticketTags,
-            customerData.instagram,
-            customerData.tiktok,
-            customerData.name,
-            customerData.email,
-            customerData.phone,
-            customerData.notes,
-          ],
-        ])
-        // 2.4 Actualizar estado a COMPLETED
-        await dbRepository.updateTicketStatus(ticketId, "COMPLETED")
-        return res.json({
-          message: "Influencer ticket successfully processed.",
-        })
-      }
-    } catch (err) {
-      console.error(err)
-      logger.error(err.message)
-
-      // fallback: marcar como ERROR y sumar retries
-      try {
-        const dbTicket = await dbRepository.getTicketById(req.body.ticket_id)
-        if (dbTicket) {
-          await dbRepository.updateTicketStatus(dbTicket.ticket_id, "ERROR")
-          await dbRepository.incrementRetries(dbTicket.ticket_id)
-        }
-      } catch (dbErr) {
-        logger.error(`Retry handling failed: ${dbErr.message}`)
-      }
-
-      return res.status(200).json({ message: err.message })
+      console.log(`ℹ️ Ticket ${ticketId} already exists in DB`);
+    } else {
+      await dbRepository.saveTicket(ticketId, ticketTags, 'UNPROCESSED', 0);
+      console.log(`✅ Ticket ${ticketId} saved as UNPROCESSED`);
     }
+
+    return res.status(200).json({ message: "Ticket captured" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal error" });
   }
-)
+});
 
 /**
  *  @openapi

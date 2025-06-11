@@ -3,8 +3,8 @@ const encodedAuth = process.env.GORGIAS_API_KEY;
 
 class GorgiasImp {
   constructor(emailSender = 'support@b2cresponse.gorgias.io') {
-    this.baseURL = baseURL;
-    this.authHeader = encodedAuth;
+    this.baseURL = process.env.GORGIAS_API_URL;
+    this.authHeader = process.env.GORGIAS_API_KEY;
     this.emailSender = emailSender;
   }
 
@@ -59,6 +59,27 @@ class GorgiasImp {
       }
     } catch (error) {
       console.error(`Error al agregar tag al ticket ${ticketId}:`, error.message);
+    }
+  }
+
+  async updateTicketStatus(ticketId, statusTicket) {
+    try {
+      const response = await fetch(`${this.baseURL}/tickets/${ticketId}`, {
+        method: 'PUT',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          authorization: this.authHeader
+        },
+        body: JSON.stringify({ status: `${statusTicket}` })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status} - ${text}`);
+      }
+    } catch (error) {
+      console.error(`Error al actualizar el ticket ${ticketId}:`, error.message);
     }
   }
 
