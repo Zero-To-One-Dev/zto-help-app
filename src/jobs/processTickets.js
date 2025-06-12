@@ -1,5 +1,6 @@
 import GorgiasImp from "../implements/gorgias.imp.js"
 import GoogleImp from "../implements/google.imp.js"
+import MessageImp from '../implements/slack.imp.js'
 import OpenAIImp from "../implements/openai.imp.js"
 import DBRepository from "../repositories/postgres.repository.js"
 
@@ -8,9 +9,9 @@ const dbRepository = new DBRepository()
 const gorgias = new GorgiasImp()
 const openAI = new OpenAIImp()
 const google = new GoogleImp()
+const slack = new MessageImp()
 //utils
 const emailSender = gorgias.emailSender
-const spreadsheetId = process.env.SHEET_ID
 const createMessagePrompt = `
 You are a professional customer service assistant specialized in responding to influencer collaboration messages. You always respond with kindness, professionalism, and clarity.
 
@@ -35,22 +36,27 @@ If the user provides extra information that is not related to the required field
 If the user has provided a name and at least one social media (Instagram or TikTok), create a key called "confirmed" with a value of true as a boolean not string, otherwise is false.
 The data that you extract has to be only one object and it's keys values most be strings strings values, not arrays or objects.
 `
+const processTicketTag = process.env.PROCESS_TICKET_TAG
+const spreadsheetId = process.env.SHEET_ID
+const sheetName = process.env.SHEET_NAME
 
 const processOneTicket = async (ticketRow) => {
   try {
     // Obtener ticket tags y verificar si tiene el tag del proceso, si no, salir
     const ticketTags = ticketRow.tags
 
-    if (!ticketTags.toLowerCase().includes("test juanma")) {
+    if (!ticketTags.toLowerCase().includes(processTicketTag.toLowerCase())) {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
-      console.log(`Ticket ${ticketRow.ticket_id} does not have the tag "test juanma", skipping...`);
+      console.log(`Ticket ${ticketRow.ticket_id} does not have the tag ${processTicketTag}, skipping...`);
       return
     };
 
-    console.log(`Processing ticket ${ticketRow.ticket_id}...`);
     // Obtener ticket
     const ticket = await gorgias.getTicket(ticketRow.ticket_id);
-    if (!ticket) throw new Error("Ticket not found in Gorgias");
+    if (!ticket) {
+      await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} not found in gorgias`, `Ticket ${ticketRow.ticket_id} not found in gorgias`);
+      throw new Error("Ticket not found in Gorgias");
+    }
 
     // Obtener los mensajes del ticket y crear el mensaje para OpenAI
     const ticketMessages = ticket.messages
@@ -95,7 +101,10 @@ const processOneTicket = async (ticketRow) => {
       name: ticket.customer.name,
     }
 
+    console.log(`Processing ticket ${ticketRow.ticket_id}...`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'PROCESSING');
+    await slack.sendMessage('inlfuencers_tickets', `Processing ticket ${ticketRow.ticket_id}...`, `Processing Ticket`);
+
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
       await gorgias.sendMessageTicket(ticket.id, reply, ticketChannel, ticketSource, reciever);
@@ -103,8 +112,8 @@ const processOneTicket = async (ticketRow) => {
     }
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
     if (customerData.confirmed === true || customerData.confirmed === "true") {
-      await google.appendValues(spreadsheetId, 'INFLUENCERS TEST', [[
-        ticketTags.replace(',', '').replace('TEST JUANMA', ' '),
+      await google.appendValues(spreadsheetId, `${sheetName}`, [[
+        ticketTags.replace(',', '').replace(`${processTicketTag}`, ' '),
         customerData.instagram,
         customerData.tiktok,
         customerData.name,
@@ -114,13 +123,16 @@ const processOneTicket = async (ticketRow) => {
       ]]);
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
       console.log(`Ticket ${ticketRow.ticket_id} completed`);
+      await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} compleated successfully`, `Ticket Compleated`);
       await gorgias.updateTicketStatus(ticketRow.ticket_id, 'closed');
     } else {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
+      await slack.sendMessage('inlfuencers_tickets', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`, `Ticket Uncompleated`);
     }
 
   } catch (err) {
     console.error(`❌ Ticket ${ticketRow.ticket_id} failed:`, err);
+    await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} error: ${err.message}`, `Ticket ${ticketRow.ticket_id} error`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'ERROR');
     await dbRepository.incrementRetries(ticketRow.ticket_id);
   }
@@ -128,8 +140,7 @@ const processOneTicket = async (ticketRow) => {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const run = async () => {
-  const unprocessed = await dbRepository.getTicketsByStatusAndTags(['UNPROCESSED', 'ERROR'], ['TEST JUANMA']);
-  console.log(unprocessed);
+  const unprocessed = await dbRepository.getTicketsByStatusAndTags(['UNPROCESSED', 'ERROR'], [`${processTicketTag}`]);
   
   for (const ticket of unprocessed) {
     if (ticket.retries >= 3) continue;

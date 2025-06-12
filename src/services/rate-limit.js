@@ -2,11 +2,10 @@ import logger from '../../logger.js';
 import { SHOPS_ORIGIN } from '../app.js';
 import MessageImp from '../implements/slack.imp.js'
 
-
-const messageImp = new MessageImp();
-
-
 export async function rateLimitHandler(req, res) {
+
+  const messageImp = new MessageImp();
+  
   const route = req.originalUrl;
   const shopAlias = SHOPS_ORIGIN[req.get('origin')].shopAlias || req.body.shopAlias;
   const ip =
