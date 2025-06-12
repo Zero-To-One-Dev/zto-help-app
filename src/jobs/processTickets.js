@@ -28,8 +28,9 @@ Your tasks:
 Now write the appropriate response to the customer based on this conversation:
 `
 const extractDataPromt = `
-Your task is to extract structured data from influencer/customer messages. Return the information as a single JSON object with the following keys: "name", "email", "instagram", "tiktok", "phone", and "notes".
+Your task is to extract structured data from influencer/customer messages. Return the information as a single JSON object with the following keys: "brand", "name", "email", "instagram", "tiktok", "phone", and "notes".
 If any field is not present, set its value to ''.
+The "brand" field should contain the name of the brand mentioned in the messages or in the tags, if any are present. Our brands are "ReduSculpt", "VibroSculpt", "HotShapers", "MyWay", "DrMing", "CopperSlim".
 If the same information appears more than once in the message history (e.g., the same email or Instagram), and it is clearly the same user, return only one JSON object, not duplicates.
 If the user provides the same social media twice (e.g., two Instagram accounts), return only the last one.
 If the user provides extra information that is not related to the required fields, include it in the "notes" field.
@@ -68,7 +69,7 @@ const processOneTicket = async (ticketRow) => {
     const ticketMessages = ticket.messages
     let ticketMessagesStr = ""
     if (ticketMessages.length > 0) {
-      ticketMessagesStr = ticketMessages
+      ticketMessagesStr = `tags: ${ticketTags} ${ticketMessages}`
         .map((message, index) => {
           if (index == 0) {
             return gorgias.cleanMessage(
@@ -119,7 +120,7 @@ const processOneTicket = async (ticketRow) => {
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
     if (customerData.confirmed === true || customerData.confirmed === "true") {
       await google.appendValues(spreadsheetId, `${sheetName}`, [[
-        ticketTags.replace(',', '').replace(`${processTicketTag}`, ' '),
+        customerData.brand,
         customerData.instagram,
         customerData.tiktok,
         customerData.name,
