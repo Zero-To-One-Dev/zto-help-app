@@ -2,7 +2,7 @@ import { Router } from "express"
 import express from "express"
 import logger from "../../logger.js"
 import app, { SHOPS_ORIGIN } from "../app.js"
-import fs from "fs"
+import fs from "fs/promises"
 import bearerToken from "express-bearer-token"
 import Mailer from "../implements/nodemailer.imp.js"
 import { authenticateToken } from "../middlewares/authenticate-token.js"
@@ -20,11 +20,8 @@ import MessageImp from "../implements/slack.imp.js"
 import ShopifyImp from "../implements/shopify.imp.js"
 import KlaviyoImp from "../implements/klaviyo.imp.js"
 import SlackImp from "../implements/slack.imp.js"
-import {
-  analyzeSurvey,
-  generateExcelReport,
-  parseSurveyData,
-} from "../services/survey-utils.js"
+import { analyzeSurvey, parseSurveyData } from "../services/survey-utils.js"
+import { generateExcelReport } from "../services/generate-excel.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -505,24 +502,36 @@ router.post(
   "/slack-app",
   express.urlencoded({ extended: true }),
   async (req, res) => {
-    const { command, text, channel_id } = req.body
+    const { command, text = "", channel_id } = req.body
 
-    if (command === "/survey-report") {
-      const google = new GoogleImp()
-      const slack = new SlackImp()
+    if (command !== "/survey-report") {
+      return res.status(200).json({ message: "Comando no reconocido." })
+    }
 
-      let [sheetUrl, sheetName] = text.split(" ")
+    const [sheetUrlPart, ...sheetNameParts] = text.trim().split(/\s+/)
+    if (!sheetUrlPart || sheetNameParts.length === 0) {
+      return res.status(200).json({
+        response_type: "ephemeral",
+        text: "Uso: `/survey-report <GoogleSheetURL> <Sheet>`",
+      })
+    }
+    const sheetUrl = sheetUrlPart
+    const sheetName = sheetNameParts.join(" ").replace(/\*/g, "")
 
+    res.status(200).json({
+      response_type: "ephemeral",
+      text: `El reporte para *${sheetName}* será enviado en breve 👨🏻‍💻`,
+    })
+
+    try {
       const spreadsheetId = sheetUrl
         .replace("https://docs.google.com/spreadsheets/d/", "")
         .split("/")[0]
-      sheetName = text.replace(`${sheetUrl} `, "").replace("*", "")
+      if (!spreadsheetId) {
+        throw new Error("Spreadsheet ID inválido.")
+      }
 
-      res.status(200).json({
-        response_type: "ephemeral",
-        text: `El reporte para ${sheetName} será enviado en breve 👨🏻‍💻`,
-      })
-
+      const google = new GoogleImp()
       const rawData = await google.getValues(
         spreadsheetId,
         `${sheetName}!A1:HZ`
@@ -531,28 +540,51 @@ router.post(
       const parsedData = parseSurveyData(rawData)
       const stats = analyzeSurvey(parsedData)
 
-      const filePath = await generateExcelReport(stats, parsedData)
+      const tmpDir = path.join(process.cwd(), "tmp")
+      await fs.mkdir(tmpDir, { recursive: true })
+      const timestamp = Date.now()
+      const fileName = `survey-report-${timestamp}.xlsx`
+      const excelFilePath = path.join(tmpDir, fileName)
+      const pptxFilePath = path.join(tmpDir, "survey.pptx")
 
+      await generateExcelReport(stats, parsedData, excelFilePath)
+
+      const slack = new SlackImp()
       await slack.uploadFile(
-        filePath,
+        excelFilePath,
         channel_id,
-        "Aqui tienes tu reporte de encuestas ✅",
-        "survey-report.xlsx",
+        `✅ Aquí tienes tu reporte de encuestas: *${sheetName}*`,
+        fileName,
         sheetName
       )
+      await slack.uploadFile(
+        pptxFilePath,
+        channel_id,
+        ``,
+        "survey.pptx",
+        "Survey Report"
+      )
 
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error(`Error deleting file ${filePath}:`, err)
-        } else {
-          console.log(`Deleted file: ${filePath}`)
-        }
-      })
+      await fs.unlink(excelFilePath)
+      console.log(`Deleted file: ${excelFilePath}`)
 
-      return null
+      await fs.unlink(pptxFilePath)
+      console.log(`Deleted file: ${pptxFilePath}`)
+    } catch (err) {
+      console.error("Error handling /survey-report:", err)
+
+      try {
+        const slack = new SlackImp()
+        await slack.postMessage(
+          channel_id,
+          `❌ No se pudo generar el reporte para *${sheetName}*: ${err.message}`
+        )
+      } catch (notifyErr) {
+        console.error("Error sending failure message to Slack:", notifyErr)
+      }
     }
 
-    return res.status(200).json({ message: "Comando no reconocido." })
+    return null
   }
 )
 

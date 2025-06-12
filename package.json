@@ -23,6 +23,8 @@
   "dependencies": {
     "@shopify/shopify-api": "^11.8.1",
     "@slack/web-api": "^7.9.2",
+    "adm-zip": "^0.5.16",
+    "babel-polyfill": "^6.26.0",
     "commander": "^13.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -41,6 +43,8 @@
     "nodemailer": "^6.9.16",
     "nodemailer-express-handlebars": "^7.0.0",
     "pg": "^8.13.1",
+    "ppt-template": "^1.0.9",
+    "pptxgenjs": "^4.0.0",
     "redis": "^4.7.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",

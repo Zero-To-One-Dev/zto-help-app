@@ -61,6 +61,20 @@ class SlackImp {
       } catch (err) {}
     }
   }
+
+  async postMessage(channel_id, text) {
+    const client = this.init()
+    const result = await client.chat.postMessage({
+      channel: channel_id,
+      text,
+    })
+
+    if (!result.ok) {
+      throw new Error(`Error sending message: ${result.error}`)
+    }
+
+    return result
+  }
 }
 
 export default SlackImp
