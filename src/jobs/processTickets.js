@@ -69,7 +69,7 @@ const processOneTicket = async (ticketRow) => {
     const ticketMessages = ticket.messages
     let ticketMessagesStr = ""
     if (ticketMessages.length > 0) {
-      ticketMessagesStr = `tags: ${ticketTags} ${ticketMessages}`
+      ticketMessagesStr = ticketMessages
         .map((message, index) => {
           if (index == 0) {
             return gorgias.cleanMessage(
@@ -84,6 +84,7 @@ const processOneTicket = async (ticketRow) => {
           }
         })
         .join("\n")
+      ticketMessagesStr = `tags: ${ticketTags}   ${ticketMessagesStr}`
     }
     // Datos para establecer la comunicación
     const lastSender =
