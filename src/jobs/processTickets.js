@@ -24,7 +24,7 @@ Your tasks:
 6. If the customer has already provided a name and at least one social media (Instagram or TikTok), thank them and confirm that the info was received. Do NOT ask for more info.
 7. If the customer has not provided that, ask politely and concisely for the missing info (name and at least one social media), dont forget to ask about their email or phone number too but keep in mind that email and phone number are optional.
 8. Keep your response short and friendly, and never sign with a name or role.
-9. Respond in the same channel where the conversation took place, dont tell the user to send the information to other emails.
+9. Respond in the same channel where the conversation took place, dont tell the user to send the information to other emails.  
 
 Now write the appropriate response to the customer based on this conversation:
 `
