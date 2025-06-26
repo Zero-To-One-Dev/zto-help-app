@@ -56,7 +56,7 @@ const processOneTicket = async (ticketRow) => {
     // Obtener ticket
     const ticket = await gorgias.getTicket(ticketRow.ticket_id);
     if (!ticket) {
-      await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} not found in gorgias`, `Ticket ${ticketRow.ticket_id} not found in gorgias`);
+      await slack.postMessage('C09176CKX9A', `Ticket ${ticketRow.ticket_id} not found in gorgias`);
       throw new Error("Ticket not found in Gorgias");
     }
 
@@ -112,7 +112,7 @@ const processOneTicket = async (ticketRow) => {
 
     console.log(`Processing ticket ${ticketRow.ticket_id}...`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'PROCESSING');
-    await slack.sendMessage('inlfuencers_tickets', `Processing ticket ${ticketRow.ticket_id}...`, `Processing Ticket`);
+    await slack.postMessage('C09176CKX9A', `Processing ticket ${ticketRow.ticket_id}...`);
 
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
@@ -132,16 +132,16 @@ const processOneTicket = async (ticketRow) => {
       ]]);
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
       console.log(`Ticket ${ticketRow.ticket_id} completed`);
-      await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} compleated successfully`, `Ticket Compleated`);
+      await slack.postMessage('C09176CKX9A', `Ticket ${ticketRow.ticket_id} compleated successfully`);
       await gorgias.updateTicketStatus(ticketRow.ticket_id, 'closed');
     } else {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
-      await slack.sendMessage('inlfuencers_tickets', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`, `Ticket Uncompleated`);
+      await slack.postMessage('C09176CKX9A', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`);
     }
 
   } catch (err) {
     console.error(`❌ Ticket ${ticketRow.ticket_id} failed:`, err);
-    await slack.sendMessage('inlfuencers_tickets', `Ticket ${ticketRow.ticket_id} error: ${err.message}`, `Ticket ${ticketRow.ticket_id} error`);
+    await slack.postMessage('C09176CKX9A', `Ticket ${ticketRow.ticket_id} error: ${err.message}`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'ERROR');
     await dbRepository.incrementRetries(ticketRow.ticket_id);
   }
