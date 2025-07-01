@@ -112,6 +112,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                 e => e.ProductVariant.platformId === upsell.variant.id);
 
             if (!eachUpsell) continue;
+            console.log(`Upsell: Price ${eachUpsell.ProductVariant.title} - PriceWithoutDiscount ${eachUpsell.priceWithoutDiscount} - Quantity${eachUpsell.quantity}`);
             quantity += getPriceDifference(eachUpsell.ProductVariant.price,
                 eachUpsell.priceWithoutDiscount) * eachUpsell.quantity;
         }
@@ -149,7 +150,7 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                     });
                 }
             }
-
+            console.log(`OneTime: Price ${productOneTime.price} - Quantity ${productSub.quantity}`);
             quantity += getPriceDifference(productOneTime.price, productSub.variant.price) * productSub.quantity;
         }
 
