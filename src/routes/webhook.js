@@ -441,36 +441,40 @@ router.post("/purchase-camihotsize-m", authenticateToken, async (req, res) => {
   }
 })
 
-router.post("/check-influencers-mesagges", authenticateToken, async (req, res) => {
-  const gorgias = new GorgiasImp();
-  const ticketId = req.body.ticket_id;
+router.post(
+  "/check-influencers-mesagges",
+  authenticateToken,
+  async (req, res) => {
+    const gorgias = new GorgiasImp()
+    const ticketId = req.body.ticket_id
 
-  try {
-    const ticketDB = await dbRepository.getTicketById(ticketId);
-    const ticketDBTags = ticketDB ? ticketDB.tags : null;
+    try {
+      const ticketDB = await dbRepository.getTicketById(ticketId)
+      const ticketDBTags = ticketDB ? ticketDB.tags : null
 
-    const ticket = await gorgias.getTicket(ticketId);
-    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-    const ticketTags = ticket.tags.map(tag => tag.name).join(", ");
-    console.log({ ticketId, ticketTags })
+      const ticket = await gorgias.getTicket(ticketId)
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" })
+      const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
+      console.log({ ticketId, ticketTags })
 
-    if (ticketDB) {
-      if (ticketDBTags != ticketTags) {
-        await dbRepository.updateTicketTags(ticketId, ticketTags);
-        console.log(`✅ Ticket ${ticketId} updated in DB`);
+      if (ticketDB) {
+        if (ticketDBTags != ticketTags) {
+          await dbRepository.updateTicketTags(ticketId, ticketTags)
+          console.log(`✅ Ticket ${ticketId} updated in DB`)
+        }
+        console.log(`ℹ️ Ticket ${ticketId} already exists in DB`)
+      } else {
+        await dbRepository.saveTicket(ticketId, ticketTags, "UNPROCESSED", 0)
+        console.log(`✅ Ticket ${ticketId} saved as UNPROCESSED`)
       }
-      console.log(`ℹ️ Ticket ${ticketId} already exists in DB`);
-    } else {
-      await dbRepository.saveTicket(ticketId, ticketTags, 'UNPROCESSED', 0);
-      console.log(`✅ Ticket ${ticketId} saved as UNPROCESSED`);
-    }
 
-    return res.status(200).json({ message: "Ticket captured" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Internal error" });
+      return res.status(200).json({ message: "Ticket captured" })
+    } catch (err) {
+      console.error(err)
+      return res.status(500).json({ message: "Internal error" })
+    }
   }
-});
+)
 
 /**
  *  @openapi

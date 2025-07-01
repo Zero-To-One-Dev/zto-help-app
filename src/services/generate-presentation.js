@@ -17,27 +17,31 @@ const formatList = (items) => {
 }
 
 const fillPersonaSlide = (slide, persona) => {
+  if (typeof persona === "string") {
+    persona = JSON.parse(persona)
+  }
+
   const {
     name,
     demographics,
     motivations,
     goals,
-    typical_behaviors,
-    pain_points,
-    daily_life,
+    behaviors,
+    painPoints,
+    personaSummary,
   } = persona
-  const { age_range, occupation, lifestyle } = demographics
+  const { occupation, lifestyleContext, ageRange } = demographics
 
   slide.fillAll([
     Slide.pair("[Name]", name),
-    Slide.pair("[Age]", age_range),
+    Slide.pair("[Age]", ageRange),
     Slide.pair("[Occupation]", occupation),
-    Slide.pair("[Lifestyle]", lifestyle),
+    Slide.pair("[Lifestyle]", lifestyleContext),
     Slide.pair("[Motivations]", formatList(motivations)),
     Slide.pair("[Goals]", formatList(goals)),
-    Slide.pair("[Behaviors]", formatList(typical_behaviors)),
-    Slide.pair("[Points]", formatList(pain_points)),
-    Slide.pair("[Life]", daily_life),
+    Slide.pair("[Behaviors]", formatList(behaviors)),
+    Slide.pair("[Points]", formatList(painPoints)),
+    Slide.pair("[Life]", personaSummary),
   ])
 }
 
@@ -59,6 +63,8 @@ export const generatePresentation = async (data) => {
   const contentSlides = Object.entries(data).map(([question, payload], idx) => {
     const slideIndex = idx + 3
     const slide = pres.getSlide(slideIndex).clone()
+
+    // console.log(payload)
 
     if (question === "Buyer Persona") {
       fillPersonaSlide(slide, payload.persona)

@@ -27,7 +27,10 @@ export const parseSurveyData = (rawData) => {
     const questionsPart = {}
 
     headers.forEach((key, index) => {
-      const value = row[index] ?? ""
+      let value = row[index] ?? ""
+      if (value.includes("Other")) {
+        value = "Other"
+      }
       if (index < fixedKeys.length) {
         fixedPart[fixedKeys[index]] = value
       } else {
@@ -107,22 +110,32 @@ export const enrichSurveyWithAI = async (stats, parsedData) => {
       .filter((ans) => ans && String(ans).trim() !== "")
 
     const prompt = `
-You are an expert marketing analyst.
-Given a list of free-text responses for an open-ended question, do these three things:
+You are a professional marketing analyst specializing in qualitative data interpretation.
 
-1) Under "Categories", group the responses into at least 4 distinct themes, each with 1–2 example responses. Format as:
-["Theme A: example1; example2", "Theme B: example1; example2", ...].
+You will receive a list of free-text responses to an open-ended survey question. Your task is to analyze the responses and deliver structured insights useful for marketing strategy.
 
-2) Under "Insights", propose 2–3 concrete action plans the marketing team can take based on those themes. Do NOT restate which theme is largest.
+Instructions:
 
-3) Under "Opportunities", suggest 2–3 specific marketing initiatives (campaign ideas, partnerships, messaging tweaks) derived from those insights.
+1. Analyze the responses carefully. Even if they are vague, diverse, or very short, do your best to extract common themes or sentiment patterns.
 
-Return strictly valid JSON with keys: "Categories", "Insights", and "Opportunities".
+2. Group the responses into **at least four (4)** meaningful **categories or themes** based on their content, sentiment, or implied needs/preferences. Use abstraction if needed (e.g., group similar sentiments, pain points, or wishes).
 
-Question:
+3. After the table, write an **"Insights"** section with **2-3 clear strategic takeaways** — explain what the marketing or product team can learn from these themes. Don’t focus just on what was most frequent — provide value by interpreting *why* this matters.
+
+4. Then, write an **"Opportunities"** section with **2-3 concrete, actionable marketing initiatives** derived from the insights (e.g., new campaigns, revised messaging, targeting ideas, partnerships, feature improvements).
+
+5. Output must be in **strictly valid and structured JSON** format with the following keys:
+   - "Categories": a summary of the responses (string) (limits to 540 letters)
+   - "Insights": a list of 2-3 strategic insights (strings) (limits to 315 letters)
+   - "Opportunities": a list of 2-3 suggested marketing actions (strings) (limits to 615 letters)
+
+If responses are sparse or short, still do your best to cluster them meaningfully. Do not return empty outputs.
+
+**Question:**  
 "${question}"
 
-Responses (one per line):
+**Responses:**  
+(one response per line)
 ${responses.map((r) => `"${r}"`).join("\n")}
     `.trim()
 
@@ -163,20 +176,21 @@ ${responses.map((r) => `"${r}"`).join("\n")}
 
     const prompt = `
 You are an expert marketing analyst.
-Given a survey question and its answer percentages, do these three things:
+Given a survey question, its response data and its answer percentages, do these three things:
 
-1) Under "Categories", list each option with its percentage (e.g., "Option A: 50%", "Option B: 30%", ...), without commenting on ranking.
+1. Create a table under the key "SummaryTable", with the following columns: "Response Option", "Response Count", and "Percentage". Include all the options from the input. Do not rank or comment on popularity. 
+2. Under "Insights", provide 2-3 strategic observations or hypotheses derived from the distribution of responses. These should be non-obvious and marketing-relevant. Avoid mentioning which response was most common.
+3. Under "Opportunities", suggest 2-3 marketing initiatives or tests that can be launched based on the insights. These may include campaign themes, segment targeting, or changes in messaging or product positioning.
 
-2) Under "Insights", propose 2–3 specific, non-obvious action plans based on the distribution. Avoid stating obvious facts like “X was most chosen.”
-
-3) Under "Opportunities", suggest 2–3 concrete marketing initiatives that follow from those insights.
-
-Return strictly valid JSON with keys: "Categories", "Insights", and "Opportunities".
+Return strictly valid JSON with the following structure:
+- "SummaryTable": a list of objects with keys "ResponseOption", "ResponseCount" (if available), and "Percentage"
+- "Insights": a list of strategic insights (limits to 315 letters)
+- "Opportunities": a list of actionable marketing ideas (limits to 615 letters)
 
 Question:
 "${question}"
 
-Percentages:
+Responses:
 ${lines.join("\n")}
     `.trim()
 
@@ -216,14 +230,19 @@ ${lines.join("\n")}
   if (allOpenResponses.length > 0) {
     const personaPrompt = `
 You are an expert marketing strategist.
-Based on these free-text survey responses from open-ended questions below, create a detailed Buyer Persona for the brand, including:
-- A name and demographic details (age range, occupation, lifestyle).
-- Pain points, motivations, goals, and typical behaviors.
-- A concise narrative or visual description of this persona’s daily life.
+Based on these free-text survey responses from open-ended questions below, create a detailed Buyer Persona for the brand. The persona should include the following structured sections:
 
-Return strictly valid JSON with key "Buyer Persona" containing the persona text.
+- "name": Create a representative name.
+- "demographics": Age range, gender (if implied), occupation, income level (if inferred), and lifestyle context.
+- "painPoints": Main frustrations, needs, or challenges reflected in the responses.
+- "motivations": What drives this person to take action or seek this product.
+- "goals": Their short- and long-term goals related to the product category.
+- "behaviors": Typical habits, routines, and decision-making patterns.
+- "personaSummary": A short paragraph describing this person's day-to-day life (limits to 400 letters), written in third person (e.g., “Maria is a busy mom in her 40s who…”).
 
-Responses:
+Return strictly valid JSON with a single key: "Buyer Persona" containing all the structured sections above.
+
+Survey Responses:
 ${allOpenResponses.map((r) => `"${r}"`).join("\n")}
     `.trim()
 
