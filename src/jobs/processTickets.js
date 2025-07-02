@@ -60,11 +60,11 @@ const processOneTicket = async (ticketRow) => {
       throw new Error("Ticket not found in Gorgias");
     }
 
-    if (ticket.status === "closed") {
-      await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
-      console.log(`Ticket ${ticketRow.ticket_id} is not open, skipping...`);
-      return 
-    }
+    // if (ticket.status === "closed") {
+    //   await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
+    //   console.log(`Ticket ${ticketRow.ticket_id} is not open, skipping...`);
+    //   return 
+    // }
 
     // Obtener los mensajes del ticket y crear el mensaje para OpenAI
     const ticketMessages = ticket.messages
