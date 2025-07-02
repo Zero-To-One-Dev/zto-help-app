@@ -1,6 +1,48 @@
 import OpenAIImp from "../implements/openai.imp.js"
 
 /**
+ * Creates a markdown table string from a given string.
+ * The given string should be in the format of:
+ * category1|count1|percentage1;category2|count2|percentage2;...
+ * The function will return a markdown table with the data.
+ * @param {string} str - The string to parse
+ * @returns {string} - The markdown table string
+ */
+const crearTableString = (str) => {
+  const rows = str
+    .split(";")
+    .map((item) => item.trim())
+    .filter((item) => item)
+    .map((item) => item.split("|").map((cell) => cell.trim()))
+
+  rows.sort((a, b) => {
+    const countA = parseInt(a[1], 10)
+    const countB = parseInt(b[1], 10)
+    return countB - countA
+  })
+
+  const headers = ["Category", "Count", "Percentage"]
+
+  const colWidths = headers.map((h, i) =>
+    Math.max(h.length, ...rows.map((r) => r[i].length))
+  )
+
+  const pad = (text, width) => text + " ".repeat(width - text.length)
+
+  const headerLine =
+    `| ` + headers.map((h, i) => pad(h, colWidths[i])).join(` | `) + ` |`
+  const separator =
+    "|-" + colWidths.map((w) => "-".repeat(w)).join("-|-") + "-|"
+  const rowLines = rows.map(
+    (r) => `| ` + r.map((cell, i) => pad(cell, colWidths[i])).join(` | `) + ` |`
+  )
+
+  const table = [headerLine, separator, ...rowLines].join("\n")
+
+  return table
+}
+
+/**
  * Converts raw Google Sheets data (array of arrays) into an array of
  * objects with fixed fields and a nested `questions` object.
  *
@@ -118,18 +160,23 @@ Instructions:
 
 1. Analyze the responses carefully. Even if they are vague, diverse, or very short, do your best to extract common themes or sentiment patterns.
 
-2. Group the responses into **at least four (4)** meaningful **categories or themes** based on their content, sentiment, or implied needs/preferences. Use abstraction if needed (e.g., group similar sentiments, pain points, or wishes).
+2. Group the responses into **5 to 8** meaningful **categories or themes** based on their content, sentiment, or implied needs/preferences. Name each category in English using clear, representative titles (e.g., “Social Proof / Reviews”, “Ease of Use”, “Price / Promotion”).
 
-3. After the table, write an **"Insights"** section with **2-3 clear strategic takeaways** — explain what the marketing or product team can learn from these themes. Don’t focus just on what was most frequent — provide value by interpreting *why* this matters.
+3. For each category, calculate:
+   - Total number of responses that fall into the category.
+   - Percentage of total responses (mandatory).
+   Present these in a clean table with three columns:  
+   **Category \| Count \| Percentage**
+   **Do not** include a header row—only the result rows.
 
-4. Then, write an **"Opportunities"** section with **2-3 concrete, actionable marketing initiatives** derived from the insights (e.g., new campaigns, revised messaging, targeting ideas, partnerships, feature improvements).
+4. After the table, write an **"Insights"** section with **2-3 clear strategic takeaways** explaining what the marketing or product team can learn from these themes.
 
-5. Output must be in **strictly valid and structured JSON** format with the following keys:
-   - "Categories": a summary of the responses (string) (limits to 540 letters)
-   - "Insights": a list of 2-3 strategic insights (strings) (limits to 315 letters)
-   - "Opportunities": a list of 2-3 suggested marketing actions (strings) (limits to 615 letters)
+5. Then, write an **"Opportunities"** section with **2-3 concrete, actionable marketing initiatives** derived from the insights (e.g., new campaigns, revised messaging, targeting ideas, partnerships, feature improvements).
 
-If responses are sparse or short, still do your best to cluster them meaningfully. Do not return empty outputs.
+6. Output must be in **strictly valid and structured JSON** format with the following keys:
+   - "Categories": a single string containing the table of **Category \| Count \| Percentage**.
+   - "Insights": a list of 2-3 strategic insights (strings) (limits to 315 characters each).
+   - "Opportunities": a list of 2-3 suggested marketing actions (strings) (limits to 615 characters each).
 
 **Question:**  
 "${question}"
@@ -152,7 +199,8 @@ ${responses.map((r) => `"${r}"`).join("\n")}
         }
       }
       result[question] = {
-        categories: parsed.Categories || "",
+        categories:
+          crearTableString(parsed.Categories.replace(/\n/g, "; ")) || "",
         insights: parsed.Insights || "",
         opportunities: parsed.Opportunities || "",
       }
@@ -171,7 +219,8 @@ ${responses.map((r) => `"${r}"`).join("\n")}
     const total = Object.values(answerCounts).reduce((sum, c) => sum + c, 0)
 
     const lines = Object.entries(answerCounts).map(
-      ([ans, count]) => `${ans}: ${((count / total) * 100).toFixed(2)}%`
+      ([ans, count]) =>
+        `${ans} | ${count} | ${((count / total) * 100).toFixed(2)}%`
     )
 
     const prompt = `
@@ -183,7 +232,7 @@ Given a survey question, its response data and its answer percentages, do these 
 3. Under "Opportunities", suggest 2-3 marketing initiatives or tests that can be launched based on the insights. These may include campaign themes, segment targeting, or changes in messaging or product positioning.
 
 Return strictly valid JSON with the following structure:
-- "SummaryTable": a list of objects with keys "ResponseOption", "ResponseCount" (if available), and "Percentage"
+- "SummaryTable": a list of objects with keys "ResponseOption", "ResponseCount", and "Percentage"
 - "Insights": a list of strategic insights (limits to 315 letters)
 - "Opportunities": a list of actionable marketing ideas (limits to 615 letters)
 
@@ -201,13 +250,13 @@ ${lines.join("\n")}
         parsed = JSON.parse(aiOutput)
       } catch {
         parsed = {
-          Categories: lines.join("; "),
+          Categories: crearTableString(lines.join("; ")),
           Insights: aiOutput,
           Opportunities: "",
         }
       }
       result[question] = {
-        categories: parsed.Categories || lines.join("; "),
+        categories: parsed.Categories || crearTableString(lines.join("; ")),
         insights: parsed.Insights || "",
         opportunities: parsed.Opportunities || "",
       }

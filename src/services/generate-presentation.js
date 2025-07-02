@@ -1,6 +1,6 @@
 import PPT_Template from "ppt-template"
 
-const TEMPLATE = "template.pptx"
+const TEMPLATE = "tmp/template.pptx"
 const OUTPUT = "tmp/survey.pptx"
 
 const { Presentation, Slide } = PPT_Template
@@ -48,7 +48,7 @@ const fillPersonaSlide = (slide, persona) => {
 const fillQuestionSlide = (slide, question, payload) => {
   slide.fillAll([
     Slide.pair("[Question]", question),
-    Slide.pair("[Results]", formatList(payload.categories)),
+    Slide.pair("[Results]", payload.categories),
     Slide.pair("[Insights]", formatList(payload.insights)),
     Slide.pair("[Opportunities]", formatList(payload.opportunities)),
   ])
@@ -63,8 +63,6 @@ export const generatePresentation = async (data) => {
   const contentSlides = Object.entries(data).map(([question, payload], idx) => {
     const slideIndex = idx + 3
     const slide = pres.getSlide(slideIndex).clone()
-
-    // console.log(payload)
 
     if (question === "Buyer Persona") {
       fillPersonaSlide(slide, payload.persona)

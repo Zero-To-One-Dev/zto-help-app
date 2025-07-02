@@ -512,15 +512,18 @@ router.post(
       return res.status(200).json({ message: "Comando no reconocido." })
     }
 
-    const [sheetUrlPart, ...sheetNameParts] = text.trim().split(/\s+/)
-    if (!sheetUrlPart || sheetNameParts.length === 0) {
+    const parts = text.trim().split(/\s+/)
+
+    const sheetUrl = parts.shift()
+    const presentationUrl = parts.pop()
+    const sheetName = parts.join(" ").replace(/\*/g, "")
+
+    if (!sheetUrl || !sheetName || !presentationUrl) {
       return res.status(200).json({
         response_type: "ephemeral",
-        text: "Uso: `/survey-report <GoogleSheetURL> <Sheet>`",
+        text: "Uso: `/survey-report [Sheet URL] [Sheet Name] [Presentation Url]`",
       })
     }
-    const sheetUrl = sheetUrlPart
-    const sheetName = sheetNameParts.join(" ").replace(/\*/g, "")
 
     res.status(200).json({
       response_type: "ephemeral",
@@ -535,10 +538,22 @@ router.post(
         throw new Error("Spreadsheet ID inválido.")
       }
 
+      const presentationId = presentationUrl
+        .replace("https://docs.google.com/presentation/d/", "")
+        .split("/")[0]
+      if (!presentationId) {
+        throw new Error("Presentation ID inválido.")
+      }
+
       const google = new GoogleImp()
       const rawData = await google.getValues(
         spreadsheetId,
         `${sheetName}!A1:HZ`
+      )
+
+      const pptxTemplateFilePath = await google.downloadFile(
+        presentationId,
+        "template.pptx"
       )
 
       const parsedData = parseSurveyData(rawData)
@@ -574,6 +589,9 @@ router.post(
 
       await fs.unlink(pptxFilePath)
       console.log(`Deleted file: ${pptxFilePath}`)
+
+      await fs.unlink(pptxTemplateFilePath)
+      console.log(`Deleted file: ${pptxTemplateFilePath}`)
     } catch (err) {
       console.error("Error handling /survey-report:", err)
 
