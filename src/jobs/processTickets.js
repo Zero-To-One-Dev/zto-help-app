@@ -135,6 +135,7 @@ const processOneTicket = async (ticketRow) => {
     }
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
 
+    console.log('Customer data:', customerData);
     if(customerData.spam === false || customerData.spam === "false") {
       if (customerData.confirmed === true || customerData.confirmed === "true") {
         await google.appendValues(spreadsheetId, `${sheetName}`, [[
