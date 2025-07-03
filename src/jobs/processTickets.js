@@ -81,6 +81,7 @@ const processOneTicket = async (ticketRow) => {
     }
 
     // Obtener los mensajes del ticket y crear el mensaje para OpenAI
+    const firstMessage = ticketMessages[0]
     const ticketMessages = ticket.messages
     let ticketMessagesStr = ""
     if (ticketMessages.length > 0) {
@@ -99,12 +100,11 @@ const processOneTicket = async (ticketRow) => {
           }
         })
         .join("\n")
-      ticketMessagesStr = `tags: ${ticketTags}   ${ticketMessagesStr}`
+      ticketMessagesStr = `tags: ${ticketTags}, sender: ${firstMessage.source.to[0].address}  ${ticketMessagesStr}`
     }
     // Datos para establecer la comunicación
     const lastSender =
       ticketMessages[ticketMessages.length - 1].sender.email || ""
-    const firstMessage = ticketMessages[0]
     const ticketChannel = ticket.channel
     const ticketSource = {
       from: {
