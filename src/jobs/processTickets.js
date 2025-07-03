@@ -118,7 +118,7 @@ const processOneTicket = async (ticketRow) => {
 
     console.log(`Processing ticket ${ticketRow.ticket_id}...`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'PROCESSING');
-    await slack.postMessage('C09176CKX9A', `Processing ticket ${ticketRow.ticket_id}...`);
+    await slack.postMessage('C09176CKX9A', `Processing ticket https://b2cresponse.gorgias.com/app/ticket/${ticketRow.ticket_id} ...`);
 
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
