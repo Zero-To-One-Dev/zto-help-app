@@ -81,8 +81,8 @@ const processOneTicket = async (ticketRow) => {
     }
 
     // Obtener los mensajes del ticket y crear el mensaje para OpenAI
-    const firstMessage = ticketMessages[0]
     const ticketMessages = ticket.messages
+    const firstMessage = ticketMessages[0]
     let ticketMessagesStr = ""
     if (ticketMessages.length > 0) {
       ticketMessagesStr = ticketMessages
