@@ -53,6 +53,12 @@ const processOneTicket = async (ticketRow) => {
       return
     };
 
+    if (ticketTags.toLowerCase().includes('auto-close')) {
+      await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
+      await slack.postMessage('C09176CKX9A', `Ticket has influencer but is auto-closed, please check: https://b2cresponse.gorgias.com/app/ticket/${ticketRow.ticket_id}`);
+      return
+    };
+
     // Obtener ticket
     const ticket = await gorgias.getTicket(ticketRow.ticket_id);
     if (!ticket) {
