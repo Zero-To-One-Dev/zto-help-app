@@ -132,6 +132,10 @@ const processOneTicket = async (ticketRow) => {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
       await gorgias.sendMessageTicket(ticket.id, reply, ticketChannel, ticketSource, reciever);
       console.log(`Message sent to ticket ${ticketRow.ticket_id}...`);
+    } else {
+      await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
+      await slack.postMessage('C09176CKX9A', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`);
+      return
     }
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
 
