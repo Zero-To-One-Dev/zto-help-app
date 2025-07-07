@@ -136,6 +136,7 @@ const processOneTicket = async (ticketRow) => {
       console.log(`Message sent to ticket ${ticketRow.ticket_id}...`);
     } else {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
+      console.log(`We were the last sender, waiting for user to respond the ticket ${ticketRow.ticket_id}...`);
       await slack.postMessage('C09176CKX9A', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`);
       return
     }
