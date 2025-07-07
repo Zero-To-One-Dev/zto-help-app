@@ -50,6 +50,14 @@ CREATE TABLE gorgias_tickets (
   retries INTEGER DEFAULT 0
 );
 
+/* Creación de chatgpt_requests */
+CREATE TABLE chatgpt_requests (
+  id SERIAL PRIMARY KEY,
+  ticket_id TEXT NOT NULL UNIQUE,
+  request TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 
 /* Inserción de datos de prueba para la tabla tokens */
 -- INSERT INTO tokens (shop_alias, email, token, created_at, expire_at, metadata)

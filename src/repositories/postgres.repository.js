@@ -202,6 +202,20 @@ class PostgreSQLRepository {
         return res.rows;
     }
 
+    async saveRequest(ticketId, request) {
+        const client = await this.init();
+
+        const query = {
+            name: 'chatgpt_requests',
+            text: `INSERT INTO chatgpt_requests (ticket_id, request) VALUES( $1, $2);`,
+            values: [ticketId, request]
+        };
+
+        const res = await client.query(query);
+        await client.end();
+        return res.rows;
+    }
+
     async getErroredTicketsToRetry(maxRetries = 3) {
         const client = await this.init()
         const query = {

@@ -130,6 +130,8 @@ const processOneTicket = async (ticketRow) => {
 
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
+      //Save GPT Request 
+      await dbRepository.saveRequest(ticketRow.ticket_id, ticketMessagesStr);
       await gorgias.sendMessageTicket(ticket.id, reply, ticketChannel, ticketSource, reciever);
       console.log(`Message sent to ticket ${ticketRow.ticket_id}...`);
     } else {
@@ -137,7 +139,10 @@ const processOneTicket = async (ticketRow) => {
       await slack.postMessage('C09176CKX9A', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`);
       return
     }
+
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
+    //Save GPT Request 
+    await dbRepository.saveRequest(ticketRow.ticket_id, ticketMessagesStr);
 
     console.log('Customer data:', customerData);
     if(customerData.spam === false || customerData.spam === "false") {
@@ -155,10 +160,7 @@ const processOneTicket = async (ticketRow) => {
         console.log(`Ticket ${ticketRow.ticket_id} completed`);
         await slack.postMessage('C09176CKX9A', `Ticket ${ticketRow.ticket_id} compleated successfully`);
         await gorgias.updateTicketStatus(ticketRow.ticket_id, 'closed');
-      } else {
-        await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'UNPROCESSED');
-        await slack.postMessage('C09176CKX9A', `Waiting for user to provide more data for Ticket ${ticketRow.ticket_id}`);
-      }
+      } 
     } else {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
       console.log(`Ticket ${ticketRow.ticket_id} is spam, marked as completed`);
