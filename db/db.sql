@@ -53,7 +53,7 @@ CREATE TABLE gorgias_tickets (
 /* Creación de chatgpt_requests */
 CREATE TABLE chatgpt_requests (
   id SERIAL PRIMARY KEY,
-  ticket_id TEXT NOT NULL UNIQUE,
+  ticket_id TEXT NOT NULL,
   request TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
