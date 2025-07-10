@@ -7,13 +7,13 @@ const { Presentation, Slide } = PPT_Template
 
 const formatList = (items) => {
   if (!items) return ""
-  return Array.isArray(items)
-    ? items.join("\n")
-    : typeof items === "object"
-    ? Object.entries(items)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("\n")
-    : String(items)
+  if (Array.isArray(items)) return items.join("\n")
+  if (typeof items === "object") {
+    return Object.entries(items)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("\n")
+  }
+  return String(items)
 }
 
 const fillPersonaSlide = (slide, persona) => {
@@ -22,15 +22,16 @@ const fillPersonaSlide = (slide, persona) => {
   }
 
   const {
-    name,
-    demographics,
-    motivations,
-    goals,
-    behaviors,
-    painPoints,
-    personaSummary,
+    name = "",
+    demographics = {},
+    motivations = [],
+    goals = [],
+    behaviors = [],
+    painPoints = [],
+    personaSummary = "",
   } = persona
-  const { occupation, lifestyleContext, ageRange } = demographics
+
+  const { occupation = "", lifestyleContext = "", ageRange = "" } = demographics
 
   slide.fillAll([
     Slide.pair("[Name]", name),
@@ -41,14 +42,14 @@ const fillPersonaSlide = (slide, persona) => {
     Slide.pair("[Goals]", formatList(goals)),
     Slide.pair("[Behaviors]", formatList(behaviors)),
     Slide.pair("[Points]", formatList(painPoints)),
-    Slide.pair("[Life]", personaSummary),
+    Slide.pair("[Life]", formatList(personaSummary)),
   ])
 }
 
 const fillQuestionSlide = (slide, question, payload) => {
   slide.fillAll([
-    Slide.pair("[Question]", question),
-    Slide.pair("[Results]", payload.categories),
+    Slide.pair("[Question]", question || ""),
+    Slide.pair("[Results]", formatList(payload.categories)),
     Slide.pair("[Insights]", formatList(payload.insights)),
     Slide.pair("[Opportunities]", formatList(payload.opportunities)),
   ])
@@ -58,25 +59,33 @@ export const generatePresentation = async (data) => {
   const pres = new Presentation()
   await pres.loadFile(TEMPLATE)
 
-  // Slides intro (1 y 2) + contenido dinámico
   const introSlides = [1, 2].map((i) => pres.getSlide(i))
-  const contentSlides = Object.entries(data).map(([question, payload], idx) => {
-    const slideIndex = idx + 3
-    const slide = pres.getSlide(slideIndex).clone()
 
+  const questionSlideTemplate = pres.getSlide(3)
+  const personaSlideTemplate = pres.getSlide(4)
+
+  const questionSlides = []
+  let personaSlide = null
+
+  for (const [question, payload] of Object.entries(data)) {
     if (question === "Buyer Persona") {
+      const slide = personaSlideTemplate.clone()
       fillPersonaSlide(slide, payload.persona)
+      personaSlide = slide
     } else {
+      const slide = questionSlideTemplate.clone()
       fillQuestionSlide(slide, question, payload)
+      questionSlides.push(slide)
     }
+  }
 
-    return slide
-  })
+  const finalSlides = [...introSlides, ...questionSlides]
+  if (personaSlide) {
+    finalSlides.push(personaSlide)
+  }
 
   console.log("Generando presentación final con slides modificadas...")
-  const finalSlides = [...introSlides, ...contentSlides]
   const newPres = await pres.generate(finalSlides)
   await newPres.saveAs(OUTPUT)
-
   console.log(`Presentación guardada en: ${OUTPUT}`)
 }

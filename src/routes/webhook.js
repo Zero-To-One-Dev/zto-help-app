@@ -20,8 +20,13 @@ import MessageImp from "../implements/slack.imp.js"
 import ShopifyImp from "../implements/shopify.imp.js"
 import KlaviyoImp from "../implements/klaviyo.imp.js"
 import SlackImp from "../implements/slack.imp.js"
-import { analyzeSurvey, parseSurveyData } from "../services/survey-utils.js"
+import {
+  analyzeSurvey,
+  enrichSurveyWithAI,
+  parseSurveyData,
+} from "../services/survey-utils.js"
 import { generateExcelReport } from "../services/generate-excel.js"
+import { generatePresentation } from "../services/generate-presentation.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -566,7 +571,10 @@ router.post(
       const excelFilePath = path.join(tmpDir, fileName)
       const pptxFilePath = path.join(tmpDir, "survey.pptx")
 
-      await generateExcelReport(stats, parsedData, excelFilePath)
+      const enrichedMap = await enrichSurveyWithAI(stats, parsedData)
+
+      await generatePresentation(enrichedMap)
+      await generateExcelReport(stats, enrichedMap, excelFilePath)
 
       const slack = new SlackImp()
       await slack.uploadFile(

@@ -1,6 +1,4 @@
 import ExcelJS from "exceljs"
-import { generatePresentation } from "./generate-presentation.js"
-import { enrichSurveyWithAI } from "./survey-utils.js"
 
 /**
  * Generates an Excel file summarizing survey statistics and AI-enriched
@@ -23,7 +21,7 @@ import { enrichSurveyWithAI } from "./survey-utils.js"
  */
 export const generateExcelReport = async (
   stats,
-  parsedData,
+  enrichedMap,
   filePath = "survey-report.xlsx"
 ) => {
   const workbook = new ExcelJS.Workbook()
@@ -51,9 +49,6 @@ export const generateExcelReport = async (
       summarySheet.addRow({ question, answer, count, percentage })
     }
   }
-
-  const enrichedMap = await enrichSurveyWithAI(stats, parsedData)
-  await generatePresentation(enrichedMap)
 
   const ioSheet = workbook.addWorksheet("Insights & Opportunities")
   ioSheet.columns = [

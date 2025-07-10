@@ -44,7 +44,6 @@
     "nodemailer-express-handlebars": "^7.0.0",
     "pg": "^8.13.1",
     "ppt-template": "^1.0.9",
-    "pptxgenjs": "^4.0.0",
     "redis": "^4.7.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
