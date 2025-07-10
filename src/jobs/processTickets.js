@@ -138,7 +138,7 @@ const processOneTicket = async (ticketRow) => {
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
       //Save GPT Request 
-      await dbRepository.saveRequest(ticketRow.ticket_id, ticketMessagesStr);
+      await dbRepository.saveRequest(`${ticketRow.ticket_id}-reply`, ticketMessagesStr);
       await gorgias.sendMessageTicket(ticket.id, reply, ticketChannel, ticketSource, reciever);
       console.log(`Message sent to ticket ${ticketRow.ticket_id}...`);
     } else {
@@ -150,7 +150,7 @@ const processOneTicket = async (ticketRow) => {
 
     const customerData = await openAI.extractInfluencerData(extractDataPromt, ticketMessagesStr);
     //Save GPT Request 
-    await dbRepository.saveRequest(ticketRow.ticket_id, ticketMessagesStr);
+    await dbRepository.saveRequest(`${ticketRow.ticket_id}-data`, ticketMessagesStr);
 
     console.log('Customer data:', customerData);
     if(customerData.spam === false || customerData.spam === "false") {
