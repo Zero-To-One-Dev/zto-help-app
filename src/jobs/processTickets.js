@@ -80,6 +80,13 @@ const processOneTicket = async (ticketRow) => {
       return 
     }
 
+
+    if (ticket.customer.email?.includes('snwbl')) {
+      await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
+      console.log(`Ticket ${ticketRow.ticket_id} is spam from snowball, skipping...`);
+      return
+    }
+
     // Obtener los mensajes del ticket y crear el mensaje para OpenAI
     const ticketMessages = ticket.messages
     let ticketMessagesStr = ""
