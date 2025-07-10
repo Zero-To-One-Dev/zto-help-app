@@ -207,7 +207,7 @@ class PostgreSQLRepository {
 
         const query = {
             name: 'chatgpt_requests',
-            text: `INSERT INTO chatgpt_requests (ticket_id, request) VALUES( $1, $2);`,
+            text: `INSERT INTO chatgpt_requests (ticket, request) VALUES( $1, $2);`,
             values: [ticketId, request]
         };
 
