@@ -134,6 +134,13 @@ const processOneTicket = async (ticketRow) => {
     console.log(`Processing ticket ${ticketRow.ticket_id}...`);
     await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'PROCESSING');
     await slack.postMessage('C09176CKX9A', `Processing ticket https://b2cresponse.gorgias.com/app/ticket/${ticketRow.ticket_id} ...`);
+    
+    if (firstMessage.sender.email?.includes('support@b2cresponse.gorgias.io') || firstMessage.sender.name?.includes('Gorgias Bot')) {
+      console.log(`Inviting this user to collab, ticket: ${ticketRow.ticket_id}`);
+      await slack.postMessage('C09176CKX9A', `Inviting this user to collab, ticket: https://b2cresponse.gorgias.com/app/ticket/${ticketRow.ticket_id} ...`);
+      await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
+      return
+    }
 
     if (lastSender !== emailSender) {
       const reply = await openAI.openAIMessage(createMessagePrompt, ticketMessagesStr);
