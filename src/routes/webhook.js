@@ -580,7 +580,7 @@ router.post(
       await slack.uploadFile(
         excelFilePath,
         channel_id,
-        `✅ Aquí tienes tu reporte de encuestas: *${sheetName}*`,
+        `Reporte de encuestas: *${sheetName}*`,
         fileName,
         sheetName
       )
