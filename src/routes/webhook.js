@@ -589,7 +589,7 @@ router.post(
         channel_id,
         ``,
         "survey.pptx",
-        "Survey Report"
+        sheetName
       )
 
       await fs.unlink(excelFilePath)
