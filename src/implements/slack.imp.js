@@ -28,27 +28,26 @@ class SlackImp {
     return result.file
   }
 
-  async toCancelSubscriptionErrors(message, title = 'No Title') {
-    const channelsIds = CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS.split(",");
+  async toCancelSubscriptionErrors(message, title = "No Title") {
+    const channelsIds = CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS.split(",")
 
     for (const channelId of channelsIds) {
       try {
         await this.postMessage(channelId, `${title} \n ${message}`)
       } catch (err) {
-        console.log(`${title}: toCancelSubscriptionErrors`, err);
+        console.log(`${title}: toCancelSubscriptionErrors`, err)
       }
     }
   }
 
   async toUpdateAddressErrors(message, title) {
-
-    const channelsIds = UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS.split(",");
+    const channelsIds = UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS.split(",")
 
     for (const channelId of channelsIds) {
       try {
         await this.postMessage(channelId, `${title} \n ${message}`)
       } catch (err) {
-        console.log(`${title}: toUpdateAddressErrors`, err);
+        console.log(`${title}: toUpdateAddressErrors`, err)
       }
     }
   }
@@ -57,7 +56,7 @@ class SlackImp {
     const client = this.init()
     const result = await client.chat.postMessage({
       channel: channel_id,
-      text,
+      text: text.replace(/\\n/g, "\n"),
     })
 
     if (!result.ok) {
