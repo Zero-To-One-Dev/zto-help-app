@@ -93,6 +93,12 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
         let upsells = [];
         let productType = '';
         let quantity = 0;
+        const time_ms = new Date().getTime();
+
+        console.log(`${time_ms} - URL /subscription/validate`);
+        console.log(`${time_ms} - LineItems: ${lineItems.length}`);
+        console.log(`${time_ms} - LineItems: ${JSON.stringify(lineItems)}`);
+
         for (let lineItem of lineItems) {
             productType = lineItem.product.productType.replace(/\s/g, '').toLowerCase();
             lineItem.variant.title = lineItem.variant.title.replace(/\s/g, '').toLowerCase();
@@ -106,6 +112,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             }
         }
 
+        console.log(`${time_ms} - Upsells: ${JSON.stringify(upsells)}`);
+        console.log(`${time_ms} - NoUpsells: ${JSON.stringify(noUpsells)}`);
+
         let eachUpsell = null;
         for (let upsell of upsells) {
             eachUpsell = subscriptionData.SubscriptionLines.find(
@@ -115,6 +124,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             console.log(`Upsell: Price ${eachUpsell.ProductVariant.title} - PriceWithoutDiscount ${eachUpsell.priceWithoutDiscount} - Quantity${eachUpsell.quantity}`);
             quantity += getPriceDifference(eachUpsell.ProductVariant.price,
                 eachUpsell.priceWithoutDiscount) * eachUpsell.quantity;
+
+            console.log(`${time_ms} - EachUpsell: ${JSON.stringify(eachUpsell)}`);
+            console.log(`${time_ms} - Quantity: ${eachUpsell.ProductVariant.price}, ${eachUpsell.priceWithoutDiscount}, ${eachUpsell.quantity}, ${quantity}`);
         }
 
         const oneTimeBySubscriptionMetafieldQuery = noUpsells
@@ -127,7 +139,9 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
                 variants: e.node.variants.edges
                     .map(i => i.node)
                     .map(i => { i.title = i.title.replace(/\s/g, '').toLowerCase(); return i })
-            }))
+            }));
+        
+        console.log(`${time_ms} - oneTimeProducts: ${JSON.stringify(oneTimeProducts)}`);
 
         let productSub = null;
         let productOneTime = null;
@@ -152,6 +166,8 @@ router.post('/subscription/validate', handleError(TokenSchema), async (req, res)
             }
             console.log(`OneTime: Price ${productOneTime.price} - Quantity ${productSub.quantity}`);
             quantity += getPriceDifference(productOneTime.price, productSub.variant.price) * productSub.quantity;
+            console.log(`${time_ms} - EachOneTime: ${JSON.stringify(productOneTime)}`);
+            console.log(`${time_ms} - Quantity: ${quantity}, ${productOneTime.price}, ${productSub.variant.price}, ${productSub.quantity}`);
         }
 
         if (quantity <= 0) throw new Error('It was not possible to calculate the price difference');
