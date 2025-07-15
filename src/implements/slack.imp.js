@@ -1,8 +1,8 @@
 import fs from "fs"
 import { WebClient } from "@slack/web-api"
 import {
-  CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS,
-  UPDATE_ADDRESS_NOTIFY_CHANNELS,
+  CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS,
+  UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS,
 } from "../app.js"
 
 class SlackImp {
