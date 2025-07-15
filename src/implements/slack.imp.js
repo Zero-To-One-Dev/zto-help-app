@@ -28,13 +28,15 @@ class SlackImp {
     return result.file
   }
 
-  async toCancelSubscriptionErrors(message, title) {
+  async toCancelSubscriptionErrors(message, title = 'No Title') {
     const cancelSubscriptionChannels =
       CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS.split(",")
     for (const channel of cancelSubscriptionChannels) {
       try {
         await this.sendMessage(channel, message, title)
-      } catch (err) {}
+      } catch (err) {
+        console.log(`${title}: toCancelSubscriptionErrors`, err);
+      }
     }
   }
 
