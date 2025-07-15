@@ -29,11 +29,11 @@ class SlackImp {
   }
 
   async toCancelSubscriptionErrors(message, title = 'No Title') {
-    const cancelSubscriptionChannels =
-      CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS.split(",")
-    for (const channel of cancelSubscriptionChannels) {
+    const channelsIds = CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS.split(",");
+
+    for (const channelId of channelsIds) {
       try {
-        await this.sendMessage(channel, message, title)
+        await this.postMessage(channelId, `${title} \n ${message}`)
       } catch (err) {
         console.log(`${title}: toCancelSubscriptionErrors`, err);
       }
@@ -41,11 +41,15 @@ class SlackImp {
   }
 
   async toUpdateAddressErrors(message, title) {
-    const updateAddressChannels = UPDATE_ADDRESS_NOTIFY_CHANNELS.split(",")
-    for (const channel of updateAddressChannels) {
+
+    const channelsIds = UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS.split(",");
+
+    for (const channelId of channelsIds) {
       try {
-        this.sendMessage(channel, message, title)
-      } catch (err) {}
+        await this.postMessage(channelId, `${title} \n ${message}`)
+      } catch (err) {
+        console.log(`${title}: toUpdateAddressErrors`, err);
+      }
     }
   }
 
