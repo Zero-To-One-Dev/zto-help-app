@@ -80,10 +80,9 @@ const processOneTicket = async (ticketRow) => {
       return 
     }
 
-
-    if (ticket.customer.email?.includes('snwbl')) {
+    if (ticket.customer.email?.includes('snwbl') || ticket.customer.email?.includes('notion')) {
       await dbRepository.updateTicketStatus(ticketRow.ticket_id, 'COMPLETED');
-      console.log(`Ticket ${ticketRow.ticket_id} is spam from snowball, skipping...`);
+      console.log(`Ticket ${ticketRow.ticket_id} is spam from snowball or notion, skipping...`);
       return
     }
 
