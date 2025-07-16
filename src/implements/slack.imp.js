@@ -85,7 +85,14 @@ class SlackImp {
     if (blocks && blocks.length) payload.blocks = blocks
 
     const result = await client.chat.postMessage(payload)
-    if (!result.ok) throw new Error(`Error sending message: ${result.error}`)
+    if (!result.ok) {
+      await client.chat.postMessage({
+        channel: "C02ULRX6U21", // #testing_development
+        text: `Error sending message to ${channel_id}: ${JSON.stringify(
+          result
+        )}`,
+      })
+    }
     return result
   }
 }
