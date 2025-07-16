@@ -33,7 +33,16 @@ class SlackImp {
 
     for (const channelId of channelsIds) {
       try {
-        await this.postMessage(channelId, `${title} \n ${message}`)
+        const blocks = [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "```" + message + "```",
+            },
+          },
+        ]
+        await this.postMessage(channelId, title, blocks)
       } catch (err) {
         console.log(`${title}: toCancelSubscriptionErrors`, err)
       }
@@ -45,24 +54,38 @@ class SlackImp {
 
     for (const channelId of channelsIds) {
       try {
-        await this.postMessage(channelId, `${title} \n ${message}`)
+        const blocks = [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "```" + message + "```",
+            },
+          },
+        ]
+        await this.postMessage(channelId, title, blocks)
       } catch (err) {
         console.log(`${title}: toUpdateAddressErrors`, err)
       }
     }
   }
 
-  async postMessage(channel_id, text) {
+  async postMessage(channel_id, text, blocks) {
     const client = this.init()
-    const result = await client.chat.postMessage({
-      channel: channel_id,
-      text: text.replace(/\\n/g, "\n"),
-    })
-
-    if (!result.ok) {
-      throw new Error(`Error sending message: ${result.error}`)
+    if (Array.isArray(blocks) && blocks.length) {
+      blocks = blocks.map((block) => {
+        if (block.text && typeof block.text.text === "string") {
+          block.text.text = block.text.text.replace(/\\n/g, "\n")
+        }
+        return block
+      })
     }
 
+    const payload = { channel: channel_id, text }
+    if (blocks && blocks.length) payload.blocks = blocks
+
+    const result = await client.chat.postMessage(payload)
+    if (!result.ok) throw new Error(`Error sending message: ${result.error}`)
     return result
   }
 }
