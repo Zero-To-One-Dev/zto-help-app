@@ -38,6 +38,13 @@ class SlackImp {
             type: "section",
             text: {
               type: "mrkdwn",
+              text: `${title}`,
+            },
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
               text: "```" + message + "```",
             },
           },
@@ -55,6 +62,13 @@ class SlackImp {
     for (const channelId of channelsIds) {
       try {
         const blocks = [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `${title}`,
+            },
+          },
           {
             type: "section",
             text: {
