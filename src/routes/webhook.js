@@ -180,7 +180,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
   if (!subscriptions.length) {
     await slackImp.postMessage(
       channelId,
-      `No active subscriptions for ${email}`
+      `❌ No active subscriptions for ${email} in ${shopAlias}`
     )
     res.status(404).json({ message: "Customer has no active subscriptions" })
     return
@@ -200,7 +200,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
   } else {
     await slackImp.postMessage(
       channelId,
-      `Error applying discount to ${email}: \n ${JSON.stringify(applyDiscount)}`
+      `❌ Error applying discount to ${email} in ${shopAlias} - Subscription ID: ${subscription.id}`
     )
     res.status(500).json({ message: "Error applying discount" })
   }
