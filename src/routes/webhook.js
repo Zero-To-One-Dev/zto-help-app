@@ -144,6 +144,69 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   }
 })
 
+/**
+ *  @openapi
+ *  /subscription-discount:
+ *    post:
+ *      security:
+ *        - BearerAuth:
+ *      tags:
+ *        - Webhook
+ *      description: Subscription Discount
+ *      requestBody:
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                shopAlias:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *      responses:
+ *        200:
+ *          description: Returns JSON message
+ * */
+router.post("/subscription-discount", authenticateToken, async (req, res) => {
+  const { shopAlias, email } = req.body
+
+  const subscriptionImp = new SubscriptionImp(shopAlias)
+  const subscriptions = await subscriptionImp.getSubscriptionsByEmail(email)
+
+  const slackImp = new SlackImp()
+  const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
+  const discountCode = process.env.SUBSCRIPTION_DISCOUNT_CODE
+
+  if (!subscriptions.length) {
+    await slackImp.postMessage(
+      channelId,
+      `No active subscriptions for ${email}`
+    )
+    res.status(404).json({ message: "Customer has no active subscriptions" })
+    return
+  }
+
+  subscriptions.sort(
+    (a, b) => new Date(a.nextBillingDate) - new Date(b.nextBillingDate)
+  )
+  const subscription = subscriptions[0]
+  console.log({ subscription })
+  const applyDiscount = await subscriptionImp.applyDiscount(
+    subscription.id,
+    discountCode
+  )
+
+  if (applyDiscount.ok) {
+    res.status(200).json({ message: "Discount applied successfully" })
+  } else {
+    await slackImp.postMessage(
+      channelId,
+      `Error applying discount to ${email}: \n ${JSON.stringify(applyDiscount)}`
+    )
+    res.status(500).json({ message: "Error applying discount" })
+  }
+})
+
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
   try {
     const { shop, subscriptionId, event } = req.body

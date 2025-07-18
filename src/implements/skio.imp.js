@@ -18,8 +18,9 @@ class SkioImp {
   }
 
   async getSubscription(email, subscription, haveSellingPlan) {
-    let sellingPlanCondition = '';
-    if (haveSellingPlan) sellingPlanCondition = 'sellingPlanId: {_is_null: false}';
+    let sellingPlanCondition = ""
+    if (haveSellingPlan)
+      sellingPlanCondition = "sellingPlanId: {_is_null: false}"
     const client = this.init()
     return (
       await client.request(gql`
@@ -69,7 +70,7 @@ class SkioImp {
   }
 
   async getSubscriptionsByEmail(email) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(gql`
         query {
@@ -117,6 +118,22 @@ class SkioImp {
           }
         }`)
     ).Subscriptions.map((subscriptions) => subscriptions.id)
+  }
+
+  async applyDiscount(subscriptionId, code) {
+    const client = this.init()
+    return (
+      await client.request(gql`
+        mutation {
+          applyDiscountCode (input: {
+            subscriptionId: "${subscriptionId}",
+            code: "${code}"
+          }) {
+            ok
+          }
+        }
+      `)
+    ).applyDiscount
   }
 
   async updateSubscriptionAddress(
