@@ -195,8 +195,6 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     discountCode
   )
 
-  console.log({ applyDiscount })
-
   if (applyDiscount) {
     res.status(200).json({ message: "Discount applied successfully" })
   } else {
