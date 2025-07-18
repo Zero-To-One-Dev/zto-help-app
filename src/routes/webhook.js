@@ -483,11 +483,11 @@ router.post(
 
 /**
  *  @openapi
- *  /slack-app:
+ *  /webhook/slack-app:
  *    post:
  *      tags:
  *        - Webhook
- *      description: Slack App. Send a email to customers who buy CamiHotSize M.
+ *      description: Slack App
  *      requestBody:
  *        content:
  *          application/x-www-form-urlencoded:
@@ -506,7 +506,7 @@ router.post(
  *      responses:
  *        200:
  *          description: Returns JSON message
- */
+ * */
 router.post(
   "/slack-app",
   express.urlencoded({ extended: true }),
