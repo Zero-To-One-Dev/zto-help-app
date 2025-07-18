@@ -190,13 +190,14 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     (a, b) => new Date(a.nextBillingDate) - new Date(b.nextBillingDate)
   )
   const subscription = subscriptions[0]
-  console.log({ subscription })
   const applyDiscount = await subscriptionImp.applyDiscount(
     subscription.id,
     discountCode
   )
 
-  if (applyDiscount.ok) {
+  console.log({ applyDiscount })
+
+  if (applyDiscount) {
     res.status(200).json({ message: "Discount applied successfully" })
   } else {
     await slackImp.postMessage(
