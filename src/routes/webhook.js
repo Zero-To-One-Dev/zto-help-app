@@ -195,7 +195,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     discountCode
   )
 
-  if (applyDiscount) {
+  if (applyDiscount.ok) {
     res.status(200).json({ message: "Discount applied successfully" })
   } else {
     await slackImp.postMessage(

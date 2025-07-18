@@ -122,7 +122,8 @@ class SkioImp {
 
   async applyDiscount(subscriptionId, code) {
     const client = this.init()
-    const response = await client.request(gql`
+    return (
+      await client.request(gql`
         mutation {
           applyDiscountCode (input: {
             subscriptionId: "${subscriptionId}",
@@ -132,9 +133,7 @@ class SkioImp {
           }
         }
       `)
-
-    console.log({ response })
-    return true
+    ).applyDiscountCode
   }
 
   async updateSubscriptionAddress(
