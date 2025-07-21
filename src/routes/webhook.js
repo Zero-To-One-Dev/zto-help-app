@@ -186,6 +186,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     return
   }
 
+  // obtener la suscripción con el next order day más cercana
   subscriptions.sort(
     (a, b) => new Date(a.nextBillingDate) - new Date(b.nextBillingDate)
   )
@@ -443,7 +444,6 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
       recurringCycleLimit: 1
     }`
 
-    logger.info(`INPUT MUTATION: ${inputMutation}`)
     const codeDiscountNode = await shopifyImp.createDiscountCode(inputMutation)
 
     // Si ocurre un error al crear el código en Shopify

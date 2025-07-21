@@ -1,7 +1,7 @@
-import app, { HOSTNAME } from '../app.js';
-import '@shopify/shopify-api/adapters/node';
-import { shopifyApi, Session, LogSeverity } from '@shopify/shopify-api';
-import logger from '../../logger.js';
+import app, { HOSTNAME } from "../app.js"
+import "@shopify/shopify-api/adapters/node"
+import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api"
+import logger from "../../logger.js"
 
 class ShopifyImp {
   constructor(shopAlias) {
@@ -12,35 +12,40 @@ class ShopifyImp {
     const {
       [`SHOPIFY_API_KEY_${this.shopAlias}`]: SHOPIFY_API_KEY,
       [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY,
-      [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL
-    } = app;
+      [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL,
+    } = app
 
     const shopify = shopifyApi({
       apiKey: SHOPIFY_API_KEY,
       apiSecretKey: SHOPIFY_API_KEY,
-      scopes: ['write_draft_orders', 'read_products'],
+      scopes: ["write_draft_orders", "read_products"],
       hostName: HOSTNAME,
-      hostScheme: 'http',
+      hostScheme: "http",
       isEmbeddedApp: false,
       logger: {
-        log: (severity, message) => logger.log({ level: LogSeverity[severity].toLowerCase(), message: message })
-      }
-    });
+        log: (severity, message) =>
+          logger.log({
+            level: LogSeverity[severity].toLowerCase(),
+            message: message,
+          }),
+      },
+    })
 
     const session = new Session({
-      id: '',
+      id: "",
       shop: SHOP_URL,
       accessToken: SHOPIFY_API_SECRET_KEY,
-      state: '',
+      state: "",
       isOnline: false,
-    });
+    })
 
-    return new shopify.clients.Graphql({ session });
+    return new shopify.clients.Graphql({ session })
   }
 
   async getOrderById(id) {
     const client = this.init()
-    return (await client.request(`
+    return (
+      await client.request(`
       query {
         order (id: "${id}") {
           id
@@ -58,25 +63,30 @@ class ShopifyImp {
           }
         }
       }  
-    `)).data.order
+    `)
+    ).data.order
   }
 
   async getCustomerNameByEmail(email) {
     const client = this.init()
-    const customerByIdentifier = (await client.request(`
+    const customerByIdentifier = (
+      await client.request(`
       query {
         customerByIdentifier
       (identifier: { emailAddress: "${email}" }) {
           displayName
         }
       } 
-    `)).data.customerByIdentifier
+    `)
+    ).data.customerByIdentifier
     return customerByIdentifier ? customerByIdentifier.displayName : null
   }
 
   async getSubscription(email, subscription) {
     const client = this.init()
-    return (await client.request(`
+    return (
+      (
+        await client.request(`
       query {
         Subscriptions (limit: 1, where: {
             id: {_eq: '${subscription}'},	
@@ -85,38 +95,47 @@ class ShopifyImp {
             id
         }
       }
-    `)).Subscriptions.length > 0
+    `)
+      ).Subscriptions.length > 0
+    )
   }
 
   async cancelSubscription(subscription) {
     const client = this.init()
-    return (await client.request(`
+    return (
+      await client.request(`
       mutation {
         cancelSubscription(input: {subscriptionId: '${subscription}', shouldSendNotif: true}) {
           ok
         }
       }
-    `)).cancelSubscription.ok
+    `)
+    ).cancelSubscription.ok
   }
 
   async createDraftOrder(input) {
-    const client = this.init();
-    return (await client.request(
-      `mutation draftOrderCreate($input: DraftOrderInput!) {
+    const client = this.init()
+    return (
+      await client.request(
+        `mutation draftOrderCreate($input: DraftOrderInput!) {
           draftOrderCreate(input: $input) {
             draftOrder {
               id
             }
           }
-        }`, {
-      variables: { input }
-    })).data.draftOrderCreate.draftOrder.id;
+        }`,
+        {
+          variables: { input },
+        }
+      )
+    ).data.draftOrderCreate.draftOrder.id
   }
 
   async getActiveOrders(email) {
-    const client = this.init();
-    return (await client.request(
-      `query {
+    const client = this.init()
+    return (
+      await client.request(
+        `query {
           orders(first: 100, reverse: true, query: "fulfillment_status:unfulfilled AND email:${email}") {
             edges {
               node {
@@ -152,13 +171,16 @@ class ShopifyImp {
               }
             }
           }
-        }`)).data.orders.edges
+        }`
+      )
+    ).data.orders.edges
   }
 
   async updateAddress(id, address1, address2, provinceCode, city, zip) {
-    const client = this.init();
-    return (await client.request(
-      `mutation {
+    const client = this.init()
+    return (
+      await client.request(
+        `mutation {
         orderUpdate(input: {id: "${id}", shippingAddress: {address1: "${address1}",
         address2: ${address2 ? `"${address2}"` : null}, city: "${city}",
         provinceCode: "${provinceCode}", zip: "${zip}"}}) {
@@ -171,13 +193,14 @@ class ShopifyImp {
           }
         }
       }`
-
-    )).data.orderUpdate
+      )
+    ).data.orderUpdate
   }
 
   async subscriptionProductsIdsBySubscriptionVariant(variantsQuery) {
-    const client = this.init();
-    return (await client.request(`query {
+    const client = this.init()
+    return (
+      await client.request(`query {
         productVariants (first: 100, query: "${variantsQuery}") {
           edges {
             node {
@@ -189,12 +212,17 @@ class ShopifyImp {
             }
           }
         }
-      }`)).data.productVariants.edges
+      }`)
+    ).data.productVariants.edges
   }
 
-  async oneTimesBySubscriptionMetafield(productSubscriptionMetafieldKey, productsSubQuery) {
-    const client = this.init();
-    return (await client.request(`query {
+  async oneTimesBySubscriptionMetafield(
+    productSubscriptionMetafieldKey,
+    productsSubQuery
+  ) {
+    const client = this.init()
+    return (
+      await client.request(`query {
         products(first: 100, query: "${productsSubQuery} AND status:ACTIVE") {
           edges {
             node {
@@ -218,43 +246,51 @@ class ShopifyImp {
             }
           }
         }
-      }`)).data.products.edges
+      }`)
+    ).data.products.edges
   }
 
   async sendDraftOrderInvoice(draftOrder) {
-    const client = this.init();
-    return (await client.request(`mutation {
+    const client = this.init()
+    return (
+      await client.request(`mutation {
         draftOrderInvoiceSend (id: "${draftOrder}") {
           draftOrder {
             id
           }
         }
-      }`)).data.draftOrderInvoiceSend
+      }`)
+    ).data.draftOrderInvoiceSend
   }
 
-  async getDraftOrder(draftOrder){
-    const client = this.init();
-    return (await client.request(`query {
+  async getDraftOrder(draftOrder) {
+    const client = this.init()
+    return (
+      await client.request(`query {
         draftOrder (id: "${draftOrder}") {
           name
           status
         }
       }
-    `)).data.draftOrder
+    `)
+    ).data.draftOrder
   }
 
   async deleteDraftOrder(draftOrder) {
-    const client = this.init();
-    return (await client.request(`mutation {
+    const client = this.init()
+    return (
+      await client.request(`mutation {
       draftOrderDelete (input: { id: "${draftOrder}" }) {
         deletedId
       }
-    }`)).data.draftOrderDelete.deletedId
+    }`)
+    ).data.draftOrderDelete.deletedId
   }
 
-  async getLineItemsByOrder (orderId) {
-    const client = this.init();
-    return (await client.request(`query {
+  async getLineItemsByOrder(orderId) {
+    const client = this.init()
+    return (
+      await client.request(`query {
         order (id: "${orderId}") {
           lineItems (first: 100) {
             edges {
@@ -273,13 +309,14 @@ class ShopifyImp {
             }
           }
         }  
-      }`
-    )).data.order.lineItems.edges
+      }`)
+    ).data.order.lineItems.edges
   }
 
-  async createDiscountCode (input) {
-    const client = this.init();
-    return (await client.request(`mutation {
+  async createDiscountCode(input) {
+    const client = this.init()
+    return (
+      await client.request(`mutation {
     	discountCodeBasicCreate (basicCodeDiscount: ${input}) {
         codeDiscountNode {
           id
@@ -288,9 +325,9 @@ class ShopifyImp {
           code
         }
       }
-    }`
-    )).data.discountCodeBasicCreate.codeDiscountNode
+    }`)
+    ).data.discountCodeBasicCreate.codeDiscountNode
   }
 }
 
-export default ShopifyImp;
+export default ShopifyImp
