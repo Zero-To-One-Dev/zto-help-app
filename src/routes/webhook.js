@@ -27,6 +27,8 @@ import {
 } from "../services/survey-utils.js"
 import { generateExcelReport } from "../services/generate-excel.js"
 import { generatePresentation } from "../services/generate-presentation.js"
+import { getModalView } from "../services/modal-views.js"
+import { parseSlackViewState } from "../services/parse-slack-data.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -688,6 +690,105 @@ router.post(
     }
 
     return null
+  }
+)
+
+/**
+ * @openapi
+ * /interactivity-slack-app:
+ *   post:
+ *     tags:
+ *       - Webhook
+ *     description: Interactivity Slack App
+ *     requestBody:
+ *       content:
+ *         application/x-www-form-urlencoded:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               payload:
+ *                 type: string
+ *                 description: The payload of the webhook
+ *     responses:
+ *       200:
+ *         description: Returns JSON message
+ */
+router.post(
+  "/interactivity-slack-app",
+  express.urlencoded({ extended: true }),
+  async (req, res) => {
+    const payload = JSON.parse(req.body.payload)
+
+    if (payload.type === "view_submission") {
+      const callback = payload.view.callback_id
+      const data = parseSlackViewState(payload.view.state.values)
+      const slack = new SlackImp()
+
+      switch (callback) {
+        case "intelligems_test":
+          const values = Object.values(data)
+          const [title, description, dates, store] = values
+          const [start, end] = dates
+
+          const blocks = [
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `${title}`,
+              },
+            },
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `${description}`,
+              },
+            },
+          ]
+
+          await slack.postMessage(
+            "C027DC15P2B", // #development_team
+            title,
+            blocks
+          )
+
+          break
+      }
+    }
+
+    if (payload.type === "shortcut" || payload.type === "block_actions") {
+      const triggerId = payload.trigger_id
+      const modalView = getModalView(payload.callback_id)
+
+      try {
+        const response = await fetch("https://slack.com/api/views.open", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            trigger_id: triggerId,
+            view: modalView,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!data.ok) {
+          console.error("Slack error:", data)
+          return res.status(500).send("Slack API error")
+        }
+
+        return res.status(200).send()
+      } catch (err) {
+        console.error("Fetch error:", err)
+        return res.status(500).send("Server error")
+      }
+    }
+
+    return res.status(200).send()
   }
 )
 
