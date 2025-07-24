@@ -1,4 +1,50 @@
 export const getModalView = (callbackId) => {
+  const date = new Date()
+  const formatedDate =
+    date.getFullYear() +
+    "-" +
+    ("0" + (date.getMonth() + 1)).slice(-2) +
+    "-" +
+    ("0" + date.getDate()).slice(-2)
+  const stores = [
+    {
+      name: "Vibro Sculpt",
+      alias: "VS",
+    },
+    {
+      name: "Redu Sculpt",
+      alias: "RS",
+    },
+    {
+      name: "Hot Shapers",
+      alias: "HS",
+    },
+    {
+      name: "Copper Slim",
+      alias: "CS",
+    },
+    {
+      name: "Dr Ming",
+      alias: "DM",
+    },
+    {
+      name: "My Way",
+      alias: "MW",
+    },
+    {
+      name: "Hot Vita",
+      alias: "HV",
+    },
+    {
+      name: "Vibro Sculpt Colombia",
+      alias: "VSCOL",
+    },
+    {
+      name: "Vibro Sculpt Relief",
+      alias: "VSRELIEF",
+    },
+  ]
+
   const modals = {
     intelligems_test: {
       type: "modal",
@@ -22,24 +68,12 @@ export const getModalView = (callbackId) => {
         {
           type: "input",
           element: {
-            type: "plain_text_input",
-            action_id: "plain_text_input-action",
-          },
-          label: {
-            type: "plain_text",
-            text: "Titulo",
-            emoji: true,
-          },
-        },
-        {
-          type: "input",
-          element: {
             type: "rich_text_input",
             action_id: "rich_text_input-action",
           },
           label: {
             type: "plain_text",
-            text: "Descripción",
+            text: "Descripción del test",
             emoji: true,
           },
         },
@@ -47,7 +81,7 @@ export const getModalView = (callbackId) => {
           type: "input",
           element: {
             type: "datepicker",
-            initial_date: "2025-04-28",
+            initial_date: formatedDate,
             placeholder: {
               type: "plain_text",
               text: "Select a date",
@@ -65,7 +99,7 @@ export const getModalView = (callbackId) => {
           type: "input",
           element: {
             type: "datepicker",
-            initial_date: "2025-04-28",
+            initial_date: formatedDate,
             placeholder: {
               type: "plain_text",
               text: "Select a date",
@@ -88,32 +122,7 @@ export const getModalView = (callbackId) => {
               text: "Select an item",
               emoji: true,
             },
-            options: [
-              {
-                text: {
-                  type: "plain_text",
-                  text: "Dr Ming",
-                  emoji: true,
-                },
-                value: "DM",
-              },
-              {
-                text: {
-                  type: "plain_text",
-                  text: "Redu Sculpt",
-                  emoji: true,
-                },
-                value: "RS",
-              },
-              {
-                text: {
-                  type: "plain_text",
-                  text: "Vibro Sculpt",
-                  emoji: true,
-                },
-                value: "VS",
-              },
-            ],
+            options: [],
             action_id: "static_select-action",
           },
           label: {
@@ -124,6 +133,17 @@ export const getModalView = (callbackId) => {
         },
       ],
     },
+  }
+
+  for (const store of stores) {
+    modals.intelligems_test.blocks[3].element.options.push({
+      text: {
+        type: "plain_text",
+        text: store.name,
+        emoji: true,
+      },
+      value: store.alias,
+    })
   }
 
   return modals[callbackId]

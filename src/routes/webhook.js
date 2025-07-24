@@ -723,21 +723,28 @@ router.post(
       const callback = payload.view.callback_id
       const data = parseSlackViewState(payload.view.state.values)
       const slack = new SlackImp()
+      const google = new GoogleImp()
 
       switch (callback) {
         case "intelligems_test":
           const values = Object.values(data)
-          const [title, description, dates, store] = values
+          const [description, dates, store] = values
           const [start, end] = dates
 
+          const startDate = start.split("-")
+          const [startYear, startMonth, startDay] = startDate
+          const startDateFormat = `${startDay}/${startMonth}/${startYear}`
+
+          const endDate = end.split("-")
+          const [endYear, endMonth, endDay] = endDate
+          const endDateFormat = `${endDay}/${endMonth}/${endYear}`
+
+          let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
+          if (startDateFormat === endDateFormat) {
+            dateRange = `🚨 ${store} - ${endDateFormat}`
+          }
+
           const blocks = [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `${title}`,
-              },
-            },
             {
               type: "section",
               text: {
@@ -745,11 +752,35 @@ router.post(
                 text: `${description}`,
               },
             },
+            {
+              type: "divider",
+            },
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `${dateRange}`,
+              },
+            },
           ]
+
+          google.updateRowByCellValue(
+            "1mSutcDzdE5Zx0Un_geqHN2VuOT1AMVMlZYvAXwzfWzg",
+            "REPORTS ON TEST",
+            0, // Columna A (índice 0)
+            store,
+            [[store, startDateFormat, endDateFormat]]
+          )
+
+          await slack.postMessage(
+            "C06ME9114TE", // #mkt_intelligems
+            description,
+            blocks
+          )
 
           await slack.postMessage(
             "C027DC15P2B", // #development_team
-            title,
+            description,
             blocks
           )
 

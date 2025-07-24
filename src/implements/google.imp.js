@@ -34,6 +34,48 @@ class GoogleImp {
       },
     })
   }
+  async updateValues(spreadsheetId, range, values) {
+    const { sheets } = await this.init()
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      includeValuesInResponse: false,
+      responseDateTimeRenderOption: "FORMATTED_STRING",
+      responseValueRenderOption: "FORMATTED_VALUE",
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values,
+      },
+    })
+  }
+  async updateRowByCellValue(
+    spreadsheetId,
+    sheetName,
+    lookupColumnIndex,
+    lookupValue,
+    newValues,
+    startColumn = "A",
+    endColumnLetter = "C"
+  ) {
+    const values = await this.getValues(spreadsheetId, `${sheetName}`)
+
+    if (!values || values.length === 0) throw new Error("No data found")
+
+    const rowIndex = values.findIndex(
+      (row) => row[lookupColumnIndex] === lookupValue
+    )
+
+    if (rowIndex === -1) throw new Error("Value not found")
+
+    const sheetRow = rowIndex + 1
+    const endColumn = String.fromCharCode(
+      endColumnLetter.charCodeAt(0) + newValues[0].length - 1
+    )
+    const range = `${sheetName}!${startColumn}${sheetRow}:${endColumn}${sheetRow}`
+
+    await this.updateValues(spreadsheetId, range, newValues)
+  }
+
   async getValues(spreadsheetId, range) {
     const { sheets } = await this.init()
     const res = await sheets.spreadsheets.values.get({
