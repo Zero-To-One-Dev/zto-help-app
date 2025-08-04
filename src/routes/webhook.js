@@ -765,24 +765,19 @@ router.post(
           ]
 
           google.updateRowByCellValue(
-            "1mSutcDzdE5Zx0Un_geqHN2VuOT1AMVMlZYvAXwzfWzg",
-            "REPORTS ON TEST",
+            process.env.REPORTS_SHEET_ID,
+            process.env.REPORTS_SHEET_NAME,
             0, // Columna A (índice 0)
             store,
             [[store, startDateFormat, endDateFormat]]
           )
 
-          await slack.postMessage(
-            "C06ME9114TE", // #mkt_intelligems
-            description,
-            blocks
-          )
+          let channelsToNotify = process.env.TEST_CHANNELS
+          channelsToNotify = channelsToNotify.split(",")
 
-          await slack.postMessage(
-            "C027DC15P2B", // #development_team
-            description,
-            blocks
-          )
+          for (const channel of channelsToNotify) {
+            await slack.postMessage(channel, description, blocks)
+          }
 
           break
       }
