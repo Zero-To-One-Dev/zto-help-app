@@ -136,6 +136,25 @@ class SkioImp {
     ).applyDiscountCode
   }
 
+  async pauseSubscription(subscriptionId, unit = "Days", value = 15) {
+    const client = this.init()
+    return (
+      await client.request(gql`
+        mutation {
+          pauseSubscription (input: {
+            skipOption: {
+              "unit": "${unit}", 
+              "value": ${value}
+            },
+            subscriptionId: "${subscriptionId}"
+          }) {
+            ok
+          }
+        }
+      `)
+    ).pauseSubscription
+  }
+
   async updateSubscriptionAddress(
     subscriptionId,
     address1,

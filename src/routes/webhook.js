@@ -220,6 +220,49 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
   }
 })
 
+router.post("/pause-subscription", authenticateToken, async (req, res) => {
+  try {
+    const { shopAlias, subscriptionContract } = req.body
+
+    if (!shopAlias || !subscriptionContract) {
+      return res.status(400).json({ message: "Missing required fields" })
+    }
+
+    const subscriptionImp = new SubscriptionImp(shopAlias)
+    const subscriptions = await subscriptionImp.subscriptionsByOrder(
+      subscriptionContract
+    )
+
+    if (!subscriptions.length) {
+      return res
+        .status(404)
+        .json({ message: "Customer has no active subscriptions" })
+    }
+
+    let allOk = true
+    subscriptions.forEach(async (subscriptionId) => {
+      const pauseSubscription = await subscriptionImp.pauseSubscription(
+        subscriptionId
+      )
+
+      if (!pauseSubscription.ok) {
+        allOk = false
+      }
+    })
+
+    if (allOk) {
+      return res
+        .status(200)
+        .json({ message: "Subscription paused successfully" })
+    } else {
+      return res.status(500).json({ message: "Error pausing subscription" })
+    }
+  } catch (error) {
+    console.error("Unexpected error:", error)
+    return res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
   try {
     const { shop, subscriptionId, event } = req.body
