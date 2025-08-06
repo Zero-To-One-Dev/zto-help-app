@@ -150,7 +150,7 @@ class SkioImp {
     ).applyDiscountCode
   }
 
-  async pauseSubscription(subscriptionId, unit = "Days", value = 15) {
+  async pauseSubscription(subscriptionId, unit = "day", value = 15) {
     const client = this.init()
     return (
       await client.request(gql`
