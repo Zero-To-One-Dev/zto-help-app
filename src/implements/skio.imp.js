@@ -120,6 +120,20 @@ class SkioImp {
     ).Subscriptions.map((subscriptions) => subscriptions.id)
   }
 
+  async subscriptionsByContract(contract) {
+    const client = this.init()
+    return (
+      await client.request(gql`
+      query {
+        Subscriptions (limit: 1, where: {
+          platformId: {_eq: "${contract}"}
+        }) {
+           id
+          }
+        }`)
+    ).Subscriptions.map((subscriptions) => subscriptions.id)
+  }
+
   async applyDiscount(subscriptionId, code) {
     const client = this.init()
     return (

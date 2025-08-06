@@ -229,9 +229,11 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
     }
 
     const subscriptionImp = new SubscriptionImp(shopAlias)
-    const subscriptions = await subscriptionImp.subscriptionsByOrder(
+    const subscriptions = await subscriptionImp.subscriptionsByContract(
       subscriptionContract
     )
+
+    console.log(subscriptions)
 
     if (!subscriptions.length) {
       return res
