@@ -157,8 +157,8 @@ class SkioImp {
         mutation {
           pauseSubscription (input: {
             skipOption: {
-              "unit": "${unit}", 
-              "value": ${value}
+              unit: "${unit}", 
+              value: ${value}
             },
             subscriptionId: "${subscriptionId}"
           }) {

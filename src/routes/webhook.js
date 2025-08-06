@@ -233,8 +233,6 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
       subscriptionContract
     )
 
-    console.log(subscriptions)
-
     if (!subscriptions.length) {
       return res
         .status(404)
