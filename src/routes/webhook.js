@@ -255,7 +255,7 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
         .status(200)
         .json({ message: "Subscription paused successfully" })
     } else {
-      return res.status(500).json({ message: "Error pausing subscription" })
+      return res.status(400).json({ message: "Error pausing subscription" })
     }
   } catch (error) {
     console.error("Unexpected error:", error)
