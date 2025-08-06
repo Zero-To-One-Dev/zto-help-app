@@ -239,23 +239,22 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
         .json({ message: "Customer has no active subscriptions" })
     }
 
-    let allOk = true
-    subscriptions.forEach(async (subscriptionId) => {
-      const pauseSubscription = await subscriptionImp.pauseSubscription(
-        subscriptionId
+    const results = await Promise.all(
+      subscriptions.map((subscriptionId) =>
+        subscriptionImp.pauseSubscription(subscriptionId)
       )
+    )
 
-      if (!pauseSubscription.ok) {
-        allOk = false
-      }
-    })
+    const allOk = results.every((result) => result.ok)
 
     if (allOk) {
       return res
         .status(200)
         .json({ message: "Subscription paused successfully" })
     } else {
-      return res.status(400).json({ message: "Error pausing subscription" })
+      return res
+        .status(400)
+        .json({ message: `Error pausing subscription: ${results[0].message}` })
     }
   } catch (error) {
     console.error("Unexpected error:", error)

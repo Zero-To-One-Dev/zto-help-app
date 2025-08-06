@@ -150,7 +150,7 @@ class SkioImp {
     ).applyDiscountCode
   }
 
-  async pauseSubscription(subscriptionId, unit = "month", value = 1) {
+  async pauseSubscription(subscriptionId, unit = "DAY", value = 15.0) {
     const client = this.init()
     return (
       await client.request(gql`
@@ -163,6 +163,7 @@ class SkioImp {
             subscriptionId: "${subscriptionId}"
           }) {
             ok
+            message
           }
         }
       `)
