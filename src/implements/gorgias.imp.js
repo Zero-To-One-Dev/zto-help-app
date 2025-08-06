@@ -100,6 +100,9 @@ class GorgiasImp {
           source,
           receiver,
           sender: {
+            name: 'Influencer b2cresponse',
+            firstname: "Influencer",
+            lastname: "b2cresponse",
             email: this.emailSender
           },
           body_text: message,
