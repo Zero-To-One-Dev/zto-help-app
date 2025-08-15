@@ -932,10 +932,14 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
         },
       }
 
-      const createRes = await klaviyo.klaviyoFetch("/profiles", {
-        method: "POST",
-        body: createBody,
-      })
+      const createRes = await klaviyo.klaviyoFetch(
+        "/profiles",
+        {
+          method: "POST",
+          body: createBody,
+        },
+        klaviyoToken
+      )
 
       profileId = createRes.data?.data?.id
       createdFresh = true
@@ -992,7 +996,8 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             body: {
               data: [{ type: "profile", id: profileId }],
             },
-          }
+          },
+          klaviyoToken
         )
 
         // Klaviyo returns 204 No Content on success
