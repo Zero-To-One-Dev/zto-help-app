@@ -1075,4 +1075,17 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
   }
 })
 
+router.post("/counterdelivery-test", async(req, res) => {
+  const google = new GoogleImp()
+
+  let orderPayload = req.body
+
+  console.log("orderPayload:", orderPayload)
+  console.log("order", orderPayload.order)
+
+  return res.status(200).json({
+    message: "Counter Delivery Test Successful"
+  })
+})
+
 export default router
