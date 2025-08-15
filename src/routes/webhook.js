@@ -29,6 +29,7 @@ import { generateExcelReport } from "../services/generate-excel.js"
 import { generatePresentation } from "../services/generate-presentation.js"
 import { getModalView } from "../services/modal-views.js"
 import { parseSlackViewState } from "../services/parse-slack-data.js"
+import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -859,5 +860,214 @@ router.post(
     return res.status(200).send()
   }
 )
+
+/**
+ * POST /add-profile-to-klaviyo-list
+ *
+ * Creates a Klaviyo profile. If "addToList" is true, also adds it to the given Klaviyo list.
+ * If a duplicate profile exists (409), behavior depends on "addIfDuplicate":
+ *  - true  -> use "meta.duplicate_profile_id" returned by Klaviyo and add THAT profile to the list.
+ *  - false -> return 200 with a message saying the profile already exists (no list addition).
+ *
+ * Request body (JSON):
+ * {
+ *   "profile": {
+ *     "email": "george.washington@klaviyo.com",
+ *     "phone_number": "+13239169023",
+ *     "first_name": "Sarah",
+ *     "last_name": "Mason",
+ *     "locale": "en-US"
+ *   },
+ *   "addToList": true,
+ *   "listId": "YOUR_LIST_ID",
+ *   "addIfDuplicate": false
+ * }
+ *
+ * Responses:
+ *  - 201 Created: profile created (and optionally added to list).
+ *  - 200 OK     : duplicate profile encountered and client chose not to add; or already in list.
+ *  - 4xx/5xx    : validation or upstream errors, with structured JSON.
+ */
+router.post("/add-profile-to-klaviyo-list", async (req, res) => {
+  const klaviyo = new KlaviyoImp()
+  const { klaviyoToken } = req.body
+
+  const startedAt = Date.now()
+
+  try {
+    if (!klaviyoToken) {
+      return res.status(500).json({
+        error: {
+          code: "server_misconfig",
+          message: "Klaviyo API key is not configured.",
+        },
+      })
+    }
+
+    const { errors, listId, addToList, addIfDuplicate, profile } =
+      validateCreateProfilePayload(req.body)
+    if (errors.length) {
+      return res
+        .status(400)
+        .json({ error: { code: "invalid_request", details: errors } })
+    }
+
+    // 1) Create profile (idempotency key reduces accidental duplicates on retries)
+    let profileId = null
+    let createdFresh = false
+
+    try {
+      const createBody = {
+        data: {
+          type: "profile",
+          attributes: {
+            ...(profile.email ? { email: profile.email } : {}),
+            ...(profile.phone_number
+              ? { phone_number: profile.phone_number }
+              : {}),
+            ...(profile.first_name ? { first_name: profile.first_name } : {}),
+            ...(profile.last_name ? { last_name: profile.last_name } : {}),
+            ...(profile.locale ? { locale: profile.locale } : {}),
+          },
+        },
+      }
+
+      const createRes = await klaviyo.klaviyoFetch("/profiles", {
+        method: "POST",
+        body: createBody,
+      })
+
+      profileId = createRes.data?.data?.id
+      createdFresh = true
+    } catch (err) {
+      // Handle duplicate profile (409)
+      if (
+        err.status === 409 &&
+        err.data?.errors?.[0]?.code === "duplicate_profile"
+      ) {
+        const duplicateId = err.data?.errors?.[0]?.meta?.duplicate_profile_id
+        if (!duplicateId) {
+          // Defensive: Klaviyo should send this, but don't assume
+          return res.status(502).json({
+            error: {
+              code: "upstream_incomplete_duplicate_payload",
+              message:
+                'Duplicate profile detected but no "duplicate_profile_id" was provided by Klaviyo.',
+              upstream: err.data,
+            },
+          })
+        }
+
+        if (!addIfDuplicate) {
+          // As requested: return 200 and *do not* add to list
+          return res.status(200).json({
+            message:
+              'Profile already exists. Not added to list because "addIfDuplicate" is false.',
+            profileId: duplicateId,
+          })
+        }
+
+        // Use duplicate id for downstream "add to list"
+        profileId = duplicateId
+        createdFresh = false
+      } else {
+        // Any other upstream error
+        return res.status(err.status || 502).json({
+          error: {
+            code: "klaviyo_create_profile_failed",
+            message: "Failed to create Klaviyo profile.",
+            upstream: err.data || err.message,
+          },
+        })
+      }
+    }
+
+    // 2) Optionally add the profile to the list
+    if (addToList && listId && profileId) {
+      try {
+        const addRes = await klaviyo.klaviyoFetch(
+          `/lists/${encodeURIComponent(listId)}/relationships/profiles`,
+          {
+            method: "POST",
+            body: {
+              data: [{ type: "profile", id: profileId }],
+            },
+          }
+        )
+
+        // Klaviyo returns 204 No Content on success
+        if (addRes.status === 204) {
+          return res.status(createdFresh ? 201 : 200).json({
+            message: createdFresh
+              ? "Profile created and added to list."
+              : "Existing profile added to list.",
+            profileId,
+            listId,
+          })
+        }
+
+        // Defensive: unexpected success code
+        return res.status(200).json({
+          message:
+            "Profile processed. Unexpected status when adding to list, but no error returned.",
+          status: addRes.status,
+          profileId,
+          listId,
+        })
+      } catch (err) {
+        // If the profile is already in the list, Klaviyo may return a 409 or 400 depending on API behavior.
+        // You asked to respond 200 saying it’s already in the list if not adding in duplicate case.
+        // Here, if Klaviyo indicates "already in relationship", we normalize to 200.
+        const upstream = err.data || {}
+        const maybeAlreadyInList =
+          err.status === 409 ||
+          (Array.isArray(upstream.errors) &&
+            upstream.errors.some((e) =>
+              String(e?.detail || "")
+                .toLowerCase()
+                .includes("already")
+            ))
+
+        if (maybeAlreadyInList) {
+          return res.status(200).json({
+            message: "Profile is already in the list.",
+            profileId,
+            listId,
+          })
+        }
+
+        return res.status(err.status || 502).json({
+          error: {
+            code: "klaviyo_add_to_list_failed",
+            message: "Failed to add profile to list.",
+            upstream: upstream || err.message,
+          },
+          profileId,
+          listId,
+        })
+      }
+    }
+
+    // 3) If not adding to list, just return the profile result
+    return res.status(createdFresh ? 201 : 200).json({
+      message: createdFresh
+        ? "Profile created."
+        : "Profile exists (duplicate).",
+      profileId,
+    })
+  } catch (err) {
+    // Top-level catch-all
+    return res.status(500).json({
+      error: {
+        code: "unhandled_error",
+        message: err?.message || "Unexpected server error.",
+      },
+    })
+  } finally {
+    const ms = Date.now() - startedAt
+    // Minimal structured log (swap for your logger)
+    // console.info(JSON.stringify({ msg: 'klaviyo.add-profile', ms }));
+  }
+})
 
 export default router
