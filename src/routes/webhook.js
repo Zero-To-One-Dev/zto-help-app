@@ -1,39 +1,39 @@
-import { Router } from "express"
-import express from "express"
-import logger from "../../logger.js"
-import app, { SHOPS_ORIGIN } from "../app.js"
-import fs from "fs/promises"
-import bearerToken from "express-bearer-token"
-import Mailer from "../implements/nodemailer.imp.js"
-import { authenticateToken } from "../middlewares/authenticate-token.js"
-import SubscriptionImp from "../implements/skio.imp.js"
-import GorgiasImp from "../implements/gorgias.imp.js"
-import GoogleImp from "../implements/google.imp.js"
-import DBRepository from "../repositories/postgres.repository.js"
-import path from "node:path"
+import { Router } from "express";
+import express from "express";
+import logger from "../../logger.js";
+import app, { SHOPS_ORIGIN } from "../app.js";
+import fs from "fs/promises";
+import bearerToken from "express-bearer-token";
+import Mailer from "../implements/nodemailer.imp.js";
+import { authenticateToken } from "../middlewares/authenticate-token.js";
+import SubscriptionImp from "../implements/skio.imp.js";
+import GorgiasImp from "../implements/gorgias.imp.js";
+import GoogleImp from "../implements/google.imp.js";
+import DBRepository from "../repositories/postgres.repository.js";
+import path from "node:path";
 import {
   getExpiredDraftOrders,
   setDraftOrderStatus,
   deleteDraftOrder,
-} from "../services/draft-orders.js"
-import MessageImp from "../implements/slack.imp.js"
-import ShopifyImp from "../implements/shopify.imp.js"
-import KlaviyoImp from "../implements/klaviyo.imp.js"
-import SlackImp from "../implements/slack.imp.js"
+} from "../services/draft-orders.js";
+import MessageImp from "../implements/slack.imp.js";
+import ShopifyImp from "../implements/shopify.imp.js";
+import KlaviyoImp from "../implements/klaviyo.imp.js";
+import SlackImp from "../implements/slack.imp.js";
 import {
   analyzeSurvey,
   enrichSurveyWithAI,
   parseSurveyData,
-} from "../services/survey-utils.js"
-import { generateExcelReport } from "../services/generate-excel.js"
-import { generatePresentation } from "../services/generate-presentation.js"
-import { getModalView } from "../services/modal-views.js"
-import { parseSlackViewState } from "../services/parse-slack-data.js"
-import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js"
+} from "../services/survey-utils.js";
+import { generateExcelReport } from "../services/generate-excel.js";
+import { generatePresentation } from "../services/generate-presentation.js";
+import { getModalView } from "../services/modal-views.js";
+import { parseSlackViewState } from "../services/parse-slack-data.js";
+import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js";
 
-const router = Router()
-const dbRepository = new DBRepository()
-const messageImp = new MessageImp()
+const router = Router();
+const dbRepository = new DBRepository();
+const messageImp = new MessageImp();
 
 router.use(
   bearerToken({
@@ -43,7 +43,7 @@ router.use(
     reqKey: "token",
     cookie: false,
   })
-)
+);
 
 /**
  *  @openapi
@@ -72,37 +72,37 @@ router.use(
  */
 router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   let shopAlias,
-    draftOrderId = ""
+    draftOrderId = "";
   try {
-    ;({ shopAlias, draftOrderId } = req.body)
+    ({ shopAlias, draftOrderId } = req.body);
     const {
       [`SHOP_NAME_${shopAlias}`]: shopName,
       [`SHOP_COLOR_${shopAlias}`]: shopColor,
       [`CONTACT_PAGE_${shopAlias}`]: contactPage,
       [`EMAIL_SENDER_${shopAlias}`]: emailSender,
-    } = app
-    const mailer = new Mailer(shopAlias)
-    const subscriptionImp = new SubscriptionImp(shopAlias)
-    const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`
+    } = app;
+    const mailer = new Mailer(shopAlias);
+    const subscriptionImp = new SubscriptionImp(shopAlias);
+    const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`;
     const draftOrderData = await dbRepository.getLastDraftOrderByDraftOrder(
       shopAlias,
       draftOrder
-    )
+    );
     if (!draftOrderData) {
-      res.status(404).json({ message: "Draft order not found" })
-      return
+      res.status(404).json({ message: "Draft order not found" });
+      return;
     }
 
     const subscription = await subscriptionImp.getSubscriptionInfo(
       draftOrderData.subscription
-    )
+    );
     const subscriptionCanceled = await subscriptionImp.cancelSubscription(
       draftOrderData.cancel_session_id,
       draftOrderData.subscription
-    )
-    if (!subscriptionCanceled) throw new Error("Subscription not cancelled")
+    );
+    if (!subscriptionCanceled) throw new Error("Subscription not cancelled");
 
-    await dbRepository.deleteDraftOrder(shopAlias, draftOrder)
+    await dbRepository.deleteDraftOrder(shopAlias, draftOrder);
     await mailer.sendEmail(
       emailSender,
       subscription.StorefrontUser.email,
@@ -124,28 +124,28 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
           cid: "top_banner",
         },
       ]
-    )
+    );
     res.json({
       message: "Subscription cancelled and draft order deleted from database",
-    })
+    });
   } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(200).send({ message: err.message })
+    console.log(err);
+    logger.error(err.message);
+    res.status(200).send({ message: err.message });
 
     const errorMessage = err.message
       .replace(/[^\w\s]/gi, "")
-      .replace(/[\n\t]/g, " ")
-    const errorShop = `🏪 SHOP: ${shopAlias}\\n`
-    const errorData = `ℹ️ DRAFT ORDER ID: ${draftOrderId}\\n`
-    const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`
-    const errorRoute = `📌 ROUTE: /webhook/draft-order-paid`
-    const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`
+      .replace(/[\n\t]/g, " ");
+    const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
+    const errorData = `ℹ️ DRAFT ORDER ID: ${draftOrderId}\\n`;
+    const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
+    const errorRoute = `📌 ROUTE: /webhook/draft-order-paid`;
+    const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
     const errorTitle =
-      "🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook"
-    messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle)
+      "🔴 ❌ ERROR: Error while trying to delete the subscription in the webhook";
+    messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
   }
-})
+});
 
 /**
  *  @openapi
@@ -172,107 +172,107 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
  * */
 router.post("/subscription-discount", authenticateToken, async (req, res) => {
   try {
-    const { shopAlias, email } = req.body
+    const { shopAlias, email } = req.body;
 
     if (!shopAlias || !email) {
-      return res.status(400).json({ message: "Missing required fields" })
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const subscriptionImp = new SubscriptionImp(shopAlias)
-    const subscriptions = await subscriptionImp.getSubscriptionsByEmail(email)
+    const subscriptionImp = new SubscriptionImp(shopAlias);
+    const subscriptions = await subscriptionImp.getSubscriptionsByEmail(email);
 
-    const slackImp = new SlackImp()
-    const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
-    const discountCode = process.env.SUBSCRIPTION_DISCOUNT_CODE
+    const slackImp = new SlackImp();
+    const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID;
+    const discountCode = process.env.SUBSCRIPTION_DISCOUNT_CODE;
 
     if (!subscriptions.length) {
       await slackImp.postMessage(
         channelId,
         `❌ No active subscriptions for ${email} in ${shopAlias}`
-      )
+      );
       return res
         .status(404)
-        .json({ message: "Customer has no active subscriptions" })
+        .json({ message: "Customer has no active subscriptions" });
     }
 
     // Ordenar por fecha más cercana
     const sortedSubscriptions = subscriptions.sort(
       (a, b) => new Date(a.nextBillingDate) - new Date(b.nextBillingDate)
-    )
-    const subscription = sortedSubscriptions[0]
+    );
+    const subscription = sortedSubscriptions[0];
 
     const applyDiscount = await subscriptionImp.applyDiscount(
       subscription.id,
       discountCode
-    )
+    );
 
     if (applyDiscount.ok) {
-      return res.status(200).json({ message: "Discount applied successfully" })
+      return res.status(200).json({ message: "Discount applied successfully" });
     } else {
       await slackImp.postMessage(
         channelId,
         `❌ Error applying discount to ${email} in ${shopAlias} - Subscription ID: ${subscription.id}`
-      )
-      return res.status(500).json({ message: "Error applying discount" })
+      );
+      return res.status(500).json({ message: "Error applying discount" });
     }
   } catch (error) {
-    console.error("Unexpected error:", error)
-    return res.status(500).json({ message: "Internal server error" })
+    console.error("Unexpected error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-})
+});
 
 router.post("/pause-subscription", authenticateToken, async (req, res) => {
   try {
-    const { shopAlias, subscriptionContract } = req.body
+    const { shopAlias, subscriptionContract } = req.body;
 
     if (!shopAlias || !subscriptionContract) {
-      return res.status(400).json({ message: "Missing required fields" })
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const subscriptionImp = new SubscriptionImp(shopAlias)
+    const subscriptionImp = new SubscriptionImp(shopAlias);
     const subscriptions = await subscriptionImp.subscriptionsByContract(
       subscriptionContract
-    )
+    );
 
     if (!subscriptions.length) {
       return res
         .status(404)
-        .json({ message: "Customer has no active subscriptions" })
+        .json({ message: "Customer has no active subscriptions" });
     }
 
     const results = await Promise.all(
       subscriptions.map((subscriptionId) =>
         subscriptionImp.pauseSubscription(subscriptionId)
       )
-    )
+    );
 
-    const allOk = results.every((result) => result.ok)
+    const allOk = results.every((result) => result.ok);
 
     if (allOk) {
       return res
         .status(200)
-        .json({ message: "Subscription paused successfully" })
+        .json({ message: "Subscription paused successfully" });
     } else {
       return res
         .status(400)
-        .json({ message: `Error pausing subscription: ${results[0].message}` })
+        .json({ message: `Error pausing subscription: ${results[0].message}` });
     }
   } catch (error) {
-    console.error("Unexpected error:", error)
-    return res.status(500).json({ message: "Internal server error" })
+    console.error("Unexpected error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-})
+});
 
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
   try {
-    const { shop, subscriptionId, event } = req.body
-    const { attentiveKey, shopAlias } = SHOPS_ORIGIN[shop]
-    const subscriptionImp = new SubscriptionImp(shopAlias)
+    const { shop, subscriptionId, event } = req.body;
+    const { attentiveKey, shopAlias } = SHOPS_ORIGIN[shop];
+    const subscriptionImp = new SubscriptionImp(shopAlias);
     const subscription = await subscriptionImp.getSubscriptionByContract(
       subscriptionId
-    )
+    );
 
-    if (!subscription) throw new Error("Subscription not found")
+    if (!subscription) throw new Error("Subscription not found");
 
     const eventData = {
       type: event,
@@ -283,10 +283,10 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
         subscription_id: subscription.id,
         subscription_status: subscription.status,
       },
-    }
+    };
 
-    logger.info(`Sending event to Attentive: ${JSON.stringify(eventData)}`)
-    logger.info(`Attentive key: ${attentiveKey}`)
+    logger.info(`Sending event to Attentive: ${JSON.stringify(eventData)}`);
+    logger.info(`Attentive key: ${attentiveKey}`);
 
     const response = await fetch(
       "https://api.attentivemobile.com/v1/events/custom",
@@ -298,22 +298,22 @@ router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
         },
         body: JSON.stringify(eventData),
       }
-    )
+    );
 
     if (!response.ok) {
-      logger.error(JSON.stringify(response))
-      throw new Error(`Error en la API: ${response.statusText}`)
+      logger.error(JSON.stringify(response));
+      throw new Error(`Error en la API: ${response.statusText}`);
     }
 
-    console.log("Evento enviado con éxito a Attentive")
+    console.log("Evento enviado con éxito a Attentive");
 
-    res.json({ message: `Attentive event sent (${event})` })
+    res.json({ message: `Attentive event sent (${event})` });
   } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(500).send({ message: err.message })
+    console.log(err);
+    logger.error(err.message);
+    res.status(500).send({ message: err.message });
   }
-})
+});
 
 /**
  *  @openapi
@@ -342,72 +342,72 @@ router.post(
   "/draft-orders-expired-delete",
   authenticateToken,
   async (req, res) => {
-    let draftOrderErrors = []
-    let shopAlias = ""
+    let draftOrderErrors = [];
+    let shopAlias = "";
     try {
-      shopAlias = req.body.shopAlias
-      const expiredDraftOrders = await getExpiredDraftOrders(shopAlias)
+      shopAlias = req.body.shopAlias;
+      const expiredDraftOrders = await getExpiredDraftOrders(shopAlias);
       for (const draftOrder of expiredDraftOrders) {
         try {
-          await setDraftOrderStatus(draftOrder, "PROCESSING")
+          await setDraftOrderStatus(draftOrder, "PROCESSING");
           const [message, draftOrderId] = await deleteDraftOrder(
             draftOrder.shop_alias,
             draftOrder.draft_order
-          )
+          );
           if (!message) {
-            const success_message = `Draft order ${draftOrderId} deleted successfully from DB and from Shopify`
-            logger.info(success_message)
+            const success_message = `Draft order ${draftOrderId} deleted successfully from DB and from Shopify`;
+            logger.info(success_message);
             await setDraftOrderStatus(
               draftOrder,
               "COMPLETED",
               success_message,
               draftOrder.retries + 1
-            )
-          } else throw Error(message)
+            );
+          } else throw Error(message);
         } catch (err) {
-          draftOrderErrors.push([draftOrder.draftOrder, err.message])
+          draftOrderErrors.push([draftOrder.draftOrder, err.message]);
           await setDraftOrderStatus(
             draftOrder,
             "ERROR",
             err.message,
             draftOrder.retries + 1
-          )
-          logger.error(err.message)
+          );
+          logger.error(err.message);
         }
       }
 
       if (draftOrderErrors.length)
         throw new Error(
           "Error while trying to delete some expired draft orders from the webhook"
-        )
+        );
       res.json({
         message: `Draft orders from ${shopAlias} deleted successfully`,
-      })
+      });
     } catch (err) {
-      console.log(err)
-      logger.error(err.message)
-      res.status(200).send({ message: err.message })
+      console.log(err);
+      logger.error(err.message);
+      res.status(200).send({ message: err.message });
 
       const errorMessage = err.message
         .replace(/[^\w\s]/gi, "")
-        .replace(/[\n\t]/g, " ")
-      const errorRoute = "📌 ROUTE: /webhook/draft-orders-expired-delete"
-      const errorShop = `🏪 SHOP: ${shopAlias}\\n`
+        .replace(/[\n\t]/g, " ");
+      const errorRoute = "📌 ROUTE: /webhook/draft-orders-expired-delete";
+      const errorShop = `🏪 SHOP: ${shopAlias}\\n`;
 
-      let errorData = "ℹ️ DRAFT ORDERS ERRRORS:"
+      let errorData = "ℹ️ DRAFT ORDERS ERRRORS:";
       for (const [draftOrder, message] of draftOrderErrors) {
-        errorData += `\\n📃 DO ${draftOrder}: ${message}`
+        errorData += `\\n📃 DO ${draftOrder}: ${message}`;
       }
-      errorData += "\\n"
+      errorData += "\\n";
 
       const errorTitle =
-        "🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook"
-      const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`
-      const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`
-      messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle)
+        "🔴 ❌ ERROR: Error while trying to delete some expired draft orders from the webhook";
+      const errorDescription = `📝 DESCRIPTION: ${errorMessage}\\n`;
+      const errorFullMessage = `${errorShop}${errorData}${errorDescription}${errorRoute}`;
+      messageImp.toCancelSubscriptionErrors(errorFullMessage, errorTitle);
     }
   }
-)
+);
 
 /**
  *  @openapi
@@ -450,12 +450,12 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
       email,
       shopAlias,
       klaviyoShopAlias,
-    } = req.body
+    } = req.body;
 
-    const shopifyImp = new ShopifyImp(shopAlias)
+    const shopifyImp = new ShopifyImp(shopAlias);
 
-    let today = new Date()
-    today.setHours(0, 0, 0, 0)
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const inputMutation = `{
       title: "${title}",
@@ -498,27 +498,27 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
         appliesOnSubscription: false
       },
       recurringCycleLimit: 1
-    }`
+    }`;
 
-    const codeDiscountNode = await shopifyImp.createDiscountCode(inputMutation)
+    const codeDiscountNode = await shopifyImp.createDiscountCode(inputMutation);
 
     // Si ocurre un error al crear el código en Shopify
     if (!codeDiscountNode) {
-      res.status(200).json({ message: "Error" })
-      return
+      res.status(200).json({ message: "Error" });
+      return;
     }
 
-    const klaviyo = new KlaviyoImp(klaviyoShopAlias)
+    const klaviyo = new KlaviyoImp(klaviyoShopAlias);
     klaviyo.sendEvent("Cross discount", email, {
       discountCode: code,
-    })
-    res.json({ message: "Cross discount sent successfully to Klaviyo" })
+    });
+    res.json({ message: "Cross discount sent successfully to Klaviyo" });
   } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(200).send({ message: err.message })
+    console.log(err);
+    logger.error(err.message);
+    res.status(200).send({ message: err.message });
   }
-})
+});
 
 /**
  *  @openapi
@@ -547,57 +547,57 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
  */
 router.post("/purchase-camihotsize-m", authenticateToken, async (req, res) => {
   try {
-    const { email, shortNameStore } = req.body
-    const klaviyo = new KlaviyoImp(shortNameStore)
-    const nameEvent = "ZTO HS CamiHotSize M"
+    const { email, shortNameStore } = req.body;
+    const klaviyo = new KlaviyoImp(shortNameStore);
+    const nameEvent = "ZTO HS CamiHotSize M";
     await klaviyo.sendEvent(nameEvent, email, {
       nameEvent: nameEvent,
-    })
+    });
 
     res.json({
       message: "'ZTO HS CamiHotSize M' event sent successfully to Klaviyo.",
-    })
+    });
   } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(200).send({ message: err.message })
+    console.log(err);
+    logger.error(err.message);
+    res.status(200).send({ message: err.message });
   }
-})
+});
 
 router.post(
   "/check-influencers-mesagges",
   authenticateToken,
   async (req, res) => {
-    const gorgias = new GorgiasImp()
-    const ticketId = req.body.ticket_id
+    const gorgias = new GorgiasImp();
+    const ticketId = req.body.ticket_id;
 
     try {
-      const ticketDB = await dbRepository.getTicketById(ticketId)
-      const ticketDBTags = ticketDB ? ticketDB.tags : null
+      const ticketDB = await dbRepository.getTicketById(ticketId);
+      const ticketDBTags = ticketDB ? ticketDB.tags : null;
 
-      const ticket = await gorgias.getTicket(ticketId)
-      if (!ticket) return res.status(404).json({ message: "Ticket not found" })
-      const ticketTags = ticket.tags.map((tag) => tag.name).join(", ")
-      console.log({ ticketId, ticketTags })
+      const ticket = await gorgias.getTicket(ticketId);
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+      const ticketTags = ticket.tags.map((tag) => tag.name).join(", ");
+      console.log({ ticketId, ticketTags });
 
       if (ticketDB) {
         if (ticketDBTags != ticketTags) {
-          await dbRepository.updateTicketTags(ticketId, ticketTags)
-          console.log(`✅ Ticket ${ticketId} updated in DB`)
+          await dbRepository.updateTicketTags(ticketId, ticketTags);
+          console.log(`✅ Ticket ${ticketId} updated in DB`);
         }
-        console.log(`ℹ️ Ticket ${ticketId} already exists in DB`)
+        console.log(`ℹ️ Ticket ${ticketId} already exists in DB`);
       } else {
-        await dbRepository.saveTicket(ticketId, ticketTags, "UNPROCESSED", 0)
-        console.log(`✅ Ticket ${ticketId} saved as UNPROCESSED`)
+        await dbRepository.saveTicket(ticketId, ticketTags, "UNPROCESSED", 0);
+        console.log(`✅ Ticket ${ticketId} saved as UNPROCESSED`);
       }
 
-      return res.status(200).json({ message: "Ticket captured" })
+      return res.status(200).json({ message: "Ticket captured" });
     } catch (err) {
-      console.error(err)
-      return res.status(500).json({ message: "Internal error" })
+      console.error(err);
+      return res.status(500).json({ message: "Internal error" });
     }
   }
-)
+);
 
 /**
  *  @openapi
@@ -629,112 +629,112 @@ router.post(
   "/slack-app",
   express.urlencoded({ extended: true }),
   async (req, res) => {
-    const { command, text = "", channel_id } = req.body
+    const { command, text = "", channel_id } = req.body;
 
     if (command !== "/survey-report") {
-      return res.status(200).json({ message: "Comando no reconocido." })
+      return res.status(200).json({ message: "Comando no reconocido." });
     }
 
-    const parts = text.trim().split(/\s+/)
+    const parts = text.trim().split(/\s+/);
 
-    const sheetUrl = parts.shift()
-    const presentationUrl = parts.pop()
-    const sheetName = parts.join(" ").replace(/\*/g, "")
+    const sheetUrl = parts.shift();
+    const presentationUrl = parts.pop();
+    const sheetName = parts.join(" ").replace(/\*/g, "");
 
     if (!sheetUrl || !sheetName || !presentationUrl) {
       return res.status(200).json({
         response_type: "ephemeral",
         text: "Uso: `/survey-report [Sheet URL] [Sheet Name] [Presentation Url]`",
-      })
+      });
     }
 
     res.status(200).json({
       response_type: "ephemeral",
       text: `El reporte para *${sheetName}* será enviado en breve 👨🏻‍💻`,
-    })
+    });
 
     try {
       const spreadsheetId = sheetUrl
         .replace("https://docs.google.com/spreadsheets/d/", "")
-        .split("/")[0]
+        .split("/")[0];
       if (!spreadsheetId) {
-        throw new Error("Spreadsheet ID inválido.")
+        throw new Error("Spreadsheet ID inválido.");
       }
 
       const presentationId = presentationUrl
         .replace("https://docs.google.com/presentation/d/", "")
-        .split("/")[0]
+        .split("/")[0];
       if (!presentationId) {
-        throw new Error("Presentation ID inválido.")
+        throw new Error("Presentation ID inválido.");
       }
 
-      const google = new GoogleImp()
+      const google = new GoogleImp();
       const rawData = await google.getValues(
         spreadsheetId,
         `${sheetName}!A1:HZ`
-      )
+      );
 
       const pptxTemplateFilePath = await google.downloadFile(
         presentationId,
         "template.pptx"
-      )
+      );
 
-      const parsedData = parseSurveyData(rawData)
-      const stats = analyzeSurvey(parsedData)
+      const parsedData = parseSurveyData(rawData);
+      const stats = analyzeSurvey(parsedData);
 
-      const tmpDir = path.join(process.cwd(), "tmp")
-      await fs.mkdir(tmpDir, { recursive: true })
-      const timestamp = Date.now()
-      const fileName = `survey-report-${timestamp}.xlsx`
-      const excelFilePath = path.join(tmpDir, fileName)
-      const pptxFilePath = path.join(tmpDir, "survey.pptx")
+      const tmpDir = path.join(process.cwd(), "tmp");
+      await fs.mkdir(tmpDir, { recursive: true });
+      const timestamp = Date.now();
+      const fileName = `survey-report-${timestamp}.xlsx`;
+      const excelFilePath = path.join(tmpDir, fileName);
+      const pptxFilePath = path.join(tmpDir, "survey.pptx");
 
-      const enrichedMap = await enrichSurveyWithAI(stats, parsedData)
+      const enrichedMap = await enrichSurveyWithAI(stats, parsedData);
 
-      await generatePresentation(enrichedMap)
-      await generateExcelReport(stats, enrichedMap, excelFilePath)
+      await generatePresentation(enrichedMap);
+      await generateExcelReport(stats, enrichedMap, excelFilePath);
 
-      const slack = new SlackImp()
+      const slack = new SlackImp();
       await slack.uploadFile(
         excelFilePath,
         channel_id,
         `Reporte de encuestas: *${sheetName}*`,
         fileName,
         sheetName
-      )
+      );
       await slack.uploadFile(
         pptxFilePath,
         channel_id,
         ``,
         "survey.pptx",
         sheetName
-      )
+      );
 
-      await fs.unlink(excelFilePath)
-      console.log(`Deleted file: ${excelFilePath}`)
+      await fs.unlink(excelFilePath);
+      console.log(`Deleted file: ${excelFilePath}`);
 
-      await fs.unlink(pptxFilePath)
-      console.log(`Deleted file: ${pptxFilePath}`)
+      await fs.unlink(pptxFilePath);
+      console.log(`Deleted file: ${pptxFilePath}`);
 
-      await fs.unlink(pptxTemplateFilePath)
-      console.log(`Deleted file: ${pptxTemplateFilePath}`)
+      await fs.unlink(pptxTemplateFilePath);
+      console.log(`Deleted file: ${pptxTemplateFilePath}`);
     } catch (err) {
-      console.error("Error handling /survey-report:", err)
+      console.error("Error handling /survey-report:", err);
 
       try {
-        const slack = new SlackImp()
+        const slack = new SlackImp();
         await slack.postMessage(
           channel_id,
           `❌ No se pudo generar el reporte para *${sheetName}*: ${err.message}`
-        )
+        );
       } catch (notifyErr) {
-        console.error("Error sending failure message to Slack:", notifyErr)
+        console.error("Error sending failure message to Slack:", notifyErr);
       }
     }
 
-    return null
+    return null;
   }
-)
+);
 
 /**
  * @openapi
@@ -760,31 +760,31 @@ router.post(
   "/interactivity-slack-app",
   express.urlencoded({ extended: true }),
   async (req, res) => {
-    const payload = JSON.parse(req.body.payload)
+    const payload = JSON.parse(req.body.payload);
 
     if (payload.type === "view_submission") {
-      const callback = payload.view.callback_id
-      const data = parseSlackViewState(payload.view.state.values)
-      const slack = new SlackImp()
-      const google = new GoogleImp()
+      const callback = payload.view.callback_id;
+      const data = parseSlackViewState(payload.view.state.values);
+      const slack = new SlackImp();
+      const google = new GoogleImp();
 
       switch (callback) {
         case "intelligems_test":
-          const values = Object.values(data)
-          const [description, dates, store] = values
-          const [start, end] = dates
+          const values = Object.values(data);
+          const [description, dates, store] = values;
+          const [start, end] = dates;
 
-          const startDate = start.split("-")
-          const [startYear, startMonth, startDay] = startDate
-          const startDateFormat = `${startDay}/${startMonth}/${startYear}`
+          const startDate = start.split("-");
+          const [startYear, startMonth, startDay] = startDate;
+          const startDateFormat = `${startDay}/${startMonth}/${startYear}`;
 
-          const endDate = end.split("-")
-          const [endYear, endMonth, endDay] = endDate
-          const endDateFormat = `${endDay}/${endMonth}/${endYear}`
+          const endDate = end.split("-");
+          const [endYear, endMonth, endDay] = endDate;
+          const endDateFormat = `${endDay}/${endMonth}/${endYear}`;
 
-          let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
+          let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`;
           if (startDateFormat === endDateFormat) {
-            dateRange = `🚨 ${store} - ${endDateFormat}`
+            dateRange = `🚨 ${store} - ${endDateFormat}`;
           }
 
           const blocks = [
@@ -805,7 +805,7 @@ router.post(
                 text: `${dateRange}`,
               },
             },
-          ]
+          ];
 
           google.updateRowByCellValue(
             process.env.REPORTS_SHEET_ID,
@@ -813,22 +813,22 @@ router.post(
             0, // Columna A (índice 0)
             store,
             [[store, startDateFormat, endDateFormat]]
-          )
+          );
 
-          let channelsToNotify = process.env.TEST_CHANNELS
-          channelsToNotify = channelsToNotify.split(",")
+          let channelsToNotify = process.env.TEST_CHANNELS;
+          channelsToNotify = channelsToNotify.split(",");
 
           for (const channel of channelsToNotify) {
-            await slack.postMessage(channel, description, blocks)
+            await slack.postMessage(channel, description, blocks);
           }
 
-          break
+          break;
       }
     }
 
     if (payload.type === "shortcut" || payload.type === "block_actions") {
-      const triggerId = payload.trigger_id
-      const modalView = getModalView(payload.callback_id)
+      const triggerId = payload.trigger_id;
+      const modalView = getModalView(payload.callback_id);
 
       try {
         const response = await fetch("https://slack.com/api/views.open", {
@@ -841,25 +841,25 @@ router.post(
             trigger_id: triggerId,
             view: modalView,
           }),
-        })
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
         if (!data.ok) {
-          console.error("Slack error:", data)
-          return res.status(500).send("Slack API error")
+          console.error("Slack error:", data);
+          return res.status(500).send("Slack API error");
         }
 
-        return res.status(200).send()
+        return res.status(200).send();
       } catch (err) {
-        console.error("Fetch error:", err)
-        return res.status(500).send("Server error")
+        console.error("Fetch error:", err);
+        return res.status(500).send("Server error");
       }
     }
 
-    return res.status(200).send()
+    return res.status(200).send();
   }
-)
+);
 
 /**
  * POST /add-profile-to-klaviyo-list
@@ -889,10 +889,10 @@ router.post(
  *  - 4xx/5xx    : validation or upstream errors, with structured JSON.
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
-  const klaviyo = new KlaviyoImp()
-  const { klaviyoToken } = req.body
+  const klaviyo = new KlaviyoImp();
+  const { klaviyoToken } = req.body;
 
-  const startedAt = Date.now()
+  const startedAt = Date.now();
 
   try {
     if (!klaviyoToken) {
@@ -901,20 +901,20 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
           code: "server_misconfig",
           message: "Klaviyo API key is not configured.",
         },
-      })
+      });
     }
 
     const { errors, listId, addToList, addIfDuplicate, profile } =
-      validateCreateProfilePayload(req.body)
+      validateCreateProfilePayload(req.body);
     if (errors.length) {
       return res
         .status(400)
-        .json({ error: { code: "invalid_request", details: errors } })
+        .json({ error: { code: "invalid_request", details: errors } });
     }
 
     // 1) Create profile (idempotency key reduces accidental duplicates on retries)
-    let profileId = null
-    let createdFresh = false
+    let profileId = null;
+    let createdFresh = false;
 
     try {
       const createBody = {
@@ -930,7 +930,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             ...(profile.locale ? { locale: profile.locale } : {}),
           },
         },
-      }
+      };
 
       const createRes = await klaviyo.klaviyoFetch(
         "/profiles",
@@ -939,17 +939,17 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
           body: createBody,
         },
         klaviyoToken
-      )
+      );
 
-      profileId = createRes.data?.data?.id
-      createdFresh = true
+      profileId = createRes.data?.data?.id;
+      createdFresh = true;
     } catch (err) {
       // Handle duplicate profile (409)
       if (
         err.status === 409 &&
         err.data?.errors?.[0]?.code === "duplicate_profile"
       ) {
-        const duplicateId = err.data?.errors?.[0]?.meta?.duplicate_profile_id
+        const duplicateId = err.data?.errors?.[0]?.meta?.duplicate_profile_id;
         if (!duplicateId) {
           // Defensive: Klaviyo should send this, but don't assume
           return res.status(502).json({
@@ -959,7 +959,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
                 'Duplicate profile detected but no "duplicate_profile_id" was provided by Klaviyo.',
               upstream: err.data,
             },
-          })
+          });
         }
 
         if (!addIfDuplicate) {
@@ -968,12 +968,12 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             message:
               'Profile already exists. Not added to list because "addIfDuplicate" is false.',
             profileId: duplicateId,
-          })
+          });
         }
 
         // Use duplicate id for downstream "add to list"
-        profileId = duplicateId
-        createdFresh = false
+        profileId = duplicateId;
+        createdFresh = false;
       } else {
         // Any other upstream error
         return res.status(err.status || 502).json({
@@ -982,7 +982,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             message: "Failed to create Klaviyo profile.",
             upstream: err.data || err.message,
           },
-        })
+        });
       }
     }
 
@@ -998,7 +998,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             },
           },
           klaviyoToken
-        )
+        );
 
         // Klaviyo returns 204 No Content on success
         if (addRes.status === 204) {
@@ -1008,7 +1008,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
               : "Existing profile added to list.",
             profileId,
             listId,
-          })
+          });
         }
 
         // Defensive: unexpected success code
@@ -1018,12 +1018,12 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
           status: addRes.status,
           profileId,
           listId,
-        })
+        });
       } catch (err) {
         // If the profile is already in the list, Klaviyo may return a 409 or 400 depending on API behavior.
         // You asked to respond 200 saying it’s already in the list if not adding in duplicate case.
         // Here, if Klaviyo indicates "already in relationship", we normalize to 200.
-        const upstream = err.data || {}
+        const upstream = err.data || {};
         const maybeAlreadyInList =
           err.status === 409 ||
           (Array.isArray(upstream.errors) &&
@@ -1031,14 +1031,14 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
               String(e?.detail || "")
                 .toLowerCase()
                 .includes("already")
-            ))
+            ));
 
         if (maybeAlreadyInList) {
           return res.status(200).json({
             message: "Profile is already in the list.",
             profileId,
             listId,
-          })
+          });
         }
 
         return res.status(err.status || 502).json({
@@ -1049,7 +1049,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
           },
           profileId,
           listId,
-        })
+        });
       }
     }
 
@@ -1059,7 +1059,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
         ? "Profile created."
         : "Profile exists (duplicate).",
       profileId,
-    })
+    });
   } catch (err) {
     // Top-level catch-all
     return res.status(500).json({
@@ -1067,25 +1067,154 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
         code: "unhandled_error",
         message: err?.message || "Unexpected server error.",
       },
-    })
+    });
   } finally {
-    const ms = Date.now() - startedAt
+    const ms = Date.now() - startedAt;
     // Minimal structured log (swap for your logger)
     // console.info(JSON.stringify({ msg: 'klaviyo.add-profile', ms }));
   }
-})
+});
 
-router.post("/counterdelivery-test", async(req, res) => {
-  const google = new GoogleImp()
+router.post("/counterdelivery-test", async (req, res) => {
+  try {
+    const google = new GoogleImp();
+    const orderPayload = req.body;
 
-  let orderPayload = req.body
+    const ORDER_STATUS = {
+      default: "SIN CONFIRMAR",
+      confirmed: "CONFIRMADA",
+      canceled: "CANCELADA",
+      create_again: "CREAR DE NUEVO",
+    };
+    const DELIVERY_STATUS = {
+      default: "SIN CONFIRMAR",
+      delivered: "ENTREGADA",
+      in_transit: "EN TRANSITO",
+    };
 
-  console.log("orderPayload:", orderPayload)
-  console.log("order", orderPayload.order)
+    const orderNumber = orderPayload.order || "";
+    const customerName = orderPayload.customer;
+    const rawCreatedAt = orderPayload.created_at || null;
 
-  return res.status(200).json({
-    message: "Counter Delivery Test Successful"
-  })
-})
+    const createdAtForSheets = rawCreatedAt
+      ? new Date(rawCreatedAt).toISOString().replace("T", " ").split(".")[0]
+      : "";
 
-export default router
+    // A1 notation: hoja y columnas destino
+    const spreadsheetId = orderPayload.sheet_id;
+    const sheetName = orderPayload.sheet_name;
+    const range = `${sheetName}!A:C`;
+
+    // Fila a insertar
+    const values = [
+      [
+        orderNumber,
+        customerName,
+        createdAtForSheets,
+        ORDER_STATUS.default,
+        DELIVERY_STATUS.default,
+      ],
+    ];
+
+    await google.appendValues(spreadsheetId, range, values);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Actualiza estado/delivery/notas por número de orden
+router.put("/counterdelivery-test", async (req, res) => {
+  try {
+    const google = new GoogleImp();
+    const {
+      order,
+      sheet_id: spreadsheetId,
+      sheet_name: sheetName,
+      notes,
+      action,
+    } = req.body;
+
+    if (!order || !spreadsheetId || !sheetName) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error: "order, sheet_id y sheet_name son requeridos",
+        });
+    }
+
+    // Map de acciones
+    const ORDER_STATUS = {
+      default: "SIN CONFIRMAR",
+      confirmed: "CONFIRMADA",
+      canceled: "CANCELADA",
+      create_again: "CREAR DE NUEVO",
+    };
+
+    const DELIVERY_STATUS = {
+      default: "SIN CONFIRMAR",
+      delivered: "ENTREGADA",
+      in_transit: "EN TRANSITO",
+    };
+
+    // 1) Leemos la hoja para obtener la fila actual (para conservar valores no cambiados)
+    const values = await google.getValues(spreadsheetId, `${sheetName}`);
+    if (!values || values.length === 0) {
+      return res.status(404).json({ ok: false, error: "Hoja sin datos" });
+    }
+
+    // Busca por número de orden en la columna A (índice 0)
+    const rowIndex = values.findIndex((row) => row[0] === order);
+    if (rowIndex === -1) {
+      return res.status(404).json({ ok: false, error: "Orden no encontrada" });
+    }
+
+    const currentRow = values[rowIndex] || [];
+    const currentEstado = currentRow[3] || ""; // Columna D
+    const currentDelivery = currentRow[4] || ""; // Columna E
+    const currentNotes = currentRow[5] || ""; // Columna F
+
+    // 2) Decidimos qué actualizar
+    const isOrderAction =
+      action && Object.prototype.hasOwnProperty.call(ORDER_STATUS, action);
+    const isDeliveryAction =
+      action && Object.prototype.hasOwnProperty.call(DELIVERY_STATUS, action);
+
+    const newEstado = isOrderAction ? ORDER_STATUS[action] : currentEstado;
+    const newDelivery = isDeliveryAction
+      ? DELIVERY_STATUS[action]
+      : currentDelivery;
+    const newNotes = typeof notes === "string" ? notes : currentNotes;
+
+    // 3) Actualizamos columnas D:F de esa misma fila
+    // lookupColumnIndex = 0 (col A), lookupValue = order, startColumn = 'D'
+    await google.updateRowByCellValue(
+      spreadsheetId,
+      sheetName,
+      0,
+      order,
+      [[newEstado, newDelivery, newNotes]],
+      "D",
+      "D"
+    );
+
+    res.json({
+      ok: true,
+      message: "Fila actualizada",
+      data: {
+        order,
+        estado: newEstado,
+        delivery: newDelivery,
+        notes: newNotes,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+export default router;
