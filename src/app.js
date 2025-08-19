@@ -10,6 +10,11 @@ dotenv.config()
 
 export const app = express()
 
+if (process.env.NODE_ENV !== 'production') {
+  // Habilitar proxy para loopback y redes locales (RFC4193)
+  app.set('trust proxy', ['loopback', 'uniquelocal']);
+}
+
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   limit: 40, // Limit each IP to 40 requests per `window` (here, per 1 minutes).
