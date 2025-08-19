@@ -1097,8 +1097,11 @@ router.post("/counterdelivery-test", async (req, res) => {
     const rawCreatedAt = orderPayload.created_at || null;
 
     const createdAtForSheets = rawCreatedAt
-      ? new Date(rawCreatedAt).toISOString().replace("T", " ").split(".")[0]
-      : "";
+    ? new Date(rawCreatedAt).toLocaleString("en-CA", {
+        timeZone: "America/Bogota",
+        hour12: false,
+      }).replace(",", "")
+    : "";
 
     // A1 notation: hoja y columnas destino
     const spreadsheetId = orderPayload.sheet_id;
