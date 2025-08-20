@@ -1075,6 +1075,17 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /report:
+ *   post:
+ *     tags:
+ *       - Webhook
+ *     description: Insert order created data into Google Sheets
+ *     responses:
+ *       200:
+ *         description: Returns JSON message
+ */
 router.post("/counterdelivery-test", async (req, res) => {
   try {
     const google = new GoogleImp();
@@ -1097,11 +1108,13 @@ router.post("/counterdelivery-test", async (req, res) => {
     const rawCreatedAt = orderPayload.created_at || null;
 
     const createdAtForSheets = rawCreatedAt
-    ? new Date(rawCreatedAt).toLocaleString("en-CA", {
-        timeZone: "America/Bogota",
-        hour12: false,
-      }).replace(",", "")
-    : "";
+      ? new Date(rawCreatedAt)
+          .toLocaleString("en-CA", {
+            timeZone: "America/Bogota",
+            hour12: false,
+          })
+          .replace(",", "")
+      : "";
 
     // A1 notation: hoja y columnas destino
     const spreadsheetId = orderPayload.sheet_id;
@@ -1141,12 +1154,10 @@ router.put("/counterdelivery-test", async (req, res) => {
     } = req.body;
 
     if (!order || !spreadsheetId || !sheetName) {
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: "order, sheet_id y sheet_name son requeridos",
-        });
+      return res.status(400).json({
+        ok: false,
+        error: "order, sheet_id y sheet_name son requeridos",
+      });
     }
 
     // Map de acciones
@@ -1214,6 +1225,59 @@ router.put("/counterdelivery-test", async (req, res) => {
         notes: newNotes,
       },
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * Configura un dropdown con colores en una hoja/rango específico.
+ * Body:
+ *  - sheet_id (string)       [requerido]
+ *  - sheet_name (string)     [requerido]
+ *  - start_col (string)      [requerido]  ej. "D"
+ *  - end_col (string)        [requerido]  ej. "D"
+ *  - start_row (number)      [opcional]   default 2
+ *  - options (array)         [requerido]  [{ value, bgColor?, textColor? }]
+ */
+router.post("/sheetsconfig/dropwdown", async (req, res) => {
+  try {
+    const {
+      sheet_id: spreadsheetId,
+      sheet_name: sheetName,
+      start_col: startColLetter,
+      end_col: endColLetter,
+      start_row: startRowIndex = 2,
+      options,
+    } = req.body || {};
+
+    if (
+      !spreadsheetId ||
+      !sheetName ||
+      !startColLetter ||
+      !endColLetter ||
+      !Array.isArray(options) ||
+      options.length === 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Parámetros requeridos: sheet_id, sheet_name, start_col, end_col, options[]",
+      });
+    }
+
+    const google = new GoogleImp();
+    await google.setDropdownWithColors({
+      spreadsheetId,
+      sheetName,
+      startColLetter,
+      endColLetter,
+      startRowIndex: Number(startRowIndex) || 2,
+      options,
+    });
+
+    res.json({ ok: true, message: "Dropdown configurado correctamente." });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, error: err.message });

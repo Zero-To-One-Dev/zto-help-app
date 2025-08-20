@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { google } from "googleapis";
+import { colLetterToIndex, getSheetIdByName, hexToRgb } from "../services/google-utils.js";
 
 class GoogleImp {
   async init() {
@@ -19,33 +20,6 @@ class GoogleImp {
     const drive = google.drive({ version: "v3", auth });
 
     return { auth, sheets, drive };
-  }
-
-  async getSheetIdByName(spreadsheetId, sheetName) {
-    const { sheets } = await this.init();
-    const { data } = await sheets.spreadsheets.get({
-      spreadsheetId,
-      fields: "sheets(properties(sheetId,title))",
-    });
-    const sheet = data.sheets.find((s) => s.properties.title === sheetName);
-    if (!sheet) throw new Error(`Sheet "${sheetName}" not found`);
-    return sheet.properties.sheetId;
-  }
-  colLetterToIndex(letter) {
-    // A -> 0, B -> 1 ... Z -> 25, AA -> 26 ...
-    let idx = 0;
-    for (let i = 0; i < letter.length; i++) {
-      idx = idx * 26 + (letter.charCodeAt(i) - 64);
-    }
-    return idx - 1;
-  }
-  hexToRgb(hex) {
-    const clean = hex.replace("#", "");
-    const bigint = parseInt(clean, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return { red: r / 255, green: g / 255, blue: b / 255 };
   }
 
   async appendValues(spreadsheetId, range, values) {
@@ -111,7 +85,7 @@ class GoogleImp {
    * @param {string} startColLetter  - ej. "D"
    * @param {string} endColLetter    - ej. "D" (mismo si es 1 columna)
    * @param {number} startRowIndex   - 2 para empezar debajo del header
-   * @param {Array<{value:string,color?:string}>} options - lista de opciones y color HEX opcional
+   * @param {Array<{value:string,bgColor?:string,textColor?:string}>} options
    */
   async setDropdownWithColors({
     spreadsheetId,
@@ -122,10 +96,14 @@ class GoogleImp {
     options,
   }) {
     const { sheets } = await this.init();
-    const sheetId = await this.getSheetIdByName(spreadsheetId, sheetName);
+    const sheetId = await getSheetIdByName({
+      sheets,
+      spreadsheetId,
+      sheetName,
+    });
 
-    const startColumnIndex = this.colLetterToIndex(startColLetter);
-    const endColumnIndex = this.colLetterToIndex(endColLetter) + 1; // exclusivo
+    const startColumnIndex = colLetterToIndex(startColLetter);
+    const endColumnIndex = colLetterToIndex(endColLetter) + 1; // exclusivo
 
     const gridRange = {
       sheetId,
@@ -135,16 +113,15 @@ class GoogleImp {
       endColumnIndex,
     };
 
-    // Data Validation (Dropdown)
+    // 1) Data Validation (Dropdown)
     const dataValidationRule = {
       condition: {
         type: "ONE_OF_LIST",
         values: options.map((o) => ({ userEnteredValue: o.value })),
       },
       strict: true,
-      showCustomUi: true, // muestra el UI de dropdown
+      showCustomUi: true,
     };
-
     const requests = [
       {
         repeatCell: {
@@ -155,18 +132,13 @@ class GoogleImp {
       },
     ];
 
-    // Formato condicional por opción (fondo y/o texto)
+    // 2) Formato condicional por opción (fondo y/o texto)
     options.forEach((opt) => {
       const format = { textFormat: { bold: true } };
+      if (opt.bgColor) format.backgroundColor = hexToRgb(opt.bgColor);
+      if (opt.textColor)
+        format.textFormat.foregroundColor = hexToRgb(opt.textColor);
 
-      if (opt.bgColor) {
-        format.backgroundColor = this.hexToRgb(opt.bgColor);
-      }
-      if (opt.textColor) {
-        format.textFormat.foregroundColor = this.hexToRgb(opt.textColor);
-      }
-
-      // si no hay ni bg ni text color, igual agrega la regla (solo bold)
       requests.push({
         addConditionalFormatRule: {
           rule: {
@@ -189,6 +161,7 @@ class GoogleImp {
       requestBody: { requests },
     });
   }
+
   async getValues(spreadsheetId, range) {
     const { sheets } = await this.init();
     const res = await sheets.spreadsheets.values.get({
