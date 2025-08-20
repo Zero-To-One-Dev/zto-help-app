@@ -1086,7 +1086,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
  *       200:
  *         description: Returns JSON message
  */
-router.post("/counterdelivery-test", async (req, res) => {
+router.post("/counterdelivery/report", async (req, res) => {
   try {
     const google = new GoogleImp();
     const orderPayload = req.body;
@@ -1142,7 +1142,7 @@ router.post("/counterdelivery-test", async (req, res) => {
 });
 
 // Actualiza estado/delivery/notas por número de orden
-router.put("/counterdelivery-test", async (req, res) => {
+router.put("/counterdelivery/report", async (req, res) => {
   try {
     const google = new GoogleImp();
     const {
@@ -1150,7 +1150,8 @@ router.put("/counterdelivery-test", async (req, res) => {
       sheet_id: spreadsheetId,
       sheet_name: sheetName,
       notes,
-      action,
+      order_action,
+      delivery_action,
     } = req.body;
 
     if (!order || !spreadsheetId || !sheetName) {
@@ -1160,7 +1161,7 @@ router.put("/counterdelivery-test", async (req, res) => {
       });
     }
 
-    // Map de acciones
+    // Mapeo de estados de orden
     const ORDER_STATUS = {
       default: "SIN CONFIRMAR",
       confirmed: "CONFIRMADA",
@@ -1168,62 +1169,61 @@ router.put("/counterdelivery-test", async (req, res) => {
       create_again: "CREAR DE NUEVO",
     };
 
+    // Mapeo de estados de entrega
     const DELIVERY_STATUS = {
       default: "SIN CONFIRMAR",
-      delivered: "ENTREGADA",
+      pending: "SIN DESPACHAR",
+      canceled: "CANCELADA",
+      rejected: "RECHAZADA",
       in_transit: "EN TRANSITO",
+      delivered: "ENTREGADA",
     };
 
-    // 1) Leemos la hoja para obtener la fila actual (para conservar valores no cambiados)
+    // 1) Leer la hoja completa
     const values = await google.getValues(spreadsheetId, `${sheetName}`);
     if (!values || values.length === 0) {
       return res.status(404).json({ ok: false, error: "Hoja sin datos" });
     }
 
-    // Busca por número de orden en la columna A (índice 0)
+    // 2) Buscar fila por número de orden en col A
     const rowIndex = values.findIndex((row) => row[0] === order);
     if (rowIndex === -1) {
       return res.status(404).json({ ok: false, error: "Orden no encontrada" });
     }
 
     const currentRow = values[rowIndex] || [];
-    const currentEstado = currentRow[3] || ""; // Columna D
-    const currentDelivery = currentRow[4] || ""; // Columna E
-    const currentNotes = currentRow[5] || ""; // Columna F
+    const currentEstado = currentRow[3] || "";  // Col D
+    const currentDelivery = currentRow[4] || ""; // Col E
+    const currentNotes = currentRow[5] || "";   // Col F
 
-    // 2) Decidimos qué actualizar
-    const isOrderAction =
-      action && Object.prototype.hasOwnProperty.call(ORDER_STATUS, action);
-    const isDeliveryAction =
-      action && Object.prototype.hasOwnProperty.call(DELIVERY_STATUS, action);
+    // 3) Decidir qué actualizar
+    const newEstado =
+      order_action && Object.prototype.hasOwnProperty.call(ORDER_STATUS, order_action)
+        ? ORDER_STATUS[order_action]
+        : currentEstado;
 
-    const newEstado = isOrderAction ? ORDER_STATUS[action] : currentEstado;
-    const newDelivery = isDeliveryAction
-      ? DELIVERY_STATUS[action]
-      : currentDelivery;
+    const newDelivery =
+      delivery_action && Object.prototype.hasOwnProperty.call(DELIVERY_STATUS, delivery_action)
+        ? DELIVERY_STATUS[delivery_action]
+        : currentDelivery;
+
     const newNotes = typeof notes === "string" ? notes : currentNotes;
 
-    // 3) Actualizamos columnas D:F de esa misma fila
-    // lookupColumnIndex = 0 (col A), lookupValue = order, startColumn = 'D'
+    // 4) Actualizar D:F en esa fila
     await google.updateRowByCellValue(
       spreadsheetId,
       sheetName,
-      0,
-      order,
+      0,       // buscar por col A
+      order,   // valor a buscar
       [[newEstado, newDelivery, newNotes]],
       "D",
-      "D"
+      "D"      // se recalcula el endColumn con newValues
     );
 
     res.json({
       ok: true,
       message: "Fila actualizada",
-      data: {
-        order,
-        estado: newEstado,
-        delivery: newDelivery,
-        notes: newNotes,
-      },
+      data: { order, estado: newEstado, delivery: newDelivery, notes: newNotes },
     });
   } catch (err) {
     console.error(err);
