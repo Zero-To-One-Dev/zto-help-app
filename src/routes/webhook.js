@@ -1322,9 +1322,9 @@ router.post("/create-order", async (req, res) => {
     }
 
     const shopifyImp = new ShopifyImp(shopAlias)
-    const res = await shopifyImp.createOrder(variables)
+    const response = await shopifyImp.createOrder(variables)
 
-    if (res.userErrors.length > 0) {
+    if (response.userErrors.length > 0) {
       return res.status(400).json({
         ok: false,
         message: "There was an error with the information provided",
