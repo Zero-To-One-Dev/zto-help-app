@@ -1284,4 +1284,29 @@ router.post("/sheetsconfig/dropwdown", async (req, res) => {
   }
 })
 
+router.post("/create-order", async (req, res) => {
+  try {
+    const { shopAlias, variables } = req.body
+    const shopifyImp = new ShopifyImp(shopAlias)
+    const res = await shopifyImp.createOrder(variables)
+
+    if (res.userErrors.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "There was an error with the information provided",
+        errors: res.userErrors,
+      })
+    } else {
+      return res.status(200).json({
+        ok: true,
+        message: "Order created successfully",
+        data: res,
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    res.status(400).json({ ok: false, error: err.message })
+  }
+})
+
 export default router
