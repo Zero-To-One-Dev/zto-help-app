@@ -2,7 +2,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import express from "express"
 import swaggerUi from "swagger-ui-express"
-import { rateLimit } from 'express-rate-limit'
+import { rateLimit } from "express-rate-limit"
 import { rateLimitHandler } from "./services/rate-limit.js"
 import openapiSpecification from "./middlewares/swagger.js"
 
@@ -10,23 +10,23 @@ dotenv.config()
 
 export const app = express()
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   // Habilitar proxy para loopback y redes locales (RFC4193)
-  app.set('trust proxy', ['loopback', 'uniquelocal']);
+  app.set("trust proxy", ["loopback", "uniquelocal"])
 }
 
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   limit: 40, // Limit each IP to 40 requests per `window` (here, per 1 minutes).
-  standardHeaders: 'draft-8', // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
+  standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   handler: async (req, res, next, options) => await rateLimitHandler(req, res),
-  statusCode: 500
+  statusCode: 500,
 })
 
 app.use(express.json())
 app.use(cors())
-app.use(limiter);
+app.use(limiter)
 
 export const HOSTNAME = process.env.HOSTNAME
 export const PORT = parseInt(process.env.PORT) || 3000
@@ -61,13 +61,14 @@ const SHOPIFY_API_SECRET_KEY_HS = process.env.SHOPIFY_API_SECRET_KEY_HS
 const SKIO_API_KEY_HS = process.env.SKIO_API_KEY_HS
 const ATTENTIVE_API_KEY_HS = process.env.ATTENTIVE_API_KEY_HS
 const PRODUCT_FAKE_VARIANT_ID_HS = process.env.PRODUCT_FAKE_VARIANT_ID_HS
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS
 const EMAIL_SENDER_HS = process.env.EMAIL_SENDER_HS
 const EMAIL_HOST_HS = process.env.EMAIL_HOST_HS
 const EMAIL_USER_HS = process.env.EMAIL_USER_HS
 const EMAIL_PASSWORD_HS = process.env.EMAIL_PASSWORD_HS
 const EMAIL_PORT_HS = parseInt(process.env.EMAIL_PORT_HS || 587)
-const KLAVIYO_TOKEN_HS = process.env.KLAVIYO_TOKEN_HS;
+const KLAVIYO_TOKEN_HS = process.env.KLAVIYO_TOKEN_HS
 
 // CS
 export const SECRET_CS = process.env.SECRET_CS
@@ -81,13 +82,14 @@ const SHOPIFY_API_SECRET_KEY_CS = process.env.SHOPIFY_API_SECRET_KEY_CS
 const SKIO_API_KEY_CS = process.env.SKIO_API_KEY_CS
 const ATTENTIVE_API_KEY_CS = process.env.ATTENTIVE_API_KEY_CS
 const PRODUCT_FAKE_VARIANT_ID_CS = process.env.PRODUCT_FAKE_VARIANT_ID_CS
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS
 const EMAIL_SENDER_CS = process.env.EMAIL_SENDER_CS
 const EMAIL_HOST_CS = process.env.EMAIL_HOST_CS
 const EMAIL_USER_CS = process.env.EMAIL_USER_CS
 const EMAIL_PASSWORD_CS = process.env.EMAIL_PASSWORD_CS
 const EMAIL_PORT_CS = parseInt(process.env.EMAIL_PORT_CS || 587)
-const KLAVIYO_TOKEN_CS = process.env.KLAVIYO_TOKEN_CS;
+const KLAVIYO_TOKEN_CS = process.env.KLAVIYO_TOKEN_CS
 
 // RS
 export const SECRET_RS = process.env.SECRET_RS
@@ -101,13 +103,14 @@ const SHOPIFY_API_SECRET_KEY_RS = process.env.SHOPIFY_API_SECRET_KEY_RS
 const SKIO_API_KEY_RS = process.env.SKIO_API_KEY_RS
 const ATTENTIVE_API_KEY_RS = process.env.ATTENTIVE_API_KEY_RS
 const PRODUCT_FAKE_VARIANT_ID_RS = process.env.PRODUCT_FAKE_VARIANT_ID_RS
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS
 const EMAIL_SENDER_RS = process.env.EMAIL_SENDER_RS
 const EMAIL_HOST_RS = process.env.EMAIL_HOST_RS
 const EMAIL_USER_RS = process.env.EMAIL_USER_RS
 const EMAIL_PASSWORD_RS = process.env.EMAIL_PASSWORD_RS
 const EMAIL_PORT_RS = parseInt(process.env.EMAIL_PORT_RS || 587)
-const KLAVIYO_TOKEN_RS = process.env.KLAVIYO_TOKEN_RS;
+const KLAVIYO_TOKEN_RS = process.env.KLAVIYO_TOKEN_RS
 
 // VS
 export const SECRET_VS = process.env.SECRET_VS
@@ -121,13 +124,14 @@ const SHOPIFY_API_SECRET_KEY_VS = process.env.SHOPIFY_API_SECRET_KEY_VS
 const SKIO_API_KEY_VS = process.env.SKIO_API_KEY_VS
 const ATTENTIVE_API_KEY_VS = process.env.ATTENTIVE_API_KEY_VS
 const PRODUCT_FAKE_VARIANT_ID_VS = process.env.PRODUCT_FAKE_VARIANT_ID_VS
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS
 const EMAIL_SENDER_VS = process.env.EMAIL_SENDER_VS
 const EMAIL_HOST_VS = process.env.EMAIL_HOST_VS
 const EMAIL_USER_VS = process.env.EMAIL_USER_VS
 const EMAIL_PASSWORD_VS = process.env.EMAIL_PASSWORD_VS
 const EMAIL_PORT_VS = parseInt(process.env.EMAIL_PORT_VS || 587)
-const KLAVIYO_TOKEN_VS = process.env.KLAVIYO_TOKEN_VS;
+const KLAVIYO_TOKEN_VS = process.env.KLAVIYO_TOKEN_VS
 
 // DM
 export const SECRET_DM = process.env.SECRET_DM
@@ -141,13 +145,14 @@ const SHOPIFY_API_SECRET_KEY_DM = process.env.SHOPIFY_API_SECRET_KEY_DM
 const SKIO_API_KEY_DM = process.env.SKIO_API_KEY_DM
 const ATTENTIVE_API_KEY_DM = process.env.ATTENTIVE_API_KEY_DM
 const PRODUCT_FAKE_VARIANT_ID_DM = process.env.PRODUCT_FAKE_VARIANT_ID_DM
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM
 const EMAIL_SENDER_DM = process.env.EMAIL_SENDER_DM
 const EMAIL_HOST_DM = process.env.EMAIL_HOST_DM
 const EMAIL_USER_DM = process.env.EMAIL_USER_DM
 const EMAIL_PASSWORD_DM = process.env.EMAIL_PASSWORD_DM
 const EMAIL_PORT_DM = parseInt(process.env.EMAIL_PORT_DM || 587)
-const KLAVIYO_TOKEN_DM = process.env.KLAVIYO_TOKEN_DM;
+const KLAVIYO_TOKEN_DM = process.env.KLAVIYO_TOKEN_DM
 
 // MW
 export const SECRET_MW = process.env.SECRET_MW
@@ -161,22 +166,31 @@ const SHOPIFY_API_SECRET_KEY_MW = process.env.SHOPIFY_API_SECRET_KEY_MW
 const SKIO_API_KEY_MW = process.env.SKIO_API_KEY_MW
 const ATTENTIVE_API_KEY_MW = process.env.ATTENTIVE_API_KEY_MW
 const PRODUCT_FAKE_VARIANT_ID_MW = process.env.PRODUCT_FAKE_VARIANT_ID_MW
-const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW = process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW
+const PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW =
+  process.env.PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW
 const EMAIL_SENDER_MW = process.env.EMAIL_SENDER_MW
 const EMAIL_HOST_MW = process.env.EMAIL_HOST_MW
 const EMAIL_USER_MW = process.env.EMAIL_USER_MW
 const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW
 const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
-const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW;
+const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW
+
+// VSMX
+export const SHOPIFY_URL_VSMX = process.env.SHOPIFY_URL_VSMX
+const SHOPIFY_API_KEY_VSMX = process.env.SHOPIFY_API_KEY_VSMX
+const SHOPIFY_API_SECRET_KEY_VSMX = process.env.SHOPIFY_API_SECRET_KEY_VSMX
 
 // Cancel Subscription Channels To Notify
-export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS = process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS;
-export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS = process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS;
+export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS =
+  process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS
+export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS =
+  process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNEL_IDS
 
 // Update Address Channels To Notify
-export const UPDATE_ADDRESS_NOTIFY_CHANNELS = process.env.UPDATE_ADDRESS_NOTIFY_CHANNELS;
-export const UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS = process.env.UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS;
-
+export const UPDATE_ADDRESS_NOTIFY_CHANNELS =
+  process.env.UPDATE_ADDRESS_NOTIFY_CHANNELS
+export const UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS =
+  process.env.UPDATE_ADDRESS_NOTIFY_CHANNEL_IDS
 
 if (NODE_ENV === "development")
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiSpecification))
@@ -191,7 +205,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_HS,
     emailSender: EMAIL_SENDER_HS,
     attentiveKey: ATTENTIVE_API_KEY_HS,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_HS,
   },
   "https://copperslim.com": {
     shop: SHOPIFY_URL_CS,
@@ -202,7 +216,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_CS,
     emailSender: EMAIL_SENDER_CS,
     attentiveKey: ATTENTIVE_API_KEY_CS,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_CS,
   },
   "https://redusculpt.com": {
     shop: SHOPIFY_URL_RS,
@@ -213,7 +227,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_RS,
     emailSender: EMAIL_SENDER_RS,
     attentiveKey: ATTENTIVE_API_KEY_RS,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_RS,
   },
   "https://vibrosculpt.com": {
     shop: SHOPIFY_URL_VS,
@@ -224,7 +238,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_VS,
     emailSender: EMAIL_SENDER_VS,
     attentiveKey: ATTENTIVE_API_KEY_VS,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_VS,
   },
   "https://drmingtea.com": {
     shop: SHOPIFY_URL_DM,
@@ -235,7 +249,7 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_DM,
     emailSender: EMAIL_SENDER_DM,
     attentiveKey: ATTENTIVE_API_KEY_DM,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_DM,
   },
   "https://mywayhairdna.com": {
     shop: SHOPIFY_URL_MW,
@@ -246,8 +260,8 @@ export const SHOPS_ORIGIN = {
     productFakeVariantId: PRODUCT_FAKE_VARIANT_ID_MW,
     emailSender: EMAIL_SENDER_MW,
     attentiveKey: ATTENTIVE_API_KEY_MW,
-    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW
-  }
+    productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW,
+  },
 }
 
 export default {
@@ -323,10 +337,12 @@ export default {
   EMAIL_USER_MW,
   EMAIL_PASSWORD_MW,
   EMAIL_PORT_MW,
+  SHOPIFY_API_KEY_VSMX,
+  SHOPIFY_API_SECRET_KEY_VSMX,
   KLAVIYO_TOKEN_HS,
   KLAVIYO_TOKEN_CS,
   KLAVIYO_TOKEN_RS,
   KLAVIYO_TOKEN_VS,
   KLAVIYO_TOKEN_DM,
-  KLAVIYO_TOKEN_MW
+  KLAVIYO_TOKEN_MW,
 }
