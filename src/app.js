@@ -176,6 +176,8 @@ const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
 const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW
 
 // VSMX
+const SHOP_NAME_VSMX = process.env.SHOP_NAME_VSMX
+const SHOPIFY_ALIAS_VSMX = process.env.SHOPIFY_ALIAS_VSMX
 export const SHOPIFY_URL_VSMX = process.env.SHOPIFY_URL_VSMX
 const SHOPIFY_API_KEY_VSMX = process.env.SHOPIFY_API_KEY_VSMX
 const SHOPIFY_API_SECRET_KEY_VSMX = process.env.SHOPIFY_API_SECRET_KEY_VSMX
@@ -261,6 +263,11 @@ export const SHOPS_ORIGIN = {
     emailSender: EMAIL_SENDER_MW,
     attentiveKey: ATTENTIVE_API_KEY_MW,
     productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW,
+  },
+  "https://vibrosculpt.mx": {
+    shop: SHOPIFY_URL_VSMX,
+    shopAlias: SHOPIFY_ALIAS_VSMX,
+    shopName: SHOP_NAME_VSMX,
   },
 }
 
