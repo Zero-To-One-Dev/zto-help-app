@@ -1284,9 +1284,43 @@ router.post("/sheetsconfig/dropwdown", async (req, res) => {
   }
 })
 
+/**
+ * @openapi
+ * /create-order:
+ *   post:
+ *     tags:
+ *       - Orders
+ *     summary: Create a Shopify order
+ *     description: Creates an order in the shop identified by `shopAlias`. The `variables` object is passed through to ShopifyImp.createOrder(...). If Shopify returns userErrors, the endpoint responds with 400 and surfaces those errors.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - shopAlias
+ *               - variables
+ *             properties:
+ *               shopAlias:
+ *                 type: string
+ *                 description: Alias/identifier for the target Shopify shop.
+ *                 example: acme-us
+ *               variables:
+ *                 type: object
+ *                 description: Free-form payload forwarded to ShopifyImp.createOrder(...).
+ *                 additionalProperties: true
+ */
 router.post("/create-order", async (req, res) => {
   try {
     const { shopAlias, variables } = req.body
+
+    if (!shopAlias || !variables) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing required fields" })
+    }
+
     const shopifyImp = new ShopifyImp(shopAlias)
     const res = await shopifyImp.createOrder(variables)
 

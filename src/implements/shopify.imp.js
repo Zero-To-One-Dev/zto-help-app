@@ -18,7 +18,7 @@ class ShopifyImp {
     const shopify = shopifyApi({
       apiKey: SHOPIFY_API_KEY,
       apiSecretKey: SHOPIFY_API_KEY,
-      scopes: ["write_draft_orders", "read_products"],
+      scopes: ["write_draft_orders", "read_products", "write_orders"],
       hostName: HOSTNAME,
       hostScheme: "http",
       isEmbeddedApp: false,
