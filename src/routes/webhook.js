@@ -1321,7 +1321,7 @@ router.post("/create-order", async (req, res) => {
         .json({ ok: false, message: "Missing required fields" })
     }
 
-    const shopifyImp = new ShopifyImp("VSMX")
+    const shopifyImp = new ShopifyImp(shopAlias)
     const res = await shopifyImp.createOrder(variables)
 
     if (res.userErrors.length > 0) {
