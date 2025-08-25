@@ -1328,13 +1328,13 @@ router.post("/create-order", async (req, res) => {
       return res.status(400).json({
         ok: false,
         message: "There was an error with the information provided",
-        errors: res.userErrors,
+        errors: response.userErrors,
       })
     } else {
       return res.status(200).json({
         ok: true,
         message: "Order created successfully",
-        data: res,
+        data: response,
       })
     }
   } catch (err) {
