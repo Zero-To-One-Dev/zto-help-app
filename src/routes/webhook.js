@@ -178,8 +178,12 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" })
     }
 
+    const lowerEmail = email.toLowerCase()
+
     const subscriptionImp = new SubscriptionImp(shopAlias)
-    const subscriptions = await subscriptionImp.getSubscriptionsByEmail(email)
+    const subscriptions = await subscriptionImp.getSubscriptionsByEmail(
+      lowerEmail
+    )
 
     const slackImp = new SlackImp()
     const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
@@ -188,7 +192,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     if (!subscriptions.length) {
       await slackImp.postMessage(
         channelId,
-        `❌ No active subscriptions for ${email} in ${shopAlias}`
+        `❌ No active subscriptions for ${lowerEmail} in ${shopAlias}`
       )
       return res
         .status(404)
@@ -211,7 +215,7 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     } else {
       await slackImp.postMessage(
         channelId,
-        `❌ Error applying discount to ${email} in ${shopAlias} - Subscription ID: ${subscription.id}`
+        `❌ Error applying discount to ${lowerEmail} in ${shopAlias} - Subscription ID: ${subscription.id}`
       )
       return res.status(500).json({ message: "Error applying discount" })
     }
