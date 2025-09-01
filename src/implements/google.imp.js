@@ -22,6 +22,15 @@ class GoogleImp {
     return { auth, sheets, drive };
   }
 
+  /**
+   * Appends values to a specified range in a Google Sheets spreadsheet.
+   *
+   * @async
+   * @param {string} spreadsheetId - The ID of the spreadsheet to update.
+   * @param {string} range - The A1 notation of the range to append the values to.
+   * @param {Array<Array<any>>} values - The values to append, as a 2D array.
+   * @returns {Promise<void>} A promise that resolves when the operation is complete.
+   */
   async appendValues(spreadsheetId, range, values) {
     const { sheets } = await this.init();
     await sheets.spreadsheets.values.append({
@@ -36,6 +45,16 @@ class GoogleImp {
       },
     });
   }
+
+  /**
+   * Updates values in a specified range of a Google Sheets spreadsheet.
+   *
+   * @async
+   * @param {string} spreadsheetId - The ID of the spreadsheet to update.
+   * @param {string} range - The A1 notation of the values to update.
+   * @param {Array<Array<*>>} values - The values to set in the specified range.
+   * @returns {Promise<void>} Resolves when the update is complete.
+   */
   async updateValues(spreadsheetId, range, values) {
     const { sheets } = await this.init();
     await sheets.spreadsheets.values.update({
@@ -50,6 +69,21 @@ class GoogleImp {
       },
     });
   }
+
+  /**
+   * Updates a row in a Google Sheet by searching for a specific cell value in a given column.
+   *
+   * @async
+   * @param {string} spreadsheetId - The ID of the Google Spreadsheet.
+   * @param {string} sheetName - The name of the sheet within the spreadsheet.
+   * @param {number} lookupColumnIndex - The zero-based index of the column to search for the lookup value.
+   * @param {*} lookupValue - The value to search for in the specified column.
+   * @param {Array<Array<*>>} newValues - The new values to set in the row (as a 2D array, typically one row).
+   * @param {string} [startColumn="A"] - The starting column letter for the update range.
+   * @param {string} [endColumnLetter="C"] - The ending column letter for the update range.
+   * @throws {Error} If no data is found or the lookup value is not found.
+   * @returns {Promise<void>} Resolves when the row has been updated.
+   */
   async updateRowByCellValue(
     spreadsheetId,
     sheetName,
@@ -77,15 +111,22 @@ class GoogleImp {
 
     await this.updateValues(spreadsheetId, range, newValues);
   }
-
   /**
-   * Crea/actualiza dropdowns y colores por opción en un rango de una hoja.
-   * @param {string} spreadsheetId
-   * @param {string} sheetName
-   * @param {string} startColLetter  - ej. "D"
-   * @param {string} endColLetter    - ej. "D" (mismo si es 1 columna)
-   * @param {number} startRowIndex   - 2 para empezar debajo del header
-   * @param {Array<{value:string,bgColor?:string,textColor?:string}>} options
+   * Sets a dropdown (data validation) with color-coded options in a specified range of a Google Sheet.
+   * Each dropdown option can have a custom background and/or text color applied via conditional formatting.
+   *
+   * @async
+   * @param {Object} params - The parameters for setting the dropdown and colors.
+   * @param {string} params.spreadsheetId - The ID of the Google Spreadsheet.
+   * @param {string} params.sheetName - The name of the sheet to modify.
+   * @param {string} params.startColLetter - The starting column letter (e.g., 'A').
+   * @param {string} params.endColLetter - The ending column letter (e.g., 'D').
+   * @param {number} [params.startRowIndex=2] - The starting row index (1-based, default is 2).
+   * @param {Array<Object>} params.options - The dropdown options.
+   * @param {string} params.options[].value - The value for the dropdown option.
+   * @param {string} [params.options[].bgColor] - The background color in hex (e.g., '#FF0000').
+   * @param {string} [params.options[].textColor] - The text color in hex (e.g., '#FFFFFF').
+   * @returns {Promise<void>} Resolves when the dropdown and formatting are applied.
    */
   async setDropdownWithColors({
     spreadsheetId,
@@ -162,6 +203,14 @@ class GoogleImp {
     });
   }
 
+  /**
+   * Retrieves values from a specified range in a Google Sheets spreadsheet.
+   *
+   * @async
+   * @param {string} spreadsheetId - The ID of the Google Sheets spreadsheet.
+   * @param {string} range - The A1 notation of the values to retrieve.
+   * @returns {Promise<Array<Array<string|number|boolean|undefined>>>} A promise that resolves to the values in the specified range.
+   */
   async getValues(spreadsheetId, range) {
     const { sheets } = await this.init();
     const res = await sheets.spreadsheets.values.get({
@@ -170,6 +219,19 @@ class GoogleImp {
     });
     return res.data.values;
   }
+
+  /**
+   * Downloads a file from Google Drive. If the file is a Google Slides presentation,
+   * it exports it to the specified MIME type (default: PowerPoint). Otherwise, it downloads the file as-is.
+   *
+   * @async
+   * @param {string} fileId - The ID of the file to download from Google Drive.
+   * @param {string} destFileName - The name to save the downloaded file as.
+   * @param {string} [exportMime="application/vnd.openxmlformats-officedocument.presentationml.presentation"] - The MIME type to export Google Slides presentations to.
+   * @param {string} [destFolder="tmp"] - The destination folder to save the file in.
+   * @returns {Promise<string>} The path to the downloaded file.
+   * @throws Will throw an error if the download or export fails.
+   */
   async downloadFile(
     fileId,
     destFileName,
