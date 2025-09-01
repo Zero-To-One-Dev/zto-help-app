@@ -1141,7 +1141,10 @@ router.post("/counterdelivery/report", async (req, res) => {
   }
 });
 
-// Actualiza estado/delivery/notas por número de orden
+/**
+ * @apiapi
+ * Updates an existing order report.
+ */
 router.put("/counterdelivery/report", async (req, res) => {
   try {
     const google = new GoogleImp();
@@ -1161,7 +1164,7 @@ router.put("/counterdelivery/report", async (req, res) => {
       });
     }
 
-    // Mapeo de estados de orden
+    // Order status mapping
     const ORDER_STATUS = {
       default: "SIN CONFIRMAR",
       confirmed: "CONFIRMADA",
@@ -1169,7 +1172,7 @@ router.put("/counterdelivery/report", async (req, res) => {
       create_again: "CREAR DE NUEVO",
     };
 
-    // Mapeo de estados de entrega
+    // Delivery status mapping
     const DELIVERY_STATUS = {
       default: "SIN CONFIRMAR",
       pending: "SIN DESPACHAR",
@@ -1179,16 +1182,16 @@ router.put("/counterdelivery/report", async (req, res) => {
       delivered: "ENTREGADA",
     };
 
-    // 1) Leer la hoja completa
+    // 1) Read the entire sheet
     const values = await google.getValues(spreadsheetId, `${sheetName}`);
     if (!values || values.length === 0) {
       return res.status(404).json({ ok: false, error: "Hoja sin datos" });
     }
 
-    // 2) Buscar fila por número de orden en col A
+    // 2) Search for row by order number in col A
     const rowIndex = values.findIndex((row) => row[0] === order);
     if (rowIndex === -1) {
-      return res.status(404).json({ ok: false, error: "Orden no encontrada" });
+      return res.status(404).json({ ok: false, error: "Order not found" });
     }
 
     const currentRow = values[rowIndex] || [];
@@ -1196,7 +1199,7 @@ router.put("/counterdelivery/report", async (req, res) => {
     const currentDelivery = currentRow[4] || ""; // Col E
     const currentNotes = currentRow[5] || "";   // Col F
 
-    // 3) Decidir qué actualizar
+    // 3) Decide to update
     const newEstado =
       order_action && Object.prototype.hasOwnProperty.call(ORDER_STATUS, order_action)
         ? ORDER_STATUS[order_action]
@@ -1209,15 +1212,15 @@ router.put("/counterdelivery/report", async (req, res) => {
 
     const newNotes = typeof notes === "string" ? notes : currentNotes;
 
-    // 4) Actualizar D:F en esa fila
+    // 4) Update D:F in that row
     await google.updateRowByCellValue(
       spreadsheetId,
       sheetName,
-      0,       // buscar por col A
-      order,   // valor a buscar
+      0,       // searchColumn (A)
+      order,   // value to search
       [[newEstado, newDelivery, newNotes]],
       "D",
-      "D"      // se recalcula el endColumn con newValues
+      "D"      // endColumn recalculated with newValues
     );
 
     res.json({
@@ -1232,14 +1235,15 @@ router.put("/counterdelivery/report", async (req, res) => {
 });
 
 /**
- * Configura un dropdown con colores en una hoja/rango específico.
+ * @apiapi
+ * Sets up a dropdown with colors in a specific sheet/range.
  * Body:
- *  - sheet_id (string)       [requerido]
- *  - sheet_name (string)     [requerido]
- *  - start_col (string)      [requerido]  ej. "D"
- *  - end_col (string)        [requerido]  ej. "D"
- *  - start_row (number)      [opcional]   default 2
- *  - options (array)         [requerido]  [{ value, bgColor?, textColor? }]
+ *  - sheet_id (string)       [required]
+ *  - sheet_name (string)     [required]
+ *  - start_col (string)      [required]  e.g. "D"
+ *  - end_col (string)        [required]  e.g. "D"
+ *  - start_row (number)      [optional]  default 2
+ *  - options (array)         [required]  [{ value, bgColor?, textColor? }]
  */
 router.post("/sheetsconfig/dropwdown", async (req, res) => {
   try {
