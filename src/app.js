@@ -182,6 +182,13 @@ export const SHOPIFY_URL_VSMX = process.env.SHOPIFY_URL_VSMX
 const SHOPIFY_API_KEY_VSMX = process.env.SHOPIFY_API_KEY_VSMX
 const SHOPIFY_API_SECRET_KEY_VSMX = process.env.SHOPIFY_API_SECRET_KEY_VSMX
 
+// VSCL
+const SHOP_NAME_VSCL = process.env.SHOP_NAME_VSCL
+const SHOPIFY_ALIAS_VSCL = process.env.SHOPIFY_ALIAS_VSCL
+export const SHOPIFY_URL_VSCL = process.env.SHOPIFY_URL_VSCL
+const SHOPIFY_API_KEY_VSCL = process.env.SHOPIFY_API_KEY_VSCL
+const SHOPIFY_API_SECRET_KEY_VSCL = process.env.SHOPIFY_API_SECRET_KEY_VSCL
+
 // Cancel Subscription Channels To Notify
 export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS =
   process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS
@@ -269,6 +276,11 @@ export const SHOPS_ORIGIN = {
     shopAlias: SHOPIFY_ALIAS_VSMX,
     shopName: SHOP_NAME_VSMX,
   },
+  "https://comprevibrosculpt.cl": {
+    shop: SHOPIFY_URL_VSCL,
+    shopAlias: SHOPIFY_ALIAS_VSCL,
+    shopName: SHOP_NAME_VSCL,
+  },
 }
 
 export default {
@@ -279,6 +291,7 @@ export default {
   SHOPIFY_URL_DM,
   SHOPIFY_URL_VS,
   SHOPIFY_URL_VSMX,
+  SHOPIFY_URL_VSCL,
   SHOP_NAME_HS,
   SHOP_NAME_CS,
   SHOP_NAME_RS,
@@ -347,6 +360,8 @@ export default {
   EMAIL_PORT_MW,
   SHOPIFY_API_KEY_VSMX,
   SHOPIFY_API_SECRET_KEY_VSMX,
+  SHOPIFY_API_KEY_VSCL,
+  SHOPIFY_API_SECRET_KEY_VSCL,
   KLAVIYO_TOKEN_HS,
   KLAVIYO_TOKEN_CS,
   KLAVIYO_TOKEN_RS,
