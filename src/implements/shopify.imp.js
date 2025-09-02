@@ -1,11 +1,11 @@
-import app, { HOSTNAME } from "../app.js"
-import "@shopify/shopify-api/adapters/node"
-import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api"
-import logger from "../../logger.js"
+import app, { HOSTNAME } from "../app.js";
+import "@shopify/shopify-api/adapters/node";
+import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api";
+import logger from "../../logger.js";
 
 class ShopifyImp {
   constructor(shopAlias) {
-    this.shopAlias = shopAlias
+    this.shopAlias = shopAlias;
   }
 
   init() {
@@ -13,7 +13,7 @@ class ShopifyImp {
       [`SHOPIFY_API_KEY_${this.shopAlias}`]: SHOPIFY_API_KEY,
       [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY,
       [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL,
-    } = app
+    } = app;
 
     const shopify = shopifyApi({
       apiKey: SHOPIFY_API_KEY,
@@ -29,7 +29,7 @@ class ShopifyImp {
             message: message,
           }),
       },
-    })
+    });
 
     const session = new Session({
       id: "",
@@ -37,13 +37,13 @@ class ShopifyImp {
       accessToken: SHOPIFY_API_SECRET_KEY,
       state: "",
       isOnline: false,
-    })
+    });
 
-    return new shopify.clients.Graphql({ session })
+    return new shopify.clients.Graphql({ session });
   }
 
   async getOrderById(id) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`
       query {
@@ -64,11 +64,11 @@ class ShopifyImp {
         }
       }  
     `)
-    ).data.order
+    ).data.order;
   }
 
   async getCustomerNameByEmail(email) {
-    const client = this.init()
+    const client = this.init();
     const customerByIdentifier = (
       await client.request(`
       query {
@@ -78,12 +78,12 @@ class ShopifyImp {
         }
       } 
     `)
-    ).data.customerByIdentifier
-    return customerByIdentifier ? customerByIdentifier.displayName : null
+    ).data.customerByIdentifier;
+    return customerByIdentifier ? customerByIdentifier.displayName : null;
   }
 
   async getSubscription(email, subscription) {
-    const client = this.init()
+    const client = this.init();
     return (
       (
         await client.request(`
@@ -97,11 +97,11 @@ class ShopifyImp {
       }
     `)
       ).Subscriptions.length > 0
-    )
+    );
   }
 
   async cancelSubscription(subscription) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`
       mutation {
@@ -110,11 +110,11 @@ class ShopifyImp {
         }
       }
     `)
-    ).cancelSubscription.ok
+    ).cancelSubscription.ok;
   }
 
   async createOrder(variables) {
-    const client = this.init()
+    const client = this.init();
     const mutation = `
       mutation OrderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
         orderCreate(order: $order, options: $options) {
@@ -122,14 +122,14 @@ class ShopifyImp {
           userErrors { field message }
         }
       }
-    `
+    `;
 
-    const res = await client.request(mutation, { variables })
-    return res.data.orderCreate
+    const res = await client.request(mutation, { variables });
+    return res.data.orderCreate;
   }
 
   async createDraftOrder(input) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(
         `mutation draftOrderCreate($input: DraftOrderInput!) {
@@ -143,11 +143,11 @@ class ShopifyImp {
           variables: { input },
         }
       )
-    ).data.draftOrderCreate.draftOrder.id
+    ).data.draftOrderCreate.draftOrder.id;
   }
 
   async getActiveOrders(email) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(
         `query {
@@ -188,11 +188,11 @@ class ShopifyImp {
           }
         }`
       )
-    ).data.orders.edges
+    ).data.orders.edges;
   }
 
   async updateAddress(id, address1, address2, provinceCode, city, zip) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(
         `mutation {
@@ -209,11 +209,11 @@ class ShopifyImp {
         }
       }`
       )
-    ).data.orderUpdate
+    ).data.orderUpdate;
   }
 
   async subscriptionProductsIdsBySubscriptionVariant(variantsQuery) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`query {
         productVariants (first: 100, query: "${variantsQuery}") {
@@ -228,14 +228,14 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.productVariants.edges
+    ).data.productVariants.edges;
   }
 
   async oneTimesBySubscriptionMetafield(
     productSubscriptionMetafieldKey,
     productsSubQuery
   ) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`query {
         products(first: 100, query: "${productsSubQuery} AND status:ACTIVE") {
@@ -262,11 +262,11 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.products.edges
+    ).data.products.edges;
   }
 
   async sendDraftOrderInvoice(draftOrder) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`mutation {
         draftOrderInvoiceSend (id: "${draftOrder}") {
@@ -275,11 +275,11 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.draftOrderInvoiceSend
+    ).data.draftOrderInvoiceSend;
   }
 
   async getDraftOrder(draftOrder) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`query {
         draftOrder (id: "${draftOrder}") {
@@ -288,22 +288,22 @@ class ShopifyImp {
         }
       }
     `)
-    ).data.draftOrder
+    ).data.draftOrder;
   }
 
   async deleteDraftOrder(draftOrder) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`mutation {
       draftOrderDelete (input: { id: "${draftOrder}" }) {
         deletedId
       }
     }`)
-    ).data.draftOrderDelete.deletedId
+    ).data.draftOrderDelete.deletedId;
   }
 
   async getLineItemsByOrder(orderId) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`query {
         order (id: "${orderId}") {
@@ -325,11 +325,11 @@ class ShopifyImp {
           }
         }  
       }`)
-    ).data.order.lineItems.edges
+    ).data.order.lineItems.edges;
   }
 
   async createDiscountCode(input) {
-    const client = this.init()
+    const client = this.init();
     return (
       await client.request(`mutation {
     	discountCodeBasicCreate (basicCodeDiscount: ${input}) {
@@ -341,8 +341,69 @@ class ShopifyImp {
         }
       }
     }`)
-    ).data.discountCodeBasicCreate.codeDiscountNode
+    ).data.discountCodeBasicCreate.codeDiscountNode;
+  }
+
+  
+  /**
+   * Fetches all Shopify orders within a specified date range and optional extra query.
+   * Handles pagination to retrieve all matching orders.
+   *
+   * @async
+   * @param {Object} [params={}] - Parameters for fetching orders.
+   * @param {string} [params.from] - ISO date string for the start of the date range (inclusive).
+   * @param {string} [params.to] - ISO date string for the end of the date range (inclusive).
+   * @param {string} [params.extraQuery=""] - Additional query string to filter orders.
+   * @returns {Promise<Array<Object>>} Resolves to an array of order objects.
+   */
+  async fetchAllOrders({ from, to, extraQuery = "" } = {}) {
+    const client = this.init();
+
+    const parts = [];
+    if (from) parts.push(`created_at:>=${from}`);
+    if (to) parts.push(`created_at:<=${to}`);
+    if (extraQuery) parts.push(extraQuery);
+    const searchQuery = parts.join(" ").trim() || undefined;
+
+    const QUERY = `
+    query Orders($cursor: String, $query: String) {
+      orders(first: 250, after: $cursor, query: $query, sortKey: ORDER_NUMBER, reverse: false) {
+        pageInfo { hasNextPage endCursor }
+        edges {
+          cursor
+          node {
+            id
+            name
+            orderNumber
+            createdAt
+            email
+            displayFinancialStatus
+            totalPriceSet { shopMoney { amount currencyCode } }
+            customer { id email displayName }
+            shippingAddress {
+              name address1 address2 city provinceCode zip countryCodeV2
+            }
+          }
+        }
+      }
+    }
+  `;
+
+    const all = [];
+    let cursor = null;
+
+    do {
+      const res = await client.request(QUERY, {
+        variables: { cursor, query: searchQuery },
+      });
+
+      const { edges, pageInfo } = res.data.orders;
+      for (const e of edges) all.push(e.node);
+      cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+    } while (cursor);
+
+    return all;
   }
 }
 
-export default ShopifyImp
+export default ShopifyImp;
