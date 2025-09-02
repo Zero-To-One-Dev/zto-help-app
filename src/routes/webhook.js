@@ -1096,8 +1096,18 @@ router.post("/counterdelivery/report", async (req, res) => {
     }
     const DELIVERY_STATUS = {
       default: "SIN CONFIRMAR",
-      delivered: "ENTREGADA",
+      pending: "SIN DESPACHAR",
+      canceled: "CANCELADA",
+      rejected: "RECHAZADA",
       in_transit: "EN TRANSITO",
+      delivered: "ENTREGADA",
+      novelty: "NOVEDAD",
+      complaint: "RECLAMO EN OFICINA",
+    }
+    const RISK_STATUS = {
+      default: "-",
+      high: "ALTO",
+      low: "BAJO",
     }
 
     const orderNumber = orderPayload.order || ""
@@ -1126,6 +1136,7 @@ router.post("/counterdelivery/report", async (req, res) => {
         createdAtForSheets,
         ORDER_STATUS.default,
         DELIVERY_STATUS.default,
+        RISK_STATUS.default,
       ],
     ]
 
@@ -1177,6 +1188,8 @@ router.put("/counterdelivery/report", async (req, res) => {
       rejected: "RECHAZADA",
       in_transit: "EN TRANSITO",
       delivered: "ENTREGADA",
+      novelty: "NOVEDAD",
+      complaint: "RECLAMO EN OFICINA",
     }
 
     // 1) Read the entire sheet
