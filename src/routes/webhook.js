@@ -1109,6 +1109,12 @@ router.post("/counterdelivery/report", async (req, res) => {
       high: "ALTO",
       low: "BAJO",
     }
+    const CURRENT_MESSAGE = {
+      default: "-"
+    }
+    const REASON_CANCEL = {
+      default: "-"
+    }
 
     const orderNumber = orderPayload.order || ""
     const customerName = orderPayload.customer
@@ -1137,6 +1143,8 @@ router.post("/counterdelivery/report", async (req, res) => {
         ORDER_STATUS.default,
         DELIVERY_STATUS.default,
         RISK_STATUS.default,
+        CURRENT_MESSAGE.default,
+        REASON_CANCEL.default
       ],
     ]
 
