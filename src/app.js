@@ -276,7 +276,7 @@ export const SHOPS_ORIGIN = {
     shopAlias: SHOPIFY_ALIAS_VSMX,
     shopName: SHOP_NAME_VSMX,
   },
-  "https://comprevibrosculpt.cl/": {
+  "https://comprevibrosculpt.cl": {
     shop: SHOPIFY_URL_VSCL,
     shopAlias: SHOPIFY_ALIAS_VSCL,
     shopName: SHOP_NAME_VSCL,
