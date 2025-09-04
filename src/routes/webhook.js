@@ -1282,10 +1282,10 @@ router.put("/counterdelivery/report", async (req, res) => {
         [
           newEstado,
           newDelivery,
-          newNotes,
           newRisk,
           newMessage,
           newReasonCancel,
+          newNotes
         ],
       ], // newValues
       "D",
