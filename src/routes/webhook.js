@@ -1168,12 +1168,12 @@ router.put("/counterdelivery/report", async (req, res) => {
       order,
       sheet_id: spreadsheetId,
       sheet_name: sheetName,
-      notes,
       order_action,
       delivery_action,
       risk_action,
       message_action,
-      reason_cancel_action
+      reason_cancel_action,
+      notes
     } = req.body;
 
     if (!order || !spreadsheetId || !sheetName) {
