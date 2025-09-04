@@ -1209,6 +1209,10 @@ router.put("/counterdelivery/report", async (req, res) => {
       low: "BAJO",
     };
 
+    const CURRENT_MESSAGE = {
+      default: "-"
+    };
+
     const REASON_CANCEL = {
       default: "-",
       invalid_items: "2 ITEMS",
@@ -1230,7 +1234,7 @@ router.put("/counterdelivery/report", async (req, res) => {
     const currentRow = values[rowIndex] || [];
     const currentEstado = currentRow[3] || ""; // Col D
     const currentDelivery = currentRow[4] || ""; // Col E
-    const currentRisk = currentRow[5] || ""; // Col F
+    const currentRisk = currentRow[5] || "-"; // Col F
     const currentMessage = currentRow[6] || ""; // Col G
     const currentReasonCancel = currentRow[7] || ""; // Col H
     const currentNotes = currentRow[8] || ""; // Col I
@@ -1268,7 +1272,7 @@ router.put("/counterdelivery/report", async (req, res) => {
 
     const newNotes = typeof notes === "string" ? notes : currentNotes;
 
-    // 4) Update D:F in that row
+    // 4) Update D:I in that row
     await google.updateRowByCellValue(
       spreadsheetId,
       sheetName,
