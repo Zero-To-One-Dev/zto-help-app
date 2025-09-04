@@ -1285,7 +1285,7 @@ router.put("/counterdelivery/report", async (req, res) => {
         ],
       ], // newValues
       "D",
-      "D" // endColumn recalculated with newValues
+      "I" // endColumn recalculated with newValues
     );
 
     res.json({
