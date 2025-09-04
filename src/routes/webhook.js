@@ -1173,7 +1173,7 @@ router.put("/counterdelivery/report", async (req, res) => {
       risk_action,
       message_action,
       reason_cancel_action,
-      notes
+      notes,
     } = req.body;
 
     if (!order || !spreadsheetId || !sheetName) {
@@ -1210,7 +1210,7 @@ router.put("/counterdelivery/report", async (req, res) => {
     };
 
     const CURRENT_MESSAGE = {
-      default: "-"
+      default: "-",
     };
 
     const REASON_CANCEL = {
@@ -1280,16 +1280,16 @@ router.put("/counterdelivery/report", async (req, res) => {
       order, // value to search
       [
         [
-          newEstado,
-          newDelivery,
-          newRisk,
-          newMessage,
-          newReasonCancel,
-          newNotes
+          newEstado, // D
+          newDelivery, // E
+          newRisk, // F
+          newMessage, // G
+          newReasonCancel, // H
+          newNotes, // I
         ],
-      ], // newValues
+      ],
       "D",
-      "I" // endColumn recalculated with newValues
+      "I"
     );
 
     res.json({
