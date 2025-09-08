@@ -189,6 +189,13 @@ export const SHOPIFY_URL_VSCL = process.env.SHOPIFY_URL_VSCL
 const SHOPIFY_API_KEY_VSCL = process.env.SHOPIFY_API_KEY_VSCL
 const SHOPIFY_API_SECRET_KEY_VSCL = process.env.SHOPIFY_API_SECRET_KEY_VSCL
 
+// RSCL
+const SHOP_NAME_RSCL = process.env.SHOP_NAME_RSCL
+const SHOPIFY_ALIAS_RSCL = process.env.SHOPIFY_ALIAS_RSCL
+export const SHOPIFY_URL_RSCL = process.env.SHOPIFY_URL_RSCL
+const SHOPIFY_API_KEY_RSCL = process.env.SHOPIFY_API_KEY_RSCL
+const SHOPIFY_API_SECRET_KEY_RSCL = process.env.SHOPIFY_API_SECRET_KEY_RSCL
+
 // Cancel Subscription Channels To Notify
 export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS =
   process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS
@@ -281,6 +288,11 @@ export const SHOPS_ORIGIN = {
     shopAlias: SHOPIFY_ALIAS_VSCL,
     shopName: SHOP_NAME_VSCL,
   },
+  "https://redusculpt.cl": {
+    shop: SHOPIFY_URL_RSCL,
+    shopAlias: SHOPIFY_ALIAS_RSCL,
+    shopName: SHOP_NAME_RSCL,
+  },
 }
 
 export default {
@@ -292,6 +304,7 @@ export default {
   SHOPIFY_URL_VS,
   SHOPIFY_URL_VSMX,
   SHOPIFY_URL_VSCL,
+  SHOPIFY_URL_RSCL,
   SHOP_NAME_HS,
   SHOP_NAME_CS,
   SHOP_NAME_RS,
@@ -362,6 +375,8 @@ export default {
   SHOPIFY_API_SECRET_KEY_VSMX,
   SHOPIFY_API_KEY_VSCL,
   SHOPIFY_API_SECRET_KEY_VSCL,
+  SHOPIFY_API_KEY_RSCL,
+  SHOPIFY_API_SECRET_KEY_RSCL,
   KLAVIYO_TOKEN_HS,
   KLAVIYO_TOKEN_CS,
   KLAVIYO_TOKEN_RS,
