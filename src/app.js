@@ -196,6 +196,20 @@ export const SHOPIFY_URL_RSCL = process.env.SHOPIFY_URL_RSCL
 const SHOPIFY_API_KEY_RSCL = process.env.SHOPIFY_API_KEY_RSCL
 const SHOPIFY_API_SECRET_KEY_RSCL = process.env.SHOPIFY_API_SECRET_KEY_RSCL
 
+// HSCL
+const SHOP_NAME_HSCL = process.env.SHOP_NAME_HSCL
+const SHOPIFY_ALIAS_HSCL = process.env.SHOPIFY_ALIAS_HSCL
+export const SHOPIFY_URL_HSCL = process.env.SHOPIFY_URL_HSCL
+const SHOPIFY_API_KEY_HSCL = process.env.SHOPIFY_API_KEY_HSCL
+const SHOPIFY_API_SECRET_KEY_HSCL = process.env.SHOPIFY_API_SECRET_KEY_HSCL
+
+// HSMX
+const SHOP_NAME_HSMX = process.env.SHOP_NAME_HSMX
+const SHOPIFY_ALIAS_HSMX = process.env.SHOPIFY_ALIAS_HSMX
+export const SHOPIFY_URL_HSMX = process.env.SHOPIFY_URL_HSMX
+const SHOPIFY_API_KEY_HSMX = process.env.SHOPIFY_API_KEY_HSMX
+const SHOPIFY_API_SECRET_KEY_HSMX = process.env.SHOPIFY_API_SECRET_KEY_HSMX
+
 // Cancel Subscription Channels To Notify
 export const CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS =
   process.env.CANCEL_SUBSCRIPTION_NOTIFY_CHANNELS
@@ -293,6 +307,16 @@ export const SHOPS_ORIGIN = {
     shopAlias: SHOPIFY_ALIAS_RSCL,
     shopName: SHOP_NAME_RSCL,
   },
+  "https://hotshapers.cl": {
+    shop: SHOPIFY_URL_HSCL,
+    shopAlias: SHOPIFY_ALIAS_HSCL,
+    shopName: SHOP_NAME_HSCL,
+  },
+  "https://hotshapers.mx": {
+    shop: SHOPIFY_URL_HSMX,
+    shopAlias: SHOPIFY_ALIAS_HSMX,
+    shopName: SHOP_NAME_HSMX,
+  },
 }
 
 export default {
@@ -305,6 +329,8 @@ export default {
   SHOPIFY_URL_VSMX,
   SHOPIFY_URL_VSCL,
   SHOPIFY_URL_RSCL,
+  SHOPIFY_URL_HSCL,
+  SHOPIFY_URL_HSMX,
   SHOP_NAME_HS,
   SHOP_NAME_CS,
   SHOP_NAME_RS,
