@@ -175,6 +175,20 @@ const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW
 const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
 const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW
 
+// INMX
+const SHOP_NAME_INMX = process.env.SHOP_NAME_INMX
+const SHOPIFY_ALIAS_INMX = process.env.SHOPIFY_ALIAS_INMX
+export const SHOPIFY_URL_INMX = process.env.SHOPIFY_URL_INMX
+const SHOPIFY_API_KEY_INMX = process.env.SHOPIFY_API_KEY_INMX
+const SHOPIFY_API_SECRET_KEY_INMX = process.env.SHOPIFY_API_SECRET_KEY_INMX
+
+// INCO
+const SHOP_NAME_INCO = process.env.SHOP_NAME_INCO
+const SHOPIFY_ALIAS_INCO = process.env.SHOPIFY_ALIAS_INCO
+export const SHOPIFY_URL_INCO = process.env.SHOPIFY_URL_INCO
+const SHOPIFY_API_KEY_INCO = process.env.SHOPIFY_API_KEY_INCO
+const SHOPIFY_API_SECRET_KEY_INCO = process.env.SHOPIFY_API_SECRET_KEY_INCO
+
 // VSMX
 const SHOP_NAME_VSMX = process.env.SHOP_NAME_VSMX
 const SHOPIFY_ALIAS_VSMX = process.env.SHOPIFY_ALIAS_VSMX
@@ -298,6 +312,16 @@ export const SHOPS_ORIGIN = {
     attentiveKey: ATTENTIVE_API_KEY_MW,
     productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW,
   },
+  "https://inbogo.mx": {
+    shop: SHOPIFY_URL_INMX,
+    shopAlias: SHOPIFY_ALIAS_INMX,
+    shopName: SHOP_NAME_INMX,
+  },
+  "https://inbogo.co": {
+    shop: SHOPIFY_URL_INCO,
+    shopAlias: SHOPIFY_ALIAS_INCO,
+    shopName: SHOP_NAME_INCO,
+  },
   "https://vibrosculpt.mx": {
     shop: SHOPIFY_URL_VSMX,
     shopAlias: SHOPIFY_ALIAS_VSMX,
@@ -337,6 +361,8 @@ export default {
   SHOPIFY_URL_MW,
   SHOPIFY_URL_DM,
   SHOPIFY_URL_VS,
+  SHOPIFY_URL_INMX,
+  SHOPIFY_URL_INCO,
   SHOPIFY_URL_VSMX,
   SHOPIFY_URL_VSCL,
   SHOPIFY_URL_RSCL,
@@ -409,8 +435,12 @@ export default {
   EMAIL_USER_MW,
   EMAIL_PASSWORD_MW,
   EMAIL_PORT_MW,
+  SHOPIFY_API_KEY_INMX,
+  SHOPIFY_API_SECRET_KEY_INMX,
   SHOPIFY_API_KEY_VSMX,
   SHOPIFY_API_SECRET_KEY_VSMX,
+  SHOPIFY_API_KEY_INCO,
+  SHOPIFY_API_SECRET_KEY_INCO,
   SHOPIFY_API_KEY_VSCL,
   SHOPIFY_API_SECRET_KEY_VSCL,
   SHOPIFY_API_KEY_RSCL,
