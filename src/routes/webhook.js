@@ -827,6 +827,9 @@ router.post(
           }
 
           break;
+        case "dropi_campaign_report":
+          // Handle dropi_campaign_report submission
+          break;
       }
     }
 
@@ -1151,9 +1154,9 @@ router.post("/counterdelivery/report", async (req, res) => {
         RISK_STATUS.default,
         CURRENT_MESSAGE.default,
         REASON_CANCEL.default,
-        "",                    // I (vacía)
-        "",                    // J (vacía)
-        formula,               // K (fórmula)
+        "", // I (vacía)
+        "", // J (vacía)
+        formula, // K (fórmula)
       ],
     ];
 
