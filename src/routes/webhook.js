@@ -1132,7 +1132,13 @@ router.post("/counterdelivery/report", async (req, res) => {
     // A1 notation: hoja y columnas destino
     const spreadsheetId = orderPayload.sheet_id;
     const sheetName = orderPayload.sheet_name;
-    const range = `${sheetName}!A:C`;
+
+    // Obtener la siguiente fila disponible
+    const allValues = await google.getValues(spreadsheetId, `${sheetName}!A:A`);
+    const nextRow = allValues ? allValues.length + 1 : 2;
+
+    // Construir la fórmula dinámica para la columna K
+    const formula = `=SI(E${nextRow}="SIN CONFIRMAR";SI(MAX(0; 7 - (HOY() - ENTERO(C${nextRow})))=0;"Tiempo vencido";MAX(0; 7 - (HOY() - ENTERO(C${nextRow})));"-")`;
 
     // Fila a insertar
     const values = [
@@ -1145,12 +1151,15 @@ router.post("/counterdelivery/report", async (req, res) => {
         RISK_STATUS.default,
         CURRENT_MESSAGE.default,
         REASON_CANCEL.default,
+        "",                    // I (vacía)
+        "",                    // J (vacía)
+        formula,               // K (fórmula)
       ],
     ];
 
-    await google.appendValues(spreadsheetId, range, values);
+    await google.appendValues(spreadsheetId, `${sheetName}!A:K`, values);
 
-    res.json({ ok: true });
+    res.json({ ok: true, row: next });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, error: err.message });
