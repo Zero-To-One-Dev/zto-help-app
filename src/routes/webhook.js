@@ -772,10 +772,16 @@ router.post(
       const slack = new SlackImp();
       const google = new GoogleImp();
 
+      // Formatear las fechas de YYYY-MM-DD a DD/MM/YYYY
+      const formatDate = (dateStr) => {
+        const [year, month, day] = dateStr.split("-");
+        return `${day}/${month}/${year}`;
+      };
+
       switch (callback) {
-        case "intelligems_test":
-          const values = Object.values(data);
-          const [description, dates, store] = values;
+        case "intelligems_test": {
+          const intelligemsValues = Object.values(data);
+          const [description, dates, store] = intelligemsValues;
           const [start, end] = dates;
 
           const startDate = start.split("-");
@@ -827,9 +833,7 @@ router.post(
           }
 
           break;
-        case "dropi_campaign_report":
-          // Handle dropi_campaign_report submission
-          break;
+        }
       }
     }
 
@@ -1134,7 +1138,12 @@ router.post("/counterdelivery/report", async (req, res) => {
 
     // A1 notation: hoja y columnas destino
     const spreadsheetId = orderPayload.sheet_id;
-    const sheetName = orderPayload.sheet_name;
+
+    const sheet = await google.getOrCreateSheet(
+      spreadsheetId,
+      orderPayload.sheet_name
+    );
+    const sheetName = sheet.sheetName;
 
     // Obtener la siguiente fila disponible
     const allValues = await google.getValues(spreadsheetId, `${sheetName}!A:A`);

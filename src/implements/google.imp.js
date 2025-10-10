@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { google } from "googleapis";
-import { colLetterToIndex, getSheetIdByName, hexToRgb } from "../services/google-utils.js";
+import {
+  colLetterToIndex,
+  getSheetIdByName,
+  hexToRgb,
+} from "../services/google-utils.js";
 
 class GoogleImp {
   async init() {
@@ -269,6 +273,85 @@ class GoogleImp {
     });
 
     return filePath;
+  }
+
+  /**
+   * Gets a sheet by name, or creates it if it doesn't exist.
+   *
+   * @async
+   * @param {string} spreadsheetId - The ID of the spreadsheet.
+   * @param {string} sheetName - The name of the sheet to get or create.
+   * @param {Object} [options] - Optional configuration for the new sheet.
+   * @param {number} [options.rowCount=1000] - Number of rows if creating a new sheet.
+   * @param {number} [options.columnCount=26] - Number of columns if creating a new sheet.
+   * @param {number} [options.index] - Position index of the sheet (0-based).
+   * @param {Object} [options.gridProperties] - Additional grid properties.
+   * @param {Object} [options.tabColor] - Tab color in RGB format { red: 0-1, green: 0-1, blue: 0-1 }.
+   * @returns {Promise<Object>} Object with sheet information { sheetId, sheetName, created, properties }.
+   *
+   * @example
+   * const sheet = await googleImp.getOrCreateSheet('spreadsheet-id', 'Ventas 2024');
+   * console.log(sheet.sheetId); // ID de la hoja
+   * console.log(sheet.created); // true si fue creada, false si ya existía
+   */
+  async getOrCreateSheet(spreadsheetId, sheetName, options = {}) {
+    const { sheets } = await this.init();
+
+    // Intentar obtener la hoja existente
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+    const existingSheet = spreadsheet.data.sheets.find(
+      (s) => s.properties.title === sheetName
+    );
+
+    // Si existe, retornarla
+    if (existingSheet) {
+      return {
+        sheetId: existingSheet.properties.sheetId,
+        sheetName: existingSheet.properties.title,
+        created: false,
+        properties: existingSheet.properties,
+      };
+    }
+
+    // Si no existe, crearla
+    const {
+      rowCount = 1000,
+      columnCount = 26,
+      index,
+      gridProperties,
+      tabColor,
+    } = options;
+
+    const addSheetRequest = {
+      addSheet: {
+        properties: {
+          title: sheetName,
+          index,
+          gridProperties: {
+            rowCount,
+            columnCount,
+            ...gridProperties,
+          },
+          tabColor,
+        },
+      },
+    };
+
+    const response = await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [addSheetRequest],
+      },
+    });
+
+    const newSheet = response.data.replies[0].addSheet.properties;
+
+    return {
+      sheetId: newSheet.sheetId,
+      sheetName: newSheet.title,
+      created: true,
+      properties: newSheet,
+    };
   }
 }
 
