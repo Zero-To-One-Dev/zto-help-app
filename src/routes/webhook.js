@@ -30,6 +30,7 @@ import { generatePresentation } from "../services/generate-presentation.js";
 import { getModalView } from "../services/modal-views.js";
 import { parseSlackViewState } from "../services/parse-slack-data.js";
 import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js";
+import { parseDate } from "../services/google-utils.js";
 
 const router = Router();
 const dbRepository = new DBRepository();
@@ -1439,6 +1440,57 @@ router.post("/create-order", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/dropi-report-campaign", async (req, res) => {
+  try {
+    const google = new GoogleImp();
+
+    const ORDER_STATUS = {
+      default: "CREADA",
+      paid: "PAGADA",
+      canceled: "CANCELADA",
+    }
+    const {
+      order,
+      total_price,
+      customer,
+      created_at,
+      sheet_id,
+      sheet_name,
+      utm_campaign,
+    } = req.body;
+
+    const sheet = await google.getOrCreateSheet(
+      sheet_id,
+      sheet_name,
+      {
+        headerValues: ["Orden", "Cliente", "Fecha", "Precio", "Campaña", "Estado"],
+      }
+    );
+    // Obtener la siguiente fila disponible
+    const allValues = await google.getValues(sheet_id, `${sheet_name}!A:A`);
+    const nextRow = allValues ? allValues.length + 1 : 2;
+
+    const parsedDate = await parseDate(created_at);
+
+    const values = [
+      [
+        order,
+        customer,
+        parsedDate,
+        total_price,
+        utm_campaign,
+        ORDER_STATUS.default
+      ]
+    ];
+
+    await google.appendValues(sheet_id, `${sheet_name}!A${nextRow}:E${nextRow}`, values);
+    res.json({ ok: true, row: nextRow });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 

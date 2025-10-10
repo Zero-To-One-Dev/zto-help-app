@@ -27,7 +27,6 @@ export function hexToRgb(hex = "#ffffff") {
   return { red: r / 255, green: g / 255, blue: b / 255 };
 }
 
-
 /**
  * Retrieves the sheet ID of a specific sheet by its name from a Google Spreadsheet.
  *
@@ -47,4 +46,11 @@ export async function getSheetIdByName({ sheets, spreadsheetId, sheetName }) {
   const sheet = data.sheets.find((s) => s.properties.title === sheetName);
   if (!sheet) throw new Error(`Sheet "${sheetName}" not found`);
   return sheet.properties.sheetId;
+}
+
+export async function parseDate(dateString) {
+  const date = new Date(dateString)
+    .toLocaleString("en-CA", { timeZone: "America/Bogota", hour12: false })
+    .replace(",", "");
+  return date;
 }

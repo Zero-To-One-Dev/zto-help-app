@@ -320,6 +320,7 @@ class GoogleImp {
       index,
       gridProperties,
       tabColor,
+      headerValues = null,
     } = options;
 
     const addSheetRequest = {
@@ -345,6 +346,22 @@ class GoogleImp {
     });
 
     const newSheet = response.data.replies[0].addSheet.properties;
+
+    // Si se proporcionaron valores de encabezado, insertarlos
+    if (
+      headerValues &&
+      Array.isArray(headerValues) &&
+      headerValues.length > 0
+    ) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!A1`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [headerValues],
+        },
+      });
+    }
 
     return {
       sheetId: newSheet.sheetId,
