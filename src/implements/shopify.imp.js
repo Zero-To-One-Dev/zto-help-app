@@ -383,67 +383,6 @@ class ShopifyImp {
     }`)
     ).data.discountCodeBasicCreate.codeDiscountNode;
   }
-
-  
-  /**
-   * Fetches all Shopify orders within a specified date range and optional extra query.
-   * Handles pagination to retrieve all matching orders.
-   *
-   * @async
-   * @param {Object} [params={}] - Parameters for fetching orders.
-   * @param {string} [params.from] - ISO date string for the start of the date range (inclusive).
-   * @param {string} [params.to] - ISO date string for the end of the date range (inclusive).
-   * @param {string} [params.extraQuery=""] - Additional query string to filter orders.
-   * @returns {Promise<Array<Object>>} Resolves to an array of order objects.
-   */
-  async fetchAllOrders({ from, to, extraQuery = "" } = {}) {
-    const client = this.init();
-
-    const parts = [];
-    if (from) parts.push(`created_at:>=${from}`);
-    if (to) parts.push(`created_at:<=${to}`);
-    if (extraQuery) parts.push(extraQuery);
-    const searchQuery = parts.join(" ").trim() || undefined;
-
-    const QUERY = `
-    query Orders($cursor: String, $query: String) {
-      orders(first: 250, after: $cursor, query: $query, sortKey: ORDER_NUMBER, reverse: false) {
-        pageInfo { hasNextPage endCursor }
-        edges {
-          cursor
-          node {
-            id
-            name
-            orderNumber
-            createdAt
-            email
-            displayFinancialStatus
-            totalPriceSet { shopMoney { amount currencyCode } }
-            customer { id email displayName }
-            shippingAddress {
-              name address1 address2 city provinceCode zip countryCodeV2
-            }
-          }
-        }
-      }
-    }
-  `;
-
-    const all = [];
-    let cursor = null;
-
-    do {
-      const res = await client.request(QUERY, {
-        variables: { cursor, query: searchQuery },
-      });
-
-      const { edges, pageInfo } = res.data.orders;
-      for (const e of edges) all.push(e.node);
-      cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
-    } while (cursor);
-
-    return all;
-  }
 }
 
 export default ShopifyImp;
