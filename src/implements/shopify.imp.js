@@ -128,6 +128,46 @@ class ShopifyImp {
     return res.data.orderCreate;
   }
 
+  async updateOrder(input) {
+    const client = this.init();
+    const mutation = `
+    mutation OrderUpdate($input: OrderInput!) {
+      orderUpdate(input: $input) {
+        order {
+          id
+          name
+          note
+          tags
+          customAttributes { key value }
+          shippingAddress { address1 address2 city province zip country phone }
+          poNumber
+          localizedFields(first: 10) {
+            nodes { key value countryCode purpose }
+          }
+          metafields(first: 10) {
+            nodes { namespace key value type }
+          }
+        }
+        userErrors { field message }
+      }
+    }
+    `;
+
+    const variables = { input };
+    const res = await client.request(mutation, { variables });
+    const payload = res.data?.orderUpdate;
+
+    if (!payload) {
+      throw new Error("orderUpdate sin payload de respuesta");
+    }
+    if (payload.userErrors && payload.userErrors.length) {
+      // Propaga errores legibles
+      const details = payload.userErrors.map(e => `${e.field?.join(".") || "general"}: ${e.message}`).join(" | ");
+      throw new Error(`Shopify userErrors: ${details}`);
+    }
+    return payload.order;
+  }
+
   async createDraftOrder(input) {
     const client = this.init();
     return (

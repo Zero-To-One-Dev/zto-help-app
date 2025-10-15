@@ -31,6 +31,7 @@ import { getModalView } from "../services/modal-views.js";
 import { parseSlackViewState } from "../services/parse-slack-data.js";
 import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js";
 import { parseDate } from "../services/google-utils.js";
+import { toOrderGID } from "../services/shopify-utils.js";
 
 const router = Router();
 const dbRepository = new DBRepository();
@@ -1443,6 +1444,150 @@ router.post("/create-order", async (req, res) => {
   }
 });
 
+
+/**
+ * @openapi
+ * /order:
+ *   put:
+ *     tags:
+ *       - Orders
+ *     summary: Update a Shopify order
+ *     description: Updates an existing order in the shop identified by `shopAlias`. The `variables` object contains fields to update (note, tags, shippingAddress, customAttributes, etc.).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - shopAlias
+ *               - orderId
+ *               - variables
+ *             properties:
+ *               shopAlias:
+ *                 type: string
+ *                 description: Alias/identifier for the target Shopify shop
+ *                 example: acme-us
+ *               orderId:
+ *                 type: string
+ *                 description: Numeric order ID (will be converted to GID internally)
+ *                 example: "6678074818867"
+ *               variables:
+ *                 type: object
+ *                 description: Fields to update on the order
+ *                 properties:
+ *                   note:
+ *                     type: string
+ *                     description: Internal note for the order
+ *                     example: "Entregar solo en horario laboral"
+ *                   tags:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: Array of tags to assign to the order
+ *                     example: ["VIP", "Revisado"]
+ *                   customAttributes:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         key:
+ *                           type: string
+ *                         value:
+ *                           type: string
+ *                     description: Custom attributes as key-value pairs
+ *                     example: [{"key": "origen", "value": "landing_vitamin_c"}]
+ *                   shippingAddress:
+ *                     type: object
+ *                     properties:
+ *                       firstName:
+ *                         type: string
+ *                       lastName:
+ *                         type: string
+ *                       address1:
+ *                         type: string
+ *                       address2:
+ *                         type: string
+ *                       city:
+ *                         type: string
+ *                       province:
+ *                         type: string
+ *                       zip:
+ *                         type: string
+ *                       country:
+ *                         type: string
+ *                       phone:
+ *                         type: string
+ *                   email:
+ *                     type: string
+ *                     description: Customer email
+ *                     example: "nuevo.email@orden.com"
+ *                   poNumber:
+ *                     type: string
+ *                     description: Purchase order number
+ *                     example: "PO-INV-2025-0101"
+ *                   metafields:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         namespace:
+ *                           type: string
+ *                         key:
+ *                           type: string
+ *                         type:
+ *                           type: string
+ *                         value:
+ *                           type: string
+ *     responses:
+ *       200:
+ *         description: Order updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 order:
+ *                   type: object
+ *       400:
+ *         description: Bad request - missing fields or invalid data
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/order", async (req, res) => {
+  try {
+    const { shopAlias, orderId, variables } = req.body;
+
+    if (!shopAlias || !orderId || !variables || typeof variables !== "object") {
+      return res.status(400).json({
+        ok: false,
+        message: "Missing required fields: shopAlias, orderId, variables",
+      });
+    }
+
+    const input = {
+      id: toOrderGID(orderId),
+      ...variables,
+    };
+
+    if (variables.id && variables.id !== input.id) {
+      return res.status(400).json({
+        ok: false,
+        message: "Do not include a different 'id' inside variables",
+      });
+    }
+
+    const shopifyImp = new ShopifyImp(shopAlias);
+    const order = await shopifyImp.updateOrder(input);
+
+    return res.status(200).json({ ok: true, order });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 router.post("/dropi-report-campaign", async (req, res) => {
   try {
     const google = new GoogleImp();
@@ -1451,7 +1596,7 @@ router.post("/dropi-report-campaign", async (req, res) => {
       default: "CREADA",
       paid: "PAGADA",
       canceled: "CANCELADA",
-    }
+    };
     const {
       order,
       total_price,
@@ -1462,13 +1607,16 @@ router.post("/dropi-report-campaign", async (req, res) => {
       utm_campaign,
     } = req.body;
 
-    const sheet = await google.getOrCreateSheet(
-      sheet_id,
-      sheet_name,
-      {
-        headerValues: ["Orden", "Cliente", "Fecha", "Precio", "Campaña", "Estado"],
-      }
-    );
+    const sheet = await google.getOrCreateSheet(sheet_id, sheet_name, {
+      headerValues: [
+        "Orden",
+        "Cliente",
+        "Fecha",
+        "Precio",
+        "Campaña",
+        "Estado",
+      ],
+    });
     // Obtener la siguiente fila disponible
     const allValues = await google.getValues(sheet_id, `${sheet_name}!A:A`);
     const nextRow = allValues ? allValues.length + 1 : 2;
@@ -1482,11 +1630,15 @@ router.post("/dropi-report-campaign", async (req, res) => {
         parsedDate,
         total_price,
         utm_campaign,
-        ORDER_STATUS.default
-      ]
+        ORDER_STATUS.default,
+      ],
     ];
 
-    await google.appendValues(sheet_id, `${sheet_name}!A${nextRow}:E${nextRow}`, values);
+    await google.appendValues(
+      sheet_id,
+      `${sheet_name}!A${nextRow}:E${nextRow}`,
+      values
+    );
     res.json({ ok: true, row: nextRow });
   } catch (err) {
     console.error(err);
