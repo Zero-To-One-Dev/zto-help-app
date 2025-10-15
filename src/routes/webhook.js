@@ -1645,5 +1645,60 @@ router.post("/dropi-report-campaign", async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+router.put("/dropi-report-campaign", async (req, res) => {
+  try {
+    const google = new GoogleImp();
+
+    const { order, sheet_id, sheet_name, order_action } = req.body;
+
+    if (!order || !sheet_id || !sheet_name) {
+      return res.status(400).json({
+        ok: false,
+        error: "order, sheet_id y sheet_name son requeridos",
+      });
+    }
+    const ORDER_STATUS = {
+      default: "CREADA",
+      paid: "PAGADA",
+      canceled: "CANCELADA",
+    };
+    // 1) Read the entire sheet
+    const values = await google.getValues(sheet_id, `${sheet_name}`);
+    if (!values || values.length === 0) {
+      return res.status(404).json({ ok: false, error: "Hoja sin datos" });
+    }
+    // 2) Search for row by order number in col A
+    const rowIndex = values.findIndex((row) => row[0] === order);
+    if (rowIndex === -1) {
+      return res.status(404).json({ ok: false, error: "Order not found" });
+    }
+    const currentRow = values[rowIndex] || [];
+    const currentEstado = currentRow[5] || ""; // Col F
+    // 3) Decide to update
+    const newEstado =
+      order_action &&
+      Object.prototype.hasOwnProperty.call(ORDER_STATUS, order_action)
+        ? ORDER_STATUS[order_action]
+        : currentEstado;
+    // 4) Update F in that row
+    await google.updateRowByCellValue(
+      sheet_id,
+      sheet_name,
+      0, // searchColumn (A)
+      order, // value to search
+      [[newEstado]], // new values
+      "F",
+      "F"
+    );
+    res.json({
+      ok: true,
+      message: "Fila actualizada",
+      data: { order, estado: newEstado },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 export default router;
