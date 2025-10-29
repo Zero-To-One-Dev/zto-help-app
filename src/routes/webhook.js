@@ -229,7 +229,6 @@ router.post("/subscription-discount", async (req, res) => {
   } catch (error) {
     console.error("Unexpected error applying subscription discount:", {
       message: err?.message,
-      stack: err?.stack,
       shopAlias: req.body?.shopAlias,
       email: req.body?.email,
       discount: req.body?.discount,
