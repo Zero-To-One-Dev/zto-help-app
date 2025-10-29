@@ -235,7 +235,6 @@ router.post("/subscription-discount", async (req, res) => {
       discount: req.body?.discount,
     })
 
-    const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
     if (channelId) {
       const lowInfo = `❌ Internal error applying discount '${req.body?.discount}' to ${req.body?.email} in ${req.body?.shopAlias}`
       slackImp
