@@ -172,12 +172,23 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
  *        200:
  *          description: Returns JSON message
  * */
-router.post("/subscription-discount", authenticateToken, async (req, res) => {
-  try {
-    const { shopAlias, email, discount } = req.body
+router.post("/subscription-discount", async (req, res) => {
+  const slackImp = new SlackImp()
+  const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
 
-    if (!shopAlias || !email) {
-      return res.status(400).json({ message: "Missing required fields" })
+  const respondAndNotify = async (status, bodyMsg, slackMsg) => {
+    if (channelId && slackMsg) {
+      slackImp.postMessage(channelId, slackMsg).catch((err) => {
+        console.error("Slack notify error:", err)
+      })
+    }
+    return res.status(status).json({ message: bodyMsg })
+  }
+
+  try {
+    const { shopAlias, email, discount } = req.body ?? {}
+    if (!shopAlias || !email || !discount) {
+      return respondAndNotify(400, "Missing required fields")
     }
 
     const lowerEmail = email.toLowerCase()
@@ -187,18 +198,12 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
       lowerEmail
     )
 
-    const slackImp = new SlackImp()
-    const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
-    const discountCode = discount || process.env.SUBSCRIPTION_DISCOUNT_CODE
-
-    if (!subscriptions.length) {
-      await slackImp.postMessage(
-        channelId,
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
+      return respondAndNotify(
+        404,
+        "Customer has no active subscriptions",
         `❌ No active subscriptions for ${lowerEmail} in ${shopAlias}`
       )
-      return res
-        .status(404)
-        .json({ message: "Customer has no active subscriptions" })
     }
 
     // Ordenar por fecha más cercana
@@ -207,22 +212,37 @@ router.post("/subscription-discount", authenticateToken, async (req, res) => {
     )
     const subscription = sortedSubscriptions[0]
 
-    const applyDiscount = await subscriptionImp.applyDiscount(
+    const result = await subscriptionImp.applyDiscount(
       subscription.id,
-      discountCode
+      discount
     )
 
-    if (applyDiscount.ok) {
-      return res.status(200).json({ message: "Discount applied successfully" })
-    } else {
-      await slackImp.postMessage(
-        channelId,
-        `❌ Error applying discount to ${lowerEmail} in ${shopAlias} - Subscription ID: ${subscription.id}`
-      )
-      return res.status(500).json({ message: "Error applying discount" })
+    if (result?.ok) {
+      return respondAndNotify(200, "Discount applied successfully")
     }
+
+    await respondAndNotify(
+      500,
+      "Error applying discount",
+      `❌ Error applying discount '${discount}' to ${lowerEmail} in ${shopAlias} - Subscription ID: ${subscription.id}`
+    )
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error("Unexpected error applying subscription discount:", {
+      message: err?.message,
+      stack: err?.stack,
+      shopAlias: req.body?.shopAlias,
+      email: req.body?.email,
+      discount: req.body?.discount,
+    })
+
+    const channelId = process.env.SUBSCRIPTION_DISCOUNT_NOTIFY_CHANNEL_ID
+    if (channelId) {
+      const lowInfo = `❌ Internal error applying discount '${req.body?.discount}' to ${req.body?.email} in ${req.body?.shopAlias}`
+      slackImp
+        .postMessage(channelId, lowInfo)
+        .catch((e) => console.error("Slack notify error:", e))
+    }
+
     return res.status(500).json({ message: "Internal server error" })
   }
 })
