@@ -155,9 +155,8 @@ export const getModalView = (callbackId) => {
         {
           type: "input",
           element: {
-            type: "number_input",
-            is_decimal_allowed: false,
-            action_id: "number_input-action",
+            type: "plain_text_input",
+            action_id: "plain_text_input-action",
           },
           label: {
             type: "plain_text",
