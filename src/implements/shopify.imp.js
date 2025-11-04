@@ -1,11 +1,11 @@
-import app, { HOSTNAME } from "../app.js";
-import "@shopify/shopify-api/adapters/node";
-import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api";
-import logger from "../../logger.js";
+import app, { HOSTNAME } from "../app.js"
+import "@shopify/shopify-api/adapters/node"
+import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api"
+import logger from "../../logger.js"
 
 class ShopifyImp {
   constructor(shopAlias) {
-    this.shopAlias = shopAlias;
+    this.shopAlias = shopAlias
   }
 
   init() {
@@ -13,7 +13,7 @@ class ShopifyImp {
       [`SHOPIFY_API_KEY_${this.shopAlias}`]: SHOPIFY_API_KEY,
       [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY,
       [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL,
-    } = app;
+    } = app
 
     const shopify = shopifyApi({
       apiKey: SHOPIFY_API_KEY,
@@ -29,7 +29,7 @@ class ShopifyImp {
             message: message,
           }),
       },
-    });
+    })
 
     const session = new Session({
       id: "",
@@ -37,13 +37,13 @@ class ShopifyImp {
       accessToken: SHOPIFY_API_SECRET_KEY,
       state: "",
       isOnline: false,
-    });
+    })
 
-    return new shopify.clients.Graphql({ session });
+    return new shopify.clients.Graphql({ session })
   }
 
   async getOrderById(id) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`
       query {
@@ -64,11 +64,11 @@ class ShopifyImp {
         }
       }  
     `)
-    ).data.order;
+    ).data.order
   }
 
   async getCustomerNameByEmail(email) {
-    const client = this.init();
+    const client = this.init()
     const customerByIdentifier = (
       await client.request(`
       query {
@@ -78,12 +78,12 @@ class ShopifyImp {
         }
       } 
     `)
-    ).data.customerByIdentifier;
-    return customerByIdentifier ? customerByIdentifier.displayName : null;
+    ).data.customerByIdentifier
+    return customerByIdentifier ? customerByIdentifier.displayName : null
   }
 
   async getSubscription(email, subscription) {
-    const client = this.init();
+    const client = this.init()
     return (
       (
         await client.request(`
@@ -97,11 +97,11 @@ class ShopifyImp {
       }
     `)
       ).Subscriptions.length > 0
-    );
+    )
   }
 
   async cancelSubscription(subscription) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`
       mutation {
@@ -110,11 +110,11 @@ class ShopifyImp {
         }
       }
     `)
-    ).cancelSubscription.ok;
+    ).cancelSubscription.ok
   }
 
   async createOrder(variables) {
-    const client = this.init();
+    const client = this.init()
     const mutation = `
       mutation OrderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
         orderCreate(order: $order, options: $options) {
@@ -122,14 +122,14 @@ class ShopifyImp {
           userErrors { field message }
         }
       }
-    `;
+    `
 
-    const res = await client.request(mutation, { variables });
-    return res.data.orderCreate;
+    const res = await client.request(mutation, { variables })
+    return res.data.orderCreate
   }
 
   async updateOrder(input) {
-    const client = this.init();
+    const client = this.init()
     const mutation = `
     mutation OrderUpdate($input: OrderInput!) {
       orderUpdate(input: $input) {
@@ -151,25 +151,27 @@ class ShopifyImp {
         userErrors { field message }
       }
     }
-    `;
+    `
 
-    const variables = { input };
-    const res = await client.request(mutation, { variables });
-    const payload = res.data?.orderUpdate;
+    const variables = { input }
+    const res = await client.request(mutation, { variables })
+    const payload = res.data?.orderUpdate
 
     if (!payload) {
-      throw new Error("orderUpdate sin payload de respuesta");
+      throw new Error("orderUpdate sin payload de respuesta")
     }
     if (payload.userErrors && payload.userErrors.length) {
       // Propaga errores legibles
-      const details = payload.userErrors.map(e => `${e.field?.join(".") || "general"}: ${e.message}`).join(" | ");
-      throw new Error(`Shopify userErrors: ${details}`);
+      const details = payload.userErrors
+        .map((e) => `${e.field?.join(".") || "general"}: ${e.message}`)
+        .join(" | ")
+      throw new Error(`Shopify userErrors: ${details}`)
     }
-    return payload.order;
+    return payload.order
   }
 
   async createDraftOrder(input) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(
         `mutation draftOrderCreate($input: DraftOrderInput!) {
@@ -183,11 +185,11 @@ class ShopifyImp {
           variables: { input },
         }
       )
-    ).data.draftOrderCreate.draftOrder.id;
+    ).data.draftOrderCreate.draftOrder.id
   }
 
   async getActiveOrders(email) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(
         `query {
@@ -228,11 +230,11 @@ class ShopifyImp {
           }
         }`
       )
-    ).data.orders.edges;
+    ).data.orders.edges
   }
 
   async updateAddress(id, address1, address2, provinceCode, city, zip) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(
         `mutation {
@@ -249,11 +251,11 @@ class ShopifyImp {
         }
       }`
       )
-    ).data.orderUpdate;
+    ).data.orderUpdate
   }
 
   async subscriptionProductsIdsBySubscriptionVariant(variantsQuery) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`query {
         productVariants (first: 100, query: "${variantsQuery}") {
@@ -268,14 +270,14 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.productVariants.edges;
+    ).data.productVariants.edges
   }
 
   async oneTimesBySubscriptionMetafield(
     productSubscriptionMetafieldKey,
     productsSubQuery
   ) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`query {
         products(first: 100, query: "${productsSubQuery} AND status:ACTIVE") {
@@ -302,11 +304,11 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.products.edges;
+    ).data.products.edges
   }
 
   async sendDraftOrderInvoice(draftOrder) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`mutation {
         draftOrderInvoiceSend (id: "${draftOrder}") {
@@ -315,11 +317,11 @@ class ShopifyImp {
           }
         }
       }`)
-    ).data.draftOrderInvoiceSend;
+    ).data.draftOrderInvoiceSend
   }
 
   async getDraftOrder(draftOrder) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`query {
         draftOrder (id: "${draftOrder}") {
@@ -328,22 +330,22 @@ class ShopifyImp {
         }
       }
     `)
-    ).data.draftOrder;
+    ).data.draftOrder
   }
 
   async deleteDraftOrder(draftOrder) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`mutation {
       draftOrderDelete (input: { id: "${draftOrder}" }) {
         deletedId
       }
     }`)
-    ).data.draftOrderDelete.deletedId;
+    ).data.draftOrderDelete.deletedId
   }
 
   async getLineItemsByOrder(orderId) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`query {
         order (id: "${orderId}") {
@@ -365,11 +367,11 @@ class ShopifyImp {
           }
         }  
       }`)
-    ).data.order.lineItems.edges;
+    ).data.order.lineItems.edges
   }
 
   async createDiscountCode(input) {
-    const client = this.init();
+    const client = this.init()
     return (
       await client.request(`mutation {
     	discountCodeBasicCreate (basicCodeDiscount: ${input}) {
@@ -381,8 +383,33 @@ class ShopifyImp {
         }
       }
     }`)
-    ).data.discountCodeBasicCreate.codeDiscountNode;
+    ).data.discountCodeBasicCreate.codeDiscountNode
+  }
+
+  async getDiscountCode(id) {
+    const client = this.init()
+    return (
+      await client.request(`query {
+    	codeDiscountNode (id: ${id}) {
+        id
+        codeDiscount {
+        ... on DiscountCodeBasic {
+          title
+          summary
+          appliesOncePerCustomer
+          asyncUsageCount
+          usageLimit
+          codes {
+            nodes {
+              code
+              id
+            }
+          }
+        }
+      }
+    }`)
+    ).data.codeDiscountNode.codeDiscount
   }
 }
 
-export default ShopifyImp;
+export default ShopifyImp
