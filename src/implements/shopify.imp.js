@@ -388,27 +388,35 @@ class ShopifyImp {
 
   async getDiscountCode(id) {
     const client = this.init()
-    return (
-      await client.request(`query {
-    	codeDiscountNode (id: ${id}) {
+
+    const query = `
+    query GetDiscount($id: ID!) {
+      codeDiscountNode(id: $id) {
         id
         codeDiscount {
-        ... on DiscountCodeBasic {
-          title
-          summary
-          appliesOncePerCustomer
-          asyncUsageCount
-          usageLimit
-          codes {
-            nodes {
-              code
-              id
+          ... on DiscountCodeBasic {
+            title
+            summary
+            appliesOncePerCustomer
+            asyncUsageCount
+            usageLimit
+            codes(first: 50) {
+              nodes {
+                code
+                id
+              }
             }
           }
         }
       }
-    }`)
-    ).data.codeDiscountNode.codeDiscount
+    }
+  `
+
+    const res = await client.request(query, {
+      variables: { id },
+    })
+
+    return res.data.codeDiscountNode?.codeDiscount
   }
 }
 
