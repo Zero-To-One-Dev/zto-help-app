@@ -857,7 +857,8 @@ router.post(
         }
         case "generate_coupon": {
           const values = Object.values(data)
-          const [discountId, fromStore, toStore] = values
+          const [discountId, stores] = values
+          const [fromStore, toStore] = stores
 
           console.log(values)
 
