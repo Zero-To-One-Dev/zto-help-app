@@ -390,7 +390,7 @@ class ShopifyImp {
     const client = this.init()
     const query = `
       query {
-        codeDiscountNode(id: "${id}") {
+        codeDiscountNode(id: "gid://shopify/DiscountCodeNode/${id}") {
           id
           codeDiscount {
             ... on DiscountCodeBasic {
