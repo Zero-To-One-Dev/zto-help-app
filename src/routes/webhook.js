@@ -785,125 +785,132 @@ router.post(
   "/interactivity-slack-app",
   express.urlencoded({ extended: true }),
   async (req, res) => {
-    const payload = JSON.parse(req.body.payload)
+    try {
+      const payload = JSON.parse(req.body.payload)
 
-    if (payload.type === "view_submission") {
-      const callback = payload.view.callback_id
-      const data = parseSlackViewState(payload.view.state.values)
-      const slack = new SlackImp()
-      const google = new GoogleImp()
+      if (payload.type === "view_submission") {
+        const callback = payload.view.callback_id
+        const data = parseSlackViewState(payload.view.state.values)
+        const slack = new SlackImp()
+        const google = new GoogleImp()
 
-      // Formatear las fechas de YYYY-MM-DD a DD/MM/YYYY
-      const formatDate = (dateStr) => {
-        const [year, month, day] = dateStr.split("-")
-        return `${day}/${month}/${year}`
+        // Formatear las fechas de YYYY-MM-DD a DD/MM/YYYY
+        const formatDate = (dateStr) => {
+          const [year, month, day] = dateStr.split("-")
+          return `${day}/${month}/${year}`
+        }
+
+        switch (callback) {
+          case "intelligems_test": {
+            const intelligemsValues = Object.values(data)
+            const [description, dates, store] = intelligemsValues
+            const [start, end] = dates
+
+            const startDate = start.split("-")
+            const [startYear, startMonth, startDay] = startDate
+            const startDateFormat = `${startDay}/${startMonth}/${startYear}`
+
+            const endDate = end.split("-")
+            const [endYear, endMonth, endDay] = endDate
+            const endDateFormat = `${endDay}/${endMonth}/${endYear}`
+
+            let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
+            if (startDateFormat === endDateFormat) {
+              dateRange = `🚨 ${store} - ${endDateFormat}`
+            }
+
+            const blocks = [
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: `${description}`,
+                },
+              },
+              {
+                type: "divider",
+              },
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: `${dateRange}`,
+                },
+              },
+            ]
+
+            google.updateRowByCellValue(
+              process.env.REPORTS_SHEET_ID,
+              process.env.REPORTS_SHEET_NAME,
+              0, // Column A (Index 0)
+              store,
+              [[store, startDateFormat, endDateFormat]]
+            )
+
+            let channelsToNotify = process.env.TEST_CHANNELS
+            channelsToNotify = channelsToNotify.split(",")
+
+            for (const channel of channelsToNotify) {
+              await slack.postMessage(channel, description, blocks)
+            }
+
+            break
+          }
+          case "generate_coupon": {
+            const values = Object.values(data)
+            const [discountId, stores] = values
+            const [fromStore, toStore] = stores
+
+            console.log({ discountId, fromStore, toStore })
+
+            const shopifyImpFromStore = new ShopifyImp(fromStore)
+            // const shopifyImpToStore = new ShopifyImp(toStore)
+
+            const response = await shopifyImpFromStore.getDiscountCode(
+              discountId
+            )
+
+            console.log(response)
+          }
+        }
       }
 
-      switch (callback) {
-        case "intelligems_test": {
-          const intelligemsValues = Object.values(data)
-          const [description, dates, store] = intelligemsValues
-          const [start, end] = dates
+      if (payload.type === "shortcut" || payload.type === "block_actions") {
+        const triggerId = payload.trigger_id
+        const modalView = getModalView(payload.callback_id)
 
-          const startDate = start.split("-")
-          const [startYear, startMonth, startDay] = startDate
-          const startDateFormat = `${startDay}/${startMonth}/${startYear}`
+        try {
+          const response = await fetch("https://slack.com/api/views.open", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              trigger_id: triggerId,
+              view: modalView,
+            }),
+          })
 
-          const endDate = end.split("-")
-          const [endYear, endMonth, endDay] = endDate
-          const endDateFormat = `${endDay}/${endMonth}/${endYear}`
+          const data = await response.json()
 
-          let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
-          if (startDateFormat === endDateFormat) {
-            dateRange = `🚨 ${store} - ${endDateFormat}`
+          if (!data.ok) {
+            console.error("Slack error:", data)
+            return res.status(500).send("Slack API error")
           }
 
-          const blocks = [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `${description}`,
-              },
-            },
-            {
-              type: "divider",
-            },
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `${dateRange}`,
-              },
-            },
-          ]
-
-          google.updateRowByCellValue(
-            process.env.REPORTS_SHEET_ID,
-            process.env.REPORTS_SHEET_NAME,
-            0, // Column A (Index 0)
-            store,
-            [[store, startDateFormat, endDateFormat]]
-          )
-
-          let channelsToNotify = process.env.TEST_CHANNELS
-          channelsToNotify = channelsToNotify.split(",")
-
-          for (const channel of channelsToNotify) {
-            await slack.postMessage(channel, description, blocks)
-          }
-
-          break
-        }
-        case "generate_coupon": {
-          const values = Object.values(data)
-          const [discountId, stores] = values
-          const [fromStore, toStore] = stores
-
-          console.log(values)
-
-          const shopifyImpFromStore = new ShopifyImp(fromStore)
-          // const shopifyImpToStore = new ShopifyImp(toStore)
-
-          const response = await shopifyImpFromStore.getDiscountCode(discountId)
-
-          console.log(response)
+          return res.status(200).send()
+        } catch (err) {
+          console.error("Fetch error:", err)
+          return res.status(500).send("Server error")
         }
       }
+
+      return res.status(200).send()
+    } catch (err) {
+      console.error("Interactivity Slack App error:", err)
+      return res.status(500).send("Server error")
     }
-
-    if (payload.type === "shortcut" || payload.type === "block_actions") {
-      const triggerId = payload.trigger_id
-      const modalView = getModalView(payload.callback_id)
-
-      try {
-        const response = await fetch("https://slack.com/api/views.open", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            trigger_id: triggerId,
-            view: modalView,
-          }),
-        })
-
-        const data = await response.json()
-
-        if (!data.ok) {
-          console.error("Slack error:", data)
-          return res.status(500).send("Slack API error")
-        }
-
-        return res.status(200).send()
-      } catch (err) {
-        console.error("Fetch error:", err)
-        return res.status(500).send("Server error")
-      }
-    }
-
-    return res.status(200).send()
   }
 )
 
