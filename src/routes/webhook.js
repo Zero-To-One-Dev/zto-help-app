@@ -855,6 +855,10 @@ router.post(
 
           break
         }
+        case "generate_coupon": {
+          const values = Object.values(data)
+          console.log(values)
+        }
       }
     }
 

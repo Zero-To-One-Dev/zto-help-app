@@ -44,7 +44,7 @@ export const getModalView = (callbackId) => {
       alias: "VSRELIEF",
     },
   ]
-  
+
   const modals = {
     intelligems_test: {
       type: "modal",
@@ -132,7 +132,98 @@ export const getModalView = (callbackId) => {
           },
         },
       ],
-    }
+    },
+    generate_coupon: {
+      type: "modal",
+      callback_id: callbackId,
+      title: {
+        type: "plain_text",
+        text: "Generate Coupon",
+        emoji: true,
+      },
+      submit: {
+        type: "plain_text",
+        text: "Generate",
+        emoji: true,
+      },
+      close: {
+        type: "plain_text",
+        text: "Cancel",
+        emoji: true,
+      },
+      blocks: [
+        {
+          type: "input",
+          element: {
+            type: "number_input",
+            is_decimal_allowed: false,
+            action_id: "number_input-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "Discount ID",
+            emoji: true,
+          },
+          optional: false,
+        },
+        {
+          type: "input",
+          element: {
+            type: "static_select",
+            placeholder: {
+              type: "plain_text",
+              text: "Select a store",
+              emoji: true,
+            },
+            options: [
+              {
+                text: {
+                  type: "plain_text",
+                  text: "VibroSculpt Col",
+                  emoji: true,
+                },
+                value: "VSCO",
+              },
+            ],
+            action_id: "static_select-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "From",
+            emoji: true,
+          },
+          optional: false,
+        },
+        {
+          type: "input",
+          element: {
+            type: "static_select",
+            placeholder: {
+              type: "plain_text",
+              text: "Select a store",
+              emoji: true,
+            },
+            options: [
+              {
+                text: {
+                  type: "plain_text",
+                  text: "ReduSculpt MX",
+                  emoji: true,
+                },
+                value: "RSMX",
+              },
+            ],
+            action_id: "static_select-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "To",
+            emoji: true,
+          },
+          optional: false,
+        },
+      ],
+    },
   }
   for (const store of stores) {
     modals.intelligems_test.blocks[3].element.options.push({
