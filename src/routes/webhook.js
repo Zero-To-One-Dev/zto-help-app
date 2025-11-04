@@ -860,7 +860,7 @@ router.post(
           const [discountId, fromStore, toStore] = values
 
           const shopifyImpFromStore = new ShopifyImp(fromStore)
-          const shopifyImpToStore = new ShopifyImp(toStore)
+          // const shopifyImpToStore = new ShopifyImp(toStore)
 
           const response = await shopifyImpFromStore.getDiscountCode(discountId)
 
