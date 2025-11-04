@@ -859,12 +859,13 @@ router.post(
           const values = Object.values(data)
           const [discountId, fromStore, toStore] = values
 
+          console.log(values)
+
           const shopifyImpFromStore = new ShopifyImp(fromStore)
           // const shopifyImpToStore = new ShopifyImp(toStore)
 
           const response = await shopifyImpFromStore.getDiscountCode(discountId)
 
-          console.log(values)
           console.log(response)
         }
       }
