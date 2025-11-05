@@ -1220,6 +1220,73 @@ router.post("/counterdelivery/report", async (req, res) => {
   }
 })
 
+
+router.post("/counterdelivery/calls-report", async (req, res) => {
+  try {
+    const google = new GoogleImp()
+    const orderPayload = req.body
+
+    const PAISES = {
+      VSCO: "COLOMBIA",
+      HSCO: "COLOMBIA",
+      RSCO: "COLOMBIA",
+      VRCO: "COLOMBIA",
+      VSCL: "CHILE",
+      VSECU: "ECUADOR",
+      VSMX: "MEXICO",
+      HSMX: "MEXICO",
+      RSMX: "MEXICO",
+      INCO: "COLOMBIA",
+      INMX: "MEXICO",
+    }
+
+    const orderNumber = orderPayload.order || ""
+    const customerName = orderPayload.customer
+    const rawCreatedAt = orderPayload.created_at || null
+
+    const createdAtForSheets = rawCreatedAt
+      ? new Date(rawCreatedAt)
+          .toLocaleString("en-CA", {
+            timeZone: "America/Bogota",
+            hour12: false,
+          })
+          .replace(",", "")
+      : ""
+
+    // A1 notation: hoja y columnas destino
+    const spreadsheetId = orderPayload.sheet_id
+
+    const sheet = await google.getOrCreateSheet(
+      spreadsheetId,
+      orderPayload.sheet_name
+    )
+    const sheetName = sheet.sheetName
+
+    // Obtener la siguiente fila disponible
+    const allValues = await google.getValues(spreadsheetId, `${sheetName}!A:A`)
+    const nextRow = allValues ? allValues.length + 1 : 2
+
+    // Fila a insertar
+    const values = [
+      [
+        orderNumber,
+        customerName,
+        createdAtForSheets,
+        orderPayload.customer_phone || "",
+        orderPayload.customer_address || "",
+        PAISES[orderPayload.country] || "",
+      ],
+    ]
+
+    await google.appendValues(spreadsheetId, `${sheetName}!A:F`, values)
+
+    res.json({ ok: true, row: nextRow })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
 /**
  * @apiapi
  * Updates an existing order report.
