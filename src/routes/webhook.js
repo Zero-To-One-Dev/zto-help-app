@@ -1274,7 +1274,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
         createdAtForSheets,
         orderPayload.customer_phone || "",
         orderPayload.customer_address || "",
-        PAISES[orderPayload.country] || "",
+        orderPayload.country || "",
       ],
     ]
 
