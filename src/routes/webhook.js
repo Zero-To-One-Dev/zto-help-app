@@ -1273,8 +1273,8 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
-        orderPayload.customer_address || "",
-        orderPayload.country || "",
+        (orderPayload.customer_address || "") + ", " + (orderPayload.customer_city || ""),
+        orderPayload.customer_country || "",
       ],
     ]
 
