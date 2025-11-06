@@ -433,32 +433,112 @@ class ShopifyImp {
     ).data.discountCodeBasicCreate.codeDiscountNode
   }
 
-  async getDiscountCode(id) {
+  async getDiscountWithAllCodes(id) {
     const client = this.init()
-    const query = `
-      query {
-        codeDiscountNode(id: "gid://shopify/DiscountCodeNode/${id}") {
+    if (!id) throw new Error("Falta id del descuento")
+
+    const toGid = (v) =>
+      String(v).startsWith("gid://")
+        ? String(v)
+        : `gid://shopify/DiscountCodeNode/${v}`
+
+    const esc = (s) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+    const gid = toGid(id)
+
+    const PAGE_SIZE = 250
+    let after = null
+    const allCodes = []
+    let meta = null
+
+    while (true) {
+      const afterArg = after ? `, after: "${esc(after)}"` : ""
+      const q = `
+      {
+        codeDiscountNode(id: "${esc(gid)}") {
           id
           codeDiscount {
+            __typename
+
             ... on DiscountCodeBasic {
               title
               summary
               appliesOncePerCustomer
               asyncUsageCount
               usageLimit
-              codes(first: 50) {
-                nodes {
-                  code
-                  id
+              customerGets {
+                value {
+                  __typename
+                  ... on DiscountPercentage { percentage }
+                  ... on DiscountAmount {
+                    amount { amount currencyCode }
+                    appliesOnEachItem
+                  }
                 }
+                items { __typename }
+              }
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
+              }
+            }
+
+            ... on DiscountCodeBxgy {
+              title
+              summary
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
+              }
+            }
+
+            ... on DiscountCodeFreeShipping {
+              title
+              summary
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
               }
             }
           }
         }
       }
     `
-    const res = await client.request(query)
-    return res.data.codeDiscountNode?.codeDiscount
+      const res = await client.request(q)
+      const discount = res?.data?.codeDiscountNode?.codeDiscount
+      if (!discount) throw new Error(`No se encontró DiscountCodeNode ${gid}`)
+
+      if (!meta) {
+        let value = null
+        const v = discount.customerGets?.value
+        if (v?.__typename === "DiscountPercentage") {
+          value = { type: "percentage", percentage: v.percentage }
+        } else if (v?.__typename === "DiscountAmount") {
+          value = {
+            type: "amount",
+            amount: v.amount?.amount,
+            currencyCode: v.amount?.currencyCode,
+            appliesOnEachItem: !!v.appliesOnEachItem,
+          }
+        }
+        meta = {
+          typename: discount.__typename,
+          title: discount.title,
+          summary: discount.summary ?? null,
+          appliesOncePerCustomer: discount.appliesOncePerCustomer ?? null,
+          asyncUsageCount: discount.asyncUsageCount ?? null,
+          usageLimit: discount.usageLimit ?? null,
+          value, // ← % u amount del origen
+        }
+      }
+
+      const page = discount.codes
+      allCodes.push(...page.nodes.map((n) => ({ id: n.id, code: n.code })))
+
+      if (!page.pageInfo.hasNextPage) break
+      after = page.pageInfo.endCursor
+    }
+
+    return { ...meta, codes: allCodes }
   }
 
   async getDiscountWithAllCodes(id) {
