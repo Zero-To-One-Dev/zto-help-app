@@ -806,7 +806,8 @@ router.post(
       const channelId =
         payload.channel?.id || payload.container?.channel_id || null
 
-      const modalView = getModalView(payload.callback_id, { channelId })
+      const modalView = getModalView(payload.callback_id)
+      console.log({ channelId })
       modalView.private_metadata = JSON.stringify({ channelId })
 
       try {
@@ -1335,7 +1336,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const nextRow = allValues ? allValues.length + 1 : 2
 
     // Fila a insertar
-    const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
+    const store = orderPayload.store?.replace(".myshopify.com", "") || ""
     const orderId = orderPayload.order_id || "-"
 
     const values = [
@@ -1344,10 +1345,15 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
-        (orderPayload.customer_address || "") + ", " +
-          (orderPayload.customer_province || "") + ", " +
-          (orderPayload.customer_city || "") +
-          (orderPayload.customer_colonia ? ", " + orderPayload.customer_colonia : ""),
+        (orderPayload.customer_address || "") +
+          ", " +
+          (orderPayload.customer_province || "") +
+          ", " +
+          (orderPayload.customer_city || "")(
+            orderPayload.customer_colonia
+              ? ", " + orderPayload.customer_colonia
+              : ""
+          ),
         orderPayload.customer_country || "",
       ],
     ]
