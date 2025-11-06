@@ -564,7 +564,6 @@ class ShopifyImp {
               appliesOncePerCustomer
               asyncUsageCount
               usageLimit
-              // Traemos el valor del descuento
               customerGets {
                 value {
                   __typename
@@ -574,7 +573,7 @@ class ShopifyImp {
                     appliesOnEachItem
                   }
                 }
-                items { __typename } // placeholder por si luego necesitas copiar el scope
+                items { __typename }
               }
               codes(first: ${PAGE_SIZE}${afterArg}) {
                 pageInfo { hasNextPage endCursor }
@@ -623,6 +622,50 @@ class ShopifyImp {
     return { ...meta, codes: allCodes }
   }
 
+  // === Helper: convierte context -> customerSelection para API 2025-01 ===
+  sanitizeDiscountInputFor2025_01(type, input) {
+    if (!input || type !== "DiscountCodeBasic") return input
+
+    const out = { ...input }
+
+    // Si el user pasó "context", lo mapeamos a customerSelection y lo quitamos
+    if (out.context) {
+      let cs = out.customerSelection
+
+      // casos comunes:
+      // - context: { all: 'ALL' } o Enum('ALL') o true
+      const allFlag =
+        out.context.all === true ||
+        out.context.all === "ALL" ||
+        (out.context.all && out.context.all.__enum === true)
+
+      if (!cs) {
+        if (allFlag) {
+          cs = { all: true }
+        } else if (
+          Array.isArray(out.context.customers) &&
+          out.context.customers.length
+        ) {
+          // Si venían GIDs de clientes, los reusamos como customerIds
+          cs = { customerIds: out.context.customers }
+        } else {
+          // No podemos mapear segmentos entre tiendas en 2025-01; por defecto aplicamos a todos
+          cs = { all: true }
+        }
+      }
+
+      out.customerSelection = cs
+      delete out.context
+    }
+
+    // Si no vino ninguna selección, fuerza "todos"
+    if (!out.customerSelection) {
+      out.customerSelection = { all: true }
+    }
+
+    return out
+  }
+
   /**
    * Crea un descuento y agrega TODOS los códigos por lotes (sin variables GraphQL)
    * @param {'DiscountCodeBasic'|'DiscountCodeBxgy'|'DiscountCodeFreeShipping'} type
@@ -640,9 +683,13 @@ class ShopifyImp {
       .map((c) => (typeof c === "string" ? c : c?.code))
       .filter(Boolean)
 
-    // ---- FIX: si no viene context, lo forzamos a TODOS los compradores ----
-    if (!input.context && !input.customerSelection) {
-      input = { ...input, context: { all: this.Enum("ALL") } } // evita "Customer selection can't be blank"
+    // 🔧 Sanea input para API 2025-01 (quita "context" y asegura "customerSelection")
+    input = this.sanitizeDiscountInputFor2025_01(type, input)
+
+    // Si aún así te llega "context" por fuera, elimínalo a prueba de balas
+    if ("context" in input) {
+      const { context, ...rest } = input
+      input = rest
     }
 
     const initialCode = input.code ?? normalized[0]
@@ -651,6 +698,7 @@ class ShopifyImp {
     const rest = input.code ? normalized : normalized.slice(1)
 
     const inputLiteral = this.toGqlInput({ ...input, code: initialCode })
+
     const createMutation = {
       DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
       DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
@@ -666,6 +714,7 @@ class ShopifyImp {
     let nodeId = payload?.codeDiscountNode?.id
     let userErrors = payload?.userErrors ?? []
 
+    // Si el primer código está tomado, crea con TMP y agrega el real vía bulk
     if (!nodeId && userErrors.length) {
       const taken = userErrors.find(
         (e) =>
@@ -674,39 +723,41 @@ class ShopifyImp {
             .includes("unique") ||
           `${e.code || ""}`.toUpperCase().includes("TAKEN")
       )
-      if (!taken)
-        throw new Error(
-          `No se pudo crear el descuento: ${userErrors
-            .map((e) => e.message)
-            .join("; ")}`
-        )
+      if (!taken) {
+        const details = userErrors
+          .map((e) => `${e.field?.join?.(".") || "general"}: ${e.message}`)
+          .join("; ")
+        throw new Error(`No se pudo crear el descuento: ${details}`)
+      }
+
       const tmpLiteral = this.toGqlInput({
         ...input,
         code: `TMP-${Date.now().toString(36)}`,
       })
       const createTmp = {
         DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
-        DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+        DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${tmpLiteral})    { codeDiscountNode { id } userErrors { field code message } } }`,
         DiscountCodeFreeShipping: `mutation { discountCodeFreeShippingCreate(freeShippingCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
       }[type]
+
       createRes = await client.request(createTmp)
       payload =
         createRes?.data?.discountCodeBasicCreate ??
         createRes?.data?.discountCodeBxgyCreate ??
         createRes?.data?.discountCodeFreeShippingCreate
       nodeId = payload?.codeDiscountNode?.id
-      if (!nodeId)
+      if (!nodeId) {
+        const details = (payload?.userErrors || [])
+          .map((e) => `${e.field?.join?.(".") || "general"}: ${e.message}`)
+          .join("; ")
         throw new Error(
-          `No se pudo crear el descuento (tmp): ${
-            (payload?.userErrors || []).map((e) => e.message).join("; ") ||
-            "desconocido"
-          }`
+          `No se pudo crear el descuento (tmp): ${details || "desconocido"}`
         )
-      // agregamos el código real al bulk
+      }
       rest.unshift(initialCode)
     }
 
-    // --- bulk add (sin variables) ---
+    // Bulk add (lotes de 250) – sin variables
     const LOT = 250
     const chunk = (arr, size) =>
       arr.reduce(
@@ -717,10 +768,11 @@ class ShopifyImp {
       )
     let created = 1,
       failed = 0
+
     for (const batch of chunk(rest, LOT)) {
       if (!batch.length) continue
       const codesLiteral = this.toGqlInput(batch.map((code) => ({ code })))
-      const m = `
+      const start = await client.request(`
       mutation {
         discountRedeemCodeBulkAdd(discountId: "${this.gqlEscape(
           nodeId
@@ -728,31 +780,30 @@ class ShopifyImp {
           bulkCreation { id }
           userErrors { field code message }
         }
-      }
-    `
-      const start = await client.request(m)
+      }`)
       const errs = start?.data?.discountRedeemCodeBulkAdd?.userErrors || []
-      if (errs.length)
-        throw new Error(
-          `Error al iniciar bulkAdd: ${errs.map((e) => e.message).join("; ")}`
-        )
+      if (errs.length) {
+        const details = errs
+          .map((e) => `${e.field?.join?.(".") || "general"}: ${e.message}`)
+          .join("; ")
+        throw new Error(`Error al iniciar bulkAdd: ${details}`)
+      }
       const bulkId = start?.data?.discountRedeemCodeBulkAdd?.bulkCreation?.id
-      const statusQ = `
-      { discountRedeemCodeBulkCreation(id: "${this.gqlEscape(bulkId)}") {
-          id done importedCount failedCount
-        }
-      }`
       // poll básico
       let done = false,
         imported = 0,
         failedThis = 0
       while (!done) {
-        const s = await client.request(statusQ)
+        const s = await client.request(
+          `{ discountRedeemCodeBulkCreation(id: "${this.gqlEscape(
+            bulkId
+          )}") { id done importedCount failedCount } }`
+        )
         const st = s?.data?.discountRedeemCodeBulkCreation
         done = !!st?.done
         imported = st?.importedCount ?? 0
         failedThis = st?.failedCount ?? 0
-        if (!done) await new Promise((r) => setTimeout(r, 1000))
+        if (!done) await this.sleep(1000)
       }
       created += imported
       failed += failedThis
