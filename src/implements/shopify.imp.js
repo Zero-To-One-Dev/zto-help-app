@@ -414,70 +414,77 @@ class ShopifyImp {
     return res.data.codeDiscountNode?.codeDiscount
   }
 
-  // shopify.imp.js
   async getDiscountWithAllCodes(id) {
     const client = this.init()
+
+    if (!id) throw new Error("Falta id del descuento")
     const gid = String(id).startsWith("gid://")
       ? String(id)
       : `gid://shopify/DiscountCodeNode/${id}`
 
-    const query = `
-    query GetDiscountCodes($id: ID!, $first: Int!, $after: String) {
-      codeDiscountNode(id: $id) {
-        id
-        codeDiscount {
-          ... on DiscountCodeBasic {
-            title
-            summary
-            appliesOncePerCustomer
-            asyncUsageCount
-            usageLimit
-            codes(first: $first, after: $after) {
-              pageInfo { hasNextPage endCursor }
-              nodes { id code }
-            }
-          }
-          ... on DiscountCodeBxgy {
-            title
-            summary
-            codes(first: $first, after: $after) {
-              pageInfo { hasNextPage endCursor }
-              nodes { id code }
-            }
-          }
-          ... on DiscountCodeFreeShipping {
-            title
-            summary
-            codes(first: $first, after: $after) {
-              pageInfo { hasNextPage endCursor }
-              nodes { id code }
-            }
-          }
-        }
-      }
-    }
-  `
-
-    const first = 250
+    const PAGE_SIZE = 250 // máximo recomendado por Shopify para conexiones
     let after = null
     const allCodes = []
     let meta = null
 
     while (true) {
-      const variables = { id: gid, first, after }
-      const res = await client.request(query, variables)
+      const afterArg = after ? `, after: "${after}"` : ""
+      const query = `
+      {
+        codeDiscountNode(id: "${gid}") {
+          id
+          codeDiscount {
+            __typename
+            ... on DiscountCodeBasic {
+              title
+              summary
+              appliesOncePerCustomer
+              asyncUsageCount
+              usageLimit
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
+              }
+            }
+            ... on DiscountCodeBxgy {
+              title
+              summary
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
+              }
+            }
+            ... on DiscountCodeFreeShipping {
+              title
+              summary
+              codes(first: ${PAGE_SIZE}${afterArg}) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id code }
+              }
+            }
+          }
+        }
+      }
+    `
 
-      const node = res.data?.codeDiscountNode
+      const res = await client.request(query)
+      const node = res?.data?.codeDiscountNode
       const discount = node?.codeDiscount
-      if (!discount) break
+      if (!discount) {
+        throw new Error(
+          `No se encontró DiscountCodeNode con id=${gid}. Verifica que sea un id de DiscountCodeNode.`
+        )
+      }
 
       if (!meta) {
+        // guarda metadata común; amplía si necesitas más campos
         meta = {
+          typename: discount.__typename,
           title: discount.title,
-          summary: discount.summary,
-          appliesOncePerCustomer: discount.appliesOncePerCustomer,
-          asyncUsageCount: discount.asyncUsageCount,
-          usageLimit: discount.usageLimit,
+          summary: discount.summary ?? null,
+          appliesOncePerCustomer: discount.appliesOncePerCustomer ?? null,
+          asyncUsageCount: discount.asyncUsageCount ?? null,
+          usageLimit: discount.usageLimit ?? null,
         }
       }
 
