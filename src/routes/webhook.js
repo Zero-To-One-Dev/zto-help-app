@@ -32,6 +32,9 @@ import { parseSlackViewState } from "../services/parse-slack-data.js"
 import { validateCreateProfilePayload } from "../services/validate-create-profile-payload.js"
 import { parseDate } from "../services/google-utils.js"
 import { toOrderGID } from "../services/shopify-utils.js"
+import { ackSlack } from "../utilities/ack-slack.js"
+import { formarDate } from "../utilities/format-date.js"
+import { parseChannels } from "../utilities/parse-channels.js"
 
 const router = Router()
 const dbRepository = new DBRepository()
@@ -785,159 +788,191 @@ router.post(
   "/interactivity-slack-app",
   express.urlencoded({ extended: true }),
   async (req, res) => {
-    try {
-      const payload = JSON.parse(req.body.payload)
-
-      if (payload.type === "view_submission") {
-        const callback = payload.view.callback_id
-        const data = parseSlackViewState(payload.view.state.values)
-        const slack = new SlackImp()
-        const google = new GoogleImp()
-
-        switch (callback) {
-          case "intelligems_test": {
-            const intelligemsValues = Object.values(data)
-            const [description, dates, store] = intelligemsValues
-            const [start, end] = dates
-
-            const startDate = start.split("-")
-            const [startYear, startMonth, startDay] = startDate
-            const startDateFormat = `${startDay}/${startMonth}/${startYear}`
-
-            const endDate = end.split("-")
-            const [endYear, endMonth, endDay] = endDate
-            const endDateFormat = `${endDay}/${endMonth}/${endYear}`
-
-            let dateRange = `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
-            if (startDateFormat === endDateFormat) {
-              dateRange = `🚨 ${store} - ${endDateFormat}`
-            }
-
-            const blocks = [
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: `${description}`,
-                },
-              },
-              {
-                type: "divider",
-              },
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: `${dateRange}`,
-                },
-              },
-            ]
-
-            google.updateRowByCellValue(
-              process.env.REPORTS_SHEET_ID,
-              process.env.REPORTS_SHEET_NAME,
-              0, // Column A (Index 0)
-              store,
-              [[store, startDateFormat, endDateFormat]]
-            )
-
-            let channelsToNotify = process.env.TEST_CHANNELS
-            channelsToNotify = channelsToNotify.split(",")
-
-            for (const channel of channelsToNotify) {
-              await slack.postMessage(channel, description, blocks)
-            }
-
-            break
-          }
-          case "generate_coupon": {
-            const values = Object.values(data)
-            const [discountId, stores] = values
-            const [fromStore, toStore] = stores
-
-            console.log({ discountId, fromStore, toStore })
-
-            const shopifyImpFromStore = new ShopifyImp(fromStore)
-            const shopifyImpToStore = new ShopifyImp(toStore)
-
-            const source = await shopifyImpFromStore.getDiscountWithAllCodes(
-              discountId
-            )
-
-            const basicInput = {
-              title: source.title,
-              startsAt: new Date().toISOString(),
-              appliesOncePerCustomer: !!source.appliesOncePerCustomer,
-              usageLimit: source.usageLimit ?? null,
-              context: { all: shopifyImpToStore.Enum("ALL") },
-              customerGets: {
-                value:
-                  source.value?.type === "percentage"
-                    ? { percentage: source.value.percentage }
-                    : {
-                        discountAmount: {
-                          amount: String(source.value?.amount ?? "0.0"),
-                          appliesOnEachItem: !!source.value?.appliesOnEachItem,
-                        },
-                      },
-                items: { all: true },
-              },
-            }
-
-            const result = await shopifyImpToStore.createDiscountWithCodes(
-              "DiscountCodeBasic",
-              basicInput,
-              source.codes.map((c) => c.code)
-            )
-
-            console.log("Clonado:", result)
-
-            console.log("Resumen:", {
-              title: source.title,
-              totalCodes: source.codes.length,
-            })
-
-            break
-          }
-        }
-      }
-
-      if (payload.type === "shortcut" || payload.type === "block_actions") {
-        const triggerId = payload.trigger_id
-        const modalView = getModalView(payload.callback_id)
-
-        try {
-          const response = await fetch("https://slack.com/api/views.open", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              trigger_id: triggerId,
-              view: modalView,
-            }),
-          })
-
-          const data = await response.json()
-
-          if (!data.ok) {
-            console.error("Slack error:", data)
-            return res.status(500).send("Slack API error")
-          }
-
-          return res.status(200).send()
-        } catch (err) {
-          console.error("Fetch error:", err)
-          return res.status(500).send("Server error")
-        }
-      }
-
-      return res.status(200).send()
-    } catch (err) {
-      console.error("Interactivity Slack App error:", err)
-      return res.status(500).send("Server error")
+    const raw = req?.body?.payload
+    if (!raw) {
+      return res.status(400).send("Missing payload")
     }
+
+    let payload
+    try {
+      payload = JSON.parse(raw)
+    } catch (e) {
+      return res.status(400).send("Invalid JSON payload")
+    }
+
+    if (payload.type === "shortcut" || payload.type === "block_actions") {
+      const triggerId = payload.trigger_id
+
+      const channelId =
+        payload.channel?.id || payload.container?.channel_id || null
+
+      const modalView = getModalView(payload.callback_id, { channelId })
+      modalView.private_metadata = JSON.stringify({ channelId })
+
+      try {
+        const response = await fetch("https://slack.com/api/views.open", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ trigger_id: triggerId, view: modalView }),
+        })
+        const data = await response.json()
+        if (!data.ok) {
+          console.error("Slack error:", data)
+          return res.status(502).send("Slack API error")
+        }
+        return res.status(200).send() // Ok
+      } catch (err) {
+        console.error("Fetch error:", err)
+        return res.status(500).send("Server error")
+      }
+    }
+
+    if (payload.type === "view_submission") {
+      // Ack inmediato a Slack (cierra modal)
+      ackSlack(res, { response_action: "clear" })
+
+      setImmediate(async () => {
+        try {
+          const callback = payload.view.callback_id
+          const meta = JSON.parse(payload.view.private_metadata || "{}")
+          const channelId = meta.channelId || payload.user?.id || null
+
+          const data = parseSlackViewState(payload.view.state.values)
+          const slack = new SlackImp()
+          const google = new GoogleImp()
+
+          switch (callback) {
+            case "intelligems_test": {
+              const intelligemsValues = Object.values(data)
+              const [description, dates, store] = intelligemsValues
+              const [start, end] = dates
+
+              const startDateFormat = formarDate(start)
+              const endDateFormat = formarDate(end)
+
+              const dateRange =
+                startDateFormat === endDateFormat
+                  ? `🚨 ${store} - ${endDateFormat}`
+                  : `🚀 ${store} - (${startDateFormat} - ${endDateFormat})`
+
+              const blocks = [
+                {
+                  type: "section",
+                  text: { type: "mrkdwn", text: `${description}` },
+                },
+                { type: "divider" },
+                {
+                  type: "section",
+                  text: { type: "mrkdwn", text: `${dateRange}` },
+                },
+              ]
+
+              // Update en Google Sheets
+              await google.updateRowByCellValue(
+                process.env.REPORTS_SHEET_ID,
+                process.env.REPORTS_SHEET_NAME,
+                0, // Columna A
+                store,
+                [[store, startDateFormat, endDateFormat]]
+              )
+
+              // Notificaciones a canales
+              const channels = parseChannels(process.env.TEST_CHANNELS)
+              if (channels.length) {
+                await Promise.allSettled(
+                  channels.map((ch) =>
+                    slack.postMessage(ch, description, blocks)
+                  )
+                )
+              }
+              break
+            }
+
+            case "generate_coupon": {
+              const values = Object.values(data)
+              const [discountId, stores] = values
+              const [fromStore, toStore] = stores
+
+              if (channelId) {
+                const title = `🚀 Generando cupones para ${toStore} desde ${fromStore}`
+                const blocks = [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: `${title}` },
+                  },
+                ]
+                await slack.postMessage(channelId, title, blocks)
+              }
+
+              const shopifyImpFromStore = new ShopifyImp(fromStore)
+              const shopifyImpToStore = new ShopifyImp(toStore)
+
+              const source = await shopifyImpFromStore.getDiscountWithAllCodes(
+                discountId
+              )
+
+              const basicInput = {
+                title: source.title,
+                startsAt: new Date().toISOString(),
+                appliesOncePerCustomer: !!source.appliesOncePerCustomer,
+                usageLimit: source.usageLimit ?? null,
+                context: { all: true },
+                customerGets: {
+                  value:
+                    source.value?.type === "percentage"
+                      ? { percentage: source.value.percentage }
+                      : {
+                          discountAmount: {
+                            amount: String(source.value?.amount ?? "0.0"),
+                            appliesOnEachItem:
+                              !!source.value?.appliesOnEachItem,
+                          },
+                        },
+                  items: { all: true },
+                },
+              }
+
+              const result = await shopifyImpToStore.createDiscountWithCodes(
+                "DiscountCodeBasic",
+                basicInput,
+                source.codes.map((c) => c.code)
+              )
+
+              console.log("Clonado:", result)
+              console.log("Resumen:", {
+                title: source.title,
+                totalCodes: source.codes.length,
+              })
+
+              if (channelId) {
+                const title = `✅ ${source.codes.length} Cupones clonados para ${toStore}. Descuento: ${source.title}`
+                const blocks = [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: `${title}` },
+                  },
+                ]
+                await slack.postMessage(channelId, title, blocks)
+              }
+
+              break
+            }
+
+            default:
+              console.warn("view_submission callback no soportado:", callback)
+          }
+        } catch (err) {
+          console.error("Interactivity Slack App handler error:", err)
+        }
+      })
+
+      return
+    }
+
+    return res.status(200).send()
   }
 )
 
