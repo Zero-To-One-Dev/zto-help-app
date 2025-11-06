@@ -1252,20 +1252,6 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const google = new GoogleImp()
     const orderPayload = req.body
 
-    const PAISES = {
-      VSCO: "COLOMBIA",
-      HSCO: "COLOMBIA",
-      RSCO: "COLOMBIA",
-      VRCO: "COLOMBIA",
-      VSCL: "CHILE",
-      VSECU: "ECUADOR",
-      VSMX: "MEXICO",
-      HSMX: "MEXICO",
-      RSMX: "MEXICO",
-      INCO: "COLOMBIA",
-      INMX: "MEXICO",
-    }
-
     const orderNumber = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
@@ -1314,15 +1300,19 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const nextRow = allValues ? allValues.length + 1 : 2
 
     // Fila a insertar
+    const store = (orderPayload?.replace(".myshopify.com", "")) || "";
+    const orderId = orderPayload.order_id || "-"
+
     const values = [
       [
-        orderNumber,
+        `=HYPERLINK("https://admin.shopify.com/store/${store}/orders/${orderId}", ${orderNumber})`,
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
-        (orderPayload.customer_address || "") +
-          ", " +
-          (orderPayload.customer_city || ""),
+        (orderPayload.customer_address || "") + ", " +
+          (orderPayload.customer_province || "") + ", " +
+          (orderPayload.customer_city || "")
+          (orderPayload.customer_colonia ? ", " + orderPayload.customer_colonia : ""),
         orderPayload.customer_country || "",
       ],
     ]
