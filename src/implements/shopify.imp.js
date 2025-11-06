@@ -458,7 +458,6 @@ class ShopifyImp {
           id
           codeDiscount {
             __typename
-
             ... on DiscountCodeBasic {
               title
               summary
@@ -481,7 +480,6 @@ class ShopifyImp {
                 nodes { id code }
               }
             }
-
             ... on DiscountCodeBxgy {
               title
               summary
@@ -490,7 +488,6 @@ class ShopifyImp {
                 nodes { id code }
               }
             }
-
             ... on DiscountCodeFreeShipping {
               title
               summary
@@ -527,7 +524,7 @@ class ShopifyImp {
           appliesOncePerCustomer: discount.appliesOncePerCustomer ?? null,
           asyncUsageCount: discount.asyncUsageCount ?? null,
           usageLimit: discount.usageLimit ?? null,
-          value, // ← % u amount del origen
+          value,
         }
       }
 

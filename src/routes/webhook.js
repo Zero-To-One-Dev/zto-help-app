@@ -794,12 +794,6 @@ router.post(
         const slack = new SlackImp()
         const google = new GoogleImp()
 
-        // Formatear las fechas de YYYY-MM-DD a DD/MM/YYYY
-        const formatDate = (dateStr) => {
-          const [year, month, day] = dateStr.split("-")
-          return `${day}/${month}/${year}`
-        }
-
         switch (callback) {
           case "intelligems_test": {
             const intelligemsValues = Object.values(data)
