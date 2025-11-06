@@ -873,21 +873,21 @@ router.post(
             const basicInput = {
               title: source.title,
               startsAt: new Date().toISOString(),
+              appliesOncePerCustomer: !!source.appliesOncePerCustomer,
+              usageLimit: source.usageLimit ?? null,
               customerGets: {
                 value: { percentage: 0.1 },
                 items: { all: true },
               },
-              appliesOncePerCustomer: !!source.appliesOncePerCustomer,
-              usageLimit: source.usageLimit ?? null,
             }
 
-            const result = await shopifyImpToStore.createDiscountWithCodes({
-              type: "DiscountCodeBasic", // o 'DiscountCodeBxgy' | 'DiscountCodeFreeShipping'
-              input: basicInput, // el input completo del tipo
-              codes: source.codes.map((c) => c.code), // TODOS los códigos
-            })
+            const result = await shopifyImpToStore.createDiscountWithCodes(
+              "DiscountCodeBasic", // o 'DiscountCodeBxgy' | 'DiscountCodeFreeShipping'
+              basicInput,
+              source.codes.map((c) => c.code)
+            )
 
-            console.log("Clonado OK:", result)
+            console.log("Clonado:", result)
 
             console.log("Resumen:", {
               title: source.title,

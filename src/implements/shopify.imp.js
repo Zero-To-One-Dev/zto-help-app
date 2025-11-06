@@ -42,6 +42,7 @@ class ShopifyImp {
     return new shopify.clients.Graphql({ session })
   }
 
+  // ===== Helpers =====
   sleep(ms) {
     return new Promise((r) => setTimeout(r, ms))
   }
@@ -49,6 +50,45 @@ class ShopifyImp {
     const out = []
     for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
     return out
+  }
+  gqlEscape(str) {
+    return String(str)
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+  }
+  /**
+   * Marca valores como ENUM para no comillarlos en el input GraphQL
+   * Ej: Enum('ORDER_SUBTOTAL') -> ORDER_SUBTOTAL
+   */
+  Enum(value) {
+    return { __enum: true, value }
+  }
+  /**
+   * Convierte un valor JS a literal de input GraphQL (sin variables)
+   * - strings -> "..."
+   * - numbers/booleans -> tal cual
+   * - Date -> ISO string
+   * - arrays/objects -> recursivo
+   * - this.Enum('X') -> X (sin comillas)
+   */
+  toGqlInput(value) {
+    if (value === null) return "null"
+    if (value === undefined) return "null"
+    if (value && typeof value === "object" && value.__enum)
+      return String(value.value)
+    const t = typeof value
+    if (t === "string") return `"${this.gqlEscape(value)}"`
+    if (t === "number" || t === "boolean") return String(value)
+    if (value instanceof Date) return `"${value.toISOString()}"`
+    if (Array.isArray(value))
+      return `[${value.map((v) => this.toGqlInput(v)).join(", ")}]`
+    // objeto
+    const entries = Object.entries(value)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `${k}: ${this.toGqlInput(v)}`)
+    return `{ ${entries.join(", ")} }`
   }
 
   async getOrderById(id) {
@@ -506,71 +546,25 @@ class ShopifyImp {
     return { ...meta, codes: allCodes }
   }
 
-  get CREATE_BASIC() {
-    return `
-      mutation CreateBasic($input: DiscountCodeBasicInput!) {
-        discountCodeBasicCreate(basicCodeDiscount: $input) {
-          codeDiscountNode { id }
-          userErrors { field code message }
-        }
-      }
-    `
-  }
-  get CREATE_BXGY() {
-    return `
-      mutation CreateBxgy($input: DiscountCodeBxgyInput!) {
-        discountCodeBxgyCreate(bxgyCodeDiscount: $input) {
-          codeDiscountNode { id }
-          userErrors { field code message }
-        }
-      }
-    `
-  }
-  get CREATE_FREESHIP() {
-    return `
-      mutation CreateFreeShipping($input: DiscountCodeFreeShippingInput!) {
-        discountCodeFreeShippingCreate(freeShippingCodeDiscount: $input) {
-          codeDiscountNode { id }
-          userErrors { field code message }
-        }
-      }
-    `
-  }
-  get BULK_ADD_CODES() {
-    return `
-      mutation BulkAdd($discountId: ID!, $codes: [DiscountRedeemCodeInput!]!) {
-        discountRedeemCodeBulkAdd(discountId: $discountId, codes: $codes) {
-          bulkCreation { id }
-          userErrors { field code message }
-        }
-      }
-    `
-  }
-  get BULK_STATUS() {
-    return `
-      query BulkStatus($id: ID!) {
-        discountRedeemCodeBulkCreation(id: $id) {
-          id
-          done
-          codesCount
-          importedCount
-          failedCount
-        }
-      }
-    `
-  }
-
-  // Espera a que termine un job de carga de códigos
-  async waitBulk(
+  async waitBulkNoVars(
     bulkId,
     { intervalMs = 1000, timeoutMs = 10 * 60 * 1000 } = {}
   ) {
     const client = this.init()
     const started = Date.now()
     while (true) {
-      const { data, errors } = await client.request(this.BULK_STATUS, {
-        id: bulkId,
-      })
+      const q = `
+        {
+          discountRedeemCodeBulkCreation(id: "${this.gqlEscape(bulkId)}") {
+            id
+            done
+            codesCount
+            importedCount
+            failedCount
+          }
+        }
+      `
+      const { data, errors } = await client.request(q)
       if (errors?.length)
         throw new Error(errors.map((e) => e.message).join("; "))
       const st = data?.discountRedeemCodeBulkCreation
@@ -582,113 +576,127 @@ class ShopifyImp {
     }
   }
 
-  // Crea el descuento en la tienda destino y agrega TODOS los códigos
   /**
-   * @param {Object} params
-   * @param {'DiscountCodeBasic'|'DiscountCodeBxgy'|'DiscountCodeFreeShipping'} params.type
-   * @param {Object} params.input  // Input EXACTO del tipo (DiscountCodeBasicInput | DiscountCodeBxgyInput | DiscountCodeFreeShippingInput)
-   * @param {Array<string|{code:string}>} params.codes // Todos los códigos a crear (1..10k)
+   * Crea un descuento y agrega TODOS los códigos por lotes (sin variables GraphQL)
+   * @param {'DiscountCodeBasic'|'DiscountCodeBxgy'|'DiscountCodeFreeShipping'} type
+   * @param {object} input  Input EXACTO del tipo Shopify (fechas, customerGets/items, etc.)
+   * @param {Array<string|{code:string}>} codes  Todos los códigos (1..10k)
    * @returns {Promise<{id:string, created:number, failed:number, batches:number}>}
-   *
-   * Nota: el input DEBE incluir toda la configuración del descuento (customerGets/items/segmentos/fechas/etc).
-   * El primer código se usa para crear el descuento; los demás se agregan por lotes de 250.
    */
-  async createDiscountWithCodes({ type, input, codes }) {
+  async createDiscountWithCodes(type, input, codes) {
     if (!type) throw new Error("Falta type")
     if (!input) throw new Error("Falta input del descuento")
     if (!codes?.length) throw new Error("Debes pasar al menos un código")
 
-    // Normaliza array de códigos
-    const normalized = codes
-      .map((c) => (typeof c === "string" ? c : c.code))
-      .filter(Boolean)
+    const client = this.init()
 
-    // Usa el primer código para la creación
-    const firstCode = input.code ?? normalized[0]
-    if (!firstCode)
+    // Normaliza códigos
+    const normalized = codes
+      .map((c) => (typeof c === "string" ? c : c?.code))
+      .filter(Boolean)
+    // Código inicial: si input ya trae "code" lo respetamos; si no, usamos el primero
+    const initialCode = input.code ?? normalized[0]
+    if (!initialCode)
       throw new Error("No hay código inicial para crear el descuento")
+
     const rest = input.code ? normalized : normalized.slice(1)
 
-    // Ensambla la mutation correcta
-    const client = this.init()
-    const byType = {
-      DiscountCodeBasic: {
-        m: this.CREATE_BASIC,
-        key: "discountCodeBasicCreate",
-      },
-      DiscountCodeBxgy: { m: this.CREATE_BXGY, key: "discountCodeBxgyCreate" },
-      DiscountCodeFreeShipping: {
-        m: this.CREATE_FREESHIP,
-        key: "discountCodeFreeShippingCreate",
-      },
+    // 1) Crear el descuento según tipo (sin variables)
+    const inputWithCode = { ...input, code: initialCode }
+    const inputLiteral = this.toGqlInput(inputWithCode)
+
+    const mutationByType = {
+      DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+      DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+      DiscountCodeFreeShipping: `mutation { discountCodeFreeShippingCreate(freeShippingCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
     }
-    const meta = byType[type]
-    if (!meta) throw new Error(`Tipo no soportado: ${type}`)
+    const createMutation = mutationByType[type]
+    if (!createMutation) throw new Error(`Tipo no soportado: ${type}`)
 
-    // Asegura que el input tenga el code inicial
-    const createInput = { ...input, code: firstCode }
-
-    // 1) Crear el descuento
-    let createRes = await client.request(meta.m, { input: createInput })
-    let payload = createRes?.data?.[meta.key]
+    let createRes = await client.request(createMutation)
+    let payload =
+      createRes?.data?.discountCodeBasicCreate ??
+      createRes?.data?.discountCodeBxgyCreate ??
+      createRes?.data?.discountCodeFreeShippingCreate
     let nodeId = payload?.codeDiscountNode?.id
     let userErrors = payload?.userErrors ?? []
 
-    // Si el code inicial está tomado, crea con un TEMP y luego lo agregas en bulk
-    if (!nodeId && userErrors?.length) {
+    // Si el primer código está tomado, crea con un código temporal y agrega el inicial vía bulk
+    if (!nodeId && userErrors.length) {
       const taken = userErrors.find(
         (e) =>
-          String(e.message).toLowerCase().includes("unique") ||
-          String(e.code || "").includes("TAKEN")
+          `${e.message || ""} ${e.code || ""}`
+            .toLowerCase()
+            .includes("unique") ||
+          `${e.code || ""}`.toUpperCase().includes("TAKEN")
       )
-      if (taken) {
-        const tempCode = `TMP-${Date.now().toString(36)}`
-        const createInputTmp = { ...input, code: tempCode }
-        createRes = await client.request(meta.m, { input: createInputTmp })
-        payload = createRes?.data?.[meta.key]
-        nodeId = payload?.codeDiscountNode?.id
-        userErrors = payload?.userErrors ?? []
-        if (!nodeId) {
-          throw new Error(
-            `No se pudo crear el descuento: ${
-              userErrors.map((e) => e.message).join("; ") || "desconocido"
-            }`
-          )
-        }
-        // el código "firstCode" se agregará vía bulk con el resto
-        rest.unshift(firstCode)
-      } else {
+      if (!taken) {
         throw new Error(
           `No se pudo crear el descuento: ${userErrors
             .map((e) => e.message)
             .join("; ")}`
         )
       }
+      const tempCode = `TMP-${Date.now().toString(36)}`
+      const tmpLiteral = this.toGqlInput({ ...input, code: tempCode })
+      const createMutationTmp = {
+        DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+        DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+        DiscountCodeFreeShipping: `mutation { discountCodeFreeShippingCreate(freeShippingCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
+      }[type]
+
+      createRes = await client.request(createMutationTmp)
+      payload =
+        createRes?.data?.discountCodeBasicCreate ??
+        createRes?.data?.discountCodeBxgyCreate ??
+        createRes?.data?.discountCodeFreeShippingCreate
+      nodeId = payload?.codeDiscountNode?.id
+      userErrors = payload?.userErrors ?? []
+      if (!nodeId) {
+        throw new Error(
+          `No se pudo crear el descuento (tmp): ${
+            userErrors.map((e) => e.message).join("; ") || "desconocido"
+          }`
+        )
+      }
+      // agrega el código inicial al lote
+      rest.unshift(initialCode)
     }
 
-    // 2) Agregar TODOS los códigos restantes en lotes de 250
-    const LOT = 250 // límite Shopify para bulk add
+    // 2) Agregar el resto de códigos por lotes (250) con bulkAdd (sin variables)
+    const LOT = 250
     const batches = this.chunk(rest, LOT)
-    let created = 1 // ya contamos el primero
+    let created = 1 // ya contamos el inicial
     let failed = 0
 
     for (const batch of batches) {
-      if (batch.length === 0) continue
+      if (!batch.length) continue
       const codesInput = batch.map((code) => ({ code }))
-      const bulk = await client.request(this.BULK_ADD_CODES, {
-        discountId: nodeId,
-        codes: codesInput,
-      })
-      const bulkId = bulk?.data?.discountRedeemCodeBulkAdd?.bulkCreation?.id
+      const codesLiteral = this.toGqlInput(codesInput)
+      const m = `
+        mutation {
+          discountRedeemCodeBulkAdd(
+            discountId: "${this.gqlEscape(nodeId)}",
+            codes: ${codesLiteral}
+          ) {
+            bulkCreation { id }
+            userErrors { field code message }
+          }
+        }
+      `
+      const bulk = await client.request(m)
       const errs = bulk?.data?.discountRedeemCodeBulkAdd?.userErrors ?? []
       if (errs.length) {
         throw new Error(
           `Error al iniciar bulkAdd: ${errs.map((e) => e.message).join("; ")}`
         )
       }
-      const st = await this.waitBulk(bulkId)
-      created += st.importedCount ?? 0
-      failed += st.failedCount ?? 0
+      const bulkId = bulk?.data?.discountRedeemCodeBulkAdd?.bulkCreation?.id
+      if (!bulkId) throw new Error("No se obtuvo el id del bulk creation")
+
+      const st = await this.waitBulkNoVars(bulkId)
+      created += st?.importedCount ?? 0
+      failed += st?.failedCount ?? 0
     }
 
     return { id: nodeId, created, failed, batches: batches.length }
