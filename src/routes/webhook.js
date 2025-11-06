@@ -1336,11 +1336,11 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
 
     // Fila a insertar
     const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
-    const orderId = orderPayload.order_id || "-"
+    const orderId = (orderPayload.order_id?.replace("gid://shopify/Order/", "")) || "-"
 
     const values = [
       [
-        `=HYPERLINK("https://admin.shopify.com/store/${store}/orders/${orderId}", "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}", "${orderNumber}")`,
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
