@@ -1300,7 +1300,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const nextRow = allValues ? allValues.length + 1 : 2
 
     // Fila a insertar
-    const store = (orderPayload?.replace(".myshopify.com", "")) || "";
+    const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
     const orderId = orderPayload.order_id || "-"
 
     const values = [
