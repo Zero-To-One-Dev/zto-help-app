@@ -413,6 +413,83 @@ class ShopifyImp {
     const res = await client.request(query)
     return res.data.codeDiscountNode?.codeDiscount
   }
+
+  // shopify.imp.js
+  async getDiscountWithAllCodes(id) {
+    const client = this.init()
+    const gid = String(id).startsWith("gid://")
+      ? String(id)
+      : `gid://shopify/DiscountCodeNode/${id}`
+
+    const query = `
+    query GetDiscountCodes($id: ID!, $first: Int!, $after: String) {
+      codeDiscountNode(id: $id) {
+        id
+        codeDiscount {
+          ... on DiscountCodeBasic {
+            title
+            summary
+            appliesOncePerCustomer
+            asyncUsageCount
+            usageLimit
+            codes(first: $first, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes { id code }
+            }
+          }
+          ... on DiscountCodeBxgy {
+            title
+            summary
+            codes(first: $first, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes { id code }
+            }
+          }
+          ... on DiscountCodeFreeShipping {
+            title
+            summary
+            codes(first: $first, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes { id code }
+            }
+          }
+        }
+      }
+    }
+  `
+
+    const first = 250
+    let after = null
+    const allCodes = []
+    let meta = null
+
+    while (true) {
+      const variables = { id: gid, first, after }
+      const res = await client.request(query, variables)
+
+      const node = res.data?.codeDiscountNode
+      const discount = node?.codeDiscount
+      if (!discount) break
+
+      if (!meta) {
+        meta = {
+          title: discount.title,
+          summary: discount.summary,
+          appliesOncePerCustomer: discount.appliesOncePerCustomer,
+          asyncUsageCount: discount.asyncUsageCount,
+          usageLimit: discount.usageLimit,
+        }
+      }
+
+      const page = discount.codes
+      allCodes.push(...page.nodes.map((n) => ({ id: n.id, code: n.code })))
+
+      if (!page.pageInfo.hasNextPage) break
+      after = page.pageInfo.endCursor
+    }
+
+    return { ...meta, codes: allCodes }
+  }
 }
 
 export default ShopifyImp

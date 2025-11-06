@@ -864,13 +864,16 @@ router.post(
             console.log({ discountId, fromStore, toStore })
 
             const shopifyImpFromStore = new ShopifyImp(fromStore)
-            // const shopifyImpToStore = new ShopifyImp(toStore)
+            const shopifyImpToStore = new ShopifyImp(toStore)
 
-            const response = await shopifyImpFromStore.getDiscountCode(
+            const discount = await shopifyImpFromStore.getDiscountWithAllCodes(
               discountId
             )
 
-            console.log(response)
+            console.log("Resumen:", {
+              title: discount.title,
+              totalCodes: discount.codes.length,
+            })
           }
         }
       }
