@@ -175,6 +175,27 @@ const EMAIL_PASSWORD_MW = process.env.EMAIL_PASSWORD_MW
 const EMAIL_PORT_MW = parseInt(process.env.EMAIL_PORT_MW || 587)
 const KLAVIYO_TOKEN_MW = process.env.KLAVIYO_TOKEN_MW
 
+// VSLA
+const SHOP_NAME_VSLA = process.env.SHOP_NAME_VSLA
+const SHOPIFY_ALIAS_VSLA = process.env.SHOPIFY_ALIAS_VSLA
+export const SHOPIFY_URL_VSLA = process.env.SHOPIFY_URL_VSLA
+const SHOPIFY_API_KEY_VSLA = process.env.SHOPIFY_API_KEY_VSLA
+const SHOPIFY_API_SECRET_KEY_VSLA = process.env.SHOPIFY_API_SECRET_KEY_VSLA
+
+// RSLA
+const SHOP_NAME_RSLA = process.env.SHOP_NAME_RSLA
+const SHOPIFY_ALIAS_RSLA = process.env.SHOPIFY_ALIAS_RSLA
+export const SHOPIFY_URL_RSLA = process.env.SHOPIFY_URL_RSLA
+const SHOPIFY_API_KEY_RSLA = process.env.SHOPIFY_API_KEY_RSLA
+const SHOPIFY_API_SECRET_KEY_RSLA = process.env.SHOPIFY_API_SECRET_KEY_RSLA
+
+// HSLA
+const SHOP_NAME_HSLA = process.env.SHOP_NAME_HSLA
+const SHOPIFY_ALIAS_HSLA = process.env.SHOPIFY_ALIAS_HSLA
+export const SHOPIFY_URL_HSLA = process.env.SHOPIFY_URL_HSLA
+const SHOPIFY_API_KEY_HSLA = process.env.SHOPIFY_API_KEY_HSLA
+const SHOPIFY_API_SECRET_KEY_HSLA = process.env.SHOPIFY_API_SECRET_KEY_HSLA
+
 // INMX
 const SHOP_NAME_INMX = process.env.SHOP_NAME_INMX
 const SHOPIFY_ALIAS_INMX = process.env.SHOPIFY_ALIAS_INMX
@@ -346,6 +367,21 @@ export const SHOPS_ORIGIN = {
     attentiveKey: ATTENTIVE_API_KEY_MW,
     productSubscriptionMetafieldKey: PRODUCT_SUBSCRIPTION_METAFIELD_KEY_MW,
   },
+  "https://compravibrosculpt.com": {
+    shop: SHOPIFY_URL_VSLA,
+    shopAlias: SHOPIFY_ALIAS_VSLA,
+    shopName: SHOP_NAME_VSLA,
+  },
+  "https://compraredusculpt.com": {
+    shop: SHOPIFY_URL_RSLA,
+    shopAlias: SHOPIFY_ALIAS_RSLA,
+    shopName: SHOP_NAME_RSLA,
+  },
+  "https://comprahotshapers.com": {
+    shop: SHOPIFY_URL_HSLA,
+    shopAlias: SHOPIFY_ALIAS_HSLA,
+    shopName: SHOP_NAME_HSLA,
+  },
   "https://inbogo.mx": {
     shop: SHOPIFY_URL_INMX,
     shopAlias: SHOPIFY_ALIAS_INMX,
@@ -420,6 +456,9 @@ export default {
   SHOPIFY_URL_MW,
   SHOPIFY_URL_DM,
   SHOPIFY_URL_VS,
+  SHOPIFY_URL_VSLA,
+  SHOPIFY_URL_RSLA,
+  SHOPIFY_URL_HSLA,
   SHOPIFY_URL_INMX,
   SHOPIFY_URL_INCO,
   SHOPIFY_URL_VSCO,
@@ -499,6 +538,12 @@ export default {
   EMAIL_USER_MW,
   EMAIL_PASSWORD_MW,
   EMAIL_PORT_MW,
+  SHOPIFY_API_KEY_VSLA,
+  SHOPIFY_API_SECRET_KEY_VSLA,
+  SHOPIFY_API_KEY_RSLA,
+  SHOPIFY_API_SECRET_KEY_RSLA,
+  SHOPIFY_API_KEY_HSLA,
+  SHOPIFY_API_SECRET_KEY_HSLA,
   SHOPIFY_API_KEY_INMX,
   SHOPIFY_API_SECRET_KEY_INMX,
   SHOPIFY_API_KEY_VSCO,
