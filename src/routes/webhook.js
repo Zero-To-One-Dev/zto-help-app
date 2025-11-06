@@ -1340,7 +1340,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
 
     const values = [
       [
-        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}", "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
