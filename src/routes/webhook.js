@@ -807,7 +807,6 @@ router.post(
         payload.channel?.id || payload.container?.channel_id || null
 
       const modalView = getModalView(payload.callback_id)
-      console.log({ channelId })
       modalView.private_metadata = JSON.stringify({ channelId })
 
       try {
