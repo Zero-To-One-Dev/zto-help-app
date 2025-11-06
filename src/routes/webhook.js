@@ -1344,12 +1344,10 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
-        (orderPayload.customer_address || "") +
-          ", " +
-          (orderPayload.customer_province || "") +
-          ", " +
-          (orderPayload.customer_city || "")(
-            orderPayload.customer_colonia
+        (orderPayload.customer_address || "") + ", " +
+          (orderPayload.customer_province || "") + ", " +
+          (orderPayload.customer_city || "") +
+          (orderPayload.customer_colonia
               ? ", " + orderPayload.customer_colonia
               : ""
           ),
