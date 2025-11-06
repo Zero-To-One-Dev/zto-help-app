@@ -1244,6 +1244,23 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
 
+    // Comprobar si la fecha de la orden esta entre 8:30 am y 5:15 pm
+    const inicio = new Date();
+    inicio.setHours(7, 30, 0, 0);
+
+    const fin = new Date();
+    fin.setHours(17, 15, 0, 0);
+
+    const fechaAComparar = new Date(rawCreatedAt);
+
+    const estaEnHorarioLaboral = fechaAComparar >= inicio && fechaAComparar <= fin;
+
+    console.log("Fechas: ", inicio, fin, fechaAComparar, estaEnHorarioLaboral)
+
+    if (!estaEnHorarioLaboral) {
+      return res.status(200).json({ ok: false, error: "La fecha de la orden debe estar entre 8:30 am y 5:15 pm" });
+    }
+
     const createdAtForSheets = rawCreatedAt
       ? new Date(rawCreatedAt)
           .toLocaleString("en-CA", {
