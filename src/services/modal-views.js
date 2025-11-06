@@ -1,4 +1,4 @@
-export const getModalView = (callbackId, channelId) => {
+export const getModalView = (callbackId) => {
   const date = new Date()
   const formatedDate =
     date.getFullYear() +
@@ -85,7 +85,6 @@ export const getModalView = (callbackId, channelId) => {
     intelligems_test: {
       type: "modal",
       callback_id: callbackId,
-      channel_id: channelId,
       title: {
         type: "plain_text",
         text: "Intelligems Test",
@@ -173,7 +172,6 @@ export const getModalView = (callbackId, channelId) => {
     generate_coupon: {
       type: "modal",
       callback_id: callbackId,
-      channel_id: channelId,
       title: {
         type: "plain_text",
         text: "Generate Coupon",
