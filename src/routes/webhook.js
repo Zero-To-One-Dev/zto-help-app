@@ -875,14 +875,23 @@ router.post(
               startsAt: new Date().toISOString(),
               appliesOncePerCustomer: !!source.appliesOncePerCustomer,
               usageLimit: source.usageLimit ?? null,
+              context: { all: shopifyImpToStore.Enum("ALL") },
               customerGets: {
-                value: { percentage: 0.1 },
+                value:
+                  source.value?.type === "percentage"
+                    ? { percentage: source.value.percentage }
+                    : {
+                        discountAmount: {
+                          amount: String(source.value?.amount ?? "0.0"),
+                          appliesOnEachItem: !!source.value?.appliesOnEachItem,
+                        },
+                      },
                 items: { all: true },
               },
             }
 
             const result = await shopifyImpToStore.createDiscountWithCodes(
-              "DiscountCodeBasic", // o 'DiscountCodeBxgy' | 'DiscountCodeFreeShipping'
+              "DiscountCodeBasic",
               basicInput,
               source.codes.map((c) => c.code)
             )

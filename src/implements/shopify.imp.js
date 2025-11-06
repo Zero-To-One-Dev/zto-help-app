@@ -74,8 +74,7 @@ class ShopifyImp {
    * - this.Enum('X') -> X (sin comillas)
    */
   toGqlInput(value) {
-    if (value === null) return "null"
-    if (value === undefined) return "null"
+    if (value === null || value === undefined) return "null"
     if (value && typeof value === "object" && value.__enum)
       return String(value.value)
     const t = typeof value
@@ -84,11 +83,10 @@ class ShopifyImp {
     if (value instanceof Date) return `"${value.toISOString()}"`
     if (Array.isArray(value))
       return `[${value.map((v) => this.toGqlInput(v)).join(", ")}]`
-    // objeto
-    const entries = Object.entries(value)
+    return `{ ${Object.entries(value)
       .filter(([, v]) => v !== undefined)
       .map(([k, v]) => `${k}: ${this.toGqlInput(v)}`)
-    return `{ ${entries.join(", ")} }`
+      .join(", ")} }`
   }
 
   async getOrderById(id) {
@@ -465,7 +463,6 @@ class ShopifyImp {
 
   async getDiscountWithAllCodes(id) {
     const client = this.init()
-
     if (!id) throw new Error("Falta id del descuento")
     const gid = String(id).startsWith("gid://")
       ? String(id)
@@ -478,7 +475,7 @@ class ShopifyImp {
 
     while (true) {
       const afterArg = after ? `, after: "${after}"` : ""
-      const query = `
+      const q = `
       {
         codeDiscountNode(id: "${gid}") {
           id
@@ -490,22 +487,18 @@ class ShopifyImp {
               appliesOncePerCustomer
               asyncUsageCount
               usageLimit
-              codes(first: ${PAGE_SIZE}${afterArg}) {
-                pageInfo { hasNextPage endCursor }
-                nodes { id code }
+              // Traemos el valor del descuento
+              customerGets {
+                value {
+                  __typename
+                  ... on DiscountPercentage { percentage }
+                  ... on DiscountAmount {
+                    amount { amount currencyCode }
+                    appliesOnEachItem
+                  }
+                }
+                items { __typename } // placeholder por si luego necesitas copiar el scope
               }
-            }
-            ... on DiscountCodeBxgy {
-              title
-              summary
-              codes(first: ${PAGE_SIZE}${afterArg}) {
-                pageInfo { hasNextPage endCursor }
-                nodes { id code }
-              }
-            }
-            ... on DiscountCodeFreeShipping {
-              title
-              summary
               codes(first: ${PAGE_SIZE}${afterArg}) {
                 pageInfo { hasNextPage endCursor }
                 nodes { id code }
@@ -515,17 +508,24 @@ class ShopifyImp {
         }
       }
     `
-
-      const res = await client.request(query)
-      const node = res?.data?.codeDiscountNode
-      const discount = node?.codeDiscount
-      if (!discount) {
-        throw new Error(
-          `No se encontró DiscountCodeNode con id=${gid}. Verifica que sea un id de DiscountCodeNode.`
-        )
-      }
+      const res = await client.request(q)
+      const discount = res?.data?.codeDiscountNode?.codeDiscount
+      if (!discount) throw new Error(`No se encontró DiscountCodeNode ${gid}`)
 
       if (!meta) {
+        // mapeamos valor (si es % guardamos percentage, si fuera monto dejamos amount)
+        let value = null
+        const v = discount.customerGets?.value
+        if (v?.__typename === "DiscountPercentage") {
+          value = { type: "percentage", percentage: v.percentage }
+        } else if (v?.__typename === "DiscountAmount") {
+          value = {
+            type: "amount",
+            amount: v.amount?.amount,
+            currencyCode: v.amount?.currencyCode,
+            appliesOnEachItem: !!v.appliesOnEachItem,
+          }
+        }
         meta = {
           typename: discount.__typename,
           title: discount.title,
@@ -533,47 +533,17 @@ class ShopifyImp {
           appliesOncePerCustomer: discount.appliesOncePerCustomer ?? null,
           asyncUsageCount: discount.asyncUsageCount ?? null,
           usageLimit: discount.usageLimit ?? null,
+          value,
         }
       }
 
       const page = discount.codes
       allCodes.push(...page.nodes.map((n) => ({ id: n.id, code: n.code })))
-
       if (!page.pageInfo.hasNextPage) break
       after = page.pageInfo.endCursor
     }
 
     return { ...meta, codes: allCodes }
-  }
-
-  async waitBulkNoVars(
-    bulkId,
-    { intervalMs = 1000, timeoutMs = 10 * 60 * 1000 } = {}
-  ) {
-    const client = this.init()
-    const started = Date.now()
-    while (true) {
-      const q = `
-        {
-          discountRedeemCodeBulkCreation(id: "${this.gqlEscape(bulkId)}") {
-            id
-            done
-            codesCount
-            importedCount
-            failedCount
-          }
-        }
-      `
-      const { data, errors } = await client.request(q)
-      if (errors?.length)
-        throw new Error(errors.map((e) => e.message).join("; "))
-      const st = data?.discountRedeemCodeBulkCreation
-      if (!st) throw new Error("No se encontró el estado del bulk creation")
-      if (st.done) return st
-      if (Date.now() - started > timeoutMs)
-        throw new Error("Timeout esperando el bulk creation")
-      await this.sleep(intervalMs)
-    }
   }
 
   /**
@@ -589,28 +559,26 @@ class ShopifyImp {
     if (!codes?.length) throw new Error("Debes pasar al menos un código")
 
     const client = this.init()
-
-    // Normaliza códigos
     const normalized = codes
       .map((c) => (typeof c === "string" ? c : c?.code))
       .filter(Boolean)
-    // Código inicial: si input ya trae "code" lo respetamos; si no, usamos el primero
+
+    // ---- FIX: si no viene context, lo forzamos a TODOS los compradores ----
+    if (!input.context && !input.customerSelection) {
+      input = { ...input, context: { all: this.Enum("ALL") } } // evita "Customer selection can't be blank"
+    }
+
     const initialCode = input.code ?? normalized[0]
     if (!initialCode)
       throw new Error("No hay código inicial para crear el descuento")
-
     const rest = input.code ? normalized : normalized.slice(1)
 
-    // 1) Crear el descuento según tipo (sin variables)
-    const inputWithCode = { ...input, code: initialCode }
-    const inputLiteral = this.toGqlInput(inputWithCode)
-
-    const mutationByType = {
+    const inputLiteral = this.toGqlInput({ ...input, code: initialCode })
+    const createMutation = {
       DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
       DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
       DiscountCodeFreeShipping: `mutation { discountCodeFreeShippingCreate(freeShippingCodeDiscount: ${inputLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
-    }
-    const createMutation = mutationByType[type]
+    }[type]
     if (!createMutation) throw new Error(`Tipo no soportado: ${type}`)
 
     let createRes = await client.request(createMutation)
@@ -621,7 +589,6 @@ class ShopifyImp {
     let nodeId = payload?.codeDiscountNode?.id
     let userErrors = payload?.userErrors ?? []
 
-    // Si el primer código está tomado, crea con un código temporal y agrega el inicial vía bulk
     if (!nodeId && userErrors.length) {
       const taken = userErrors.find(
         (e) =>
@@ -630,76 +597,91 @@ class ShopifyImp {
             .includes("unique") ||
           `${e.code || ""}`.toUpperCase().includes("TAKEN")
       )
-      if (!taken) {
+      if (!taken)
         throw new Error(
           `No se pudo crear el descuento: ${userErrors
             .map((e) => e.message)
             .join("; ")}`
         )
-      }
-      const tempCode = `TMP-${Date.now().toString(36)}`
-      const tmpLiteral = this.toGqlInput({ ...input, code: tempCode })
-      const createMutationTmp = {
+      const tmpLiteral = this.toGqlInput({
+        ...input,
+        code: `TMP-${Date.now().toString(36)}`,
+      })
+      const createTmp = {
         DiscountCodeBasic: `mutation { discountCodeBasicCreate(basicCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
         DiscountCodeBxgy: `mutation { discountCodeBxgyCreate(bxgyCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
         DiscountCodeFreeShipping: `mutation { discountCodeFreeShippingCreate(freeShippingCodeDiscount: ${tmpLiteral}) { codeDiscountNode { id } userErrors { field code message } } }`,
       }[type]
-
-      createRes = await client.request(createMutationTmp)
+      createRes = await client.request(createTmp)
       payload =
         createRes?.data?.discountCodeBasicCreate ??
         createRes?.data?.discountCodeBxgyCreate ??
         createRes?.data?.discountCodeFreeShippingCreate
       nodeId = payload?.codeDiscountNode?.id
-      userErrors = payload?.userErrors ?? []
-      if (!nodeId) {
+      if (!nodeId)
         throw new Error(
           `No se pudo crear el descuento (tmp): ${
-            userErrors.map((e) => e.message).join("; ") || "desconocido"
+            (payload?.userErrors || []).map((e) => e.message).join("; ") ||
+            "desconocido"
           }`
         )
-      }
-      // agrega el código inicial al lote
+      // agregamos el código real al bulk
       rest.unshift(initialCode)
     }
 
-    // 2) Agregar el resto de códigos por lotes (250) con bulkAdd (sin variables)
+    // --- bulk add (sin variables) ---
     const LOT = 250
-    const batches = this.chunk(rest, LOT)
-    let created = 1 // ya contamos el inicial
-    let failed = 0
-
-    for (const batch of batches) {
+    const chunk = (arr, size) =>
+      arr.reduce(
+        (a, _, i) => (
+          i % size ? a[a.length - 1].push(arr[i]) : a.push([arr[i]]), a
+        ),
+        []
+      )
+    let created = 1,
+      failed = 0
+    for (const batch of chunk(rest, LOT)) {
       if (!batch.length) continue
-      const codesInput = batch.map((code) => ({ code }))
-      const codesLiteral = this.toGqlInput(codesInput)
+      const codesLiteral = this.toGqlInput(batch.map((code) => ({ code })))
       const m = `
-        mutation {
-          discountRedeemCodeBulkAdd(
-            discountId: "${this.gqlEscape(nodeId)}",
-            codes: ${codesLiteral}
-          ) {
-            bulkCreation { id }
-            userErrors { field code message }
-          }
+      mutation {
+        discountRedeemCodeBulkAdd(discountId: "${this.gqlEscape(
+          nodeId
+        )}", codes: ${codesLiteral}) {
+          bulkCreation { id }
+          userErrors { field code message }
         }
-      `
-      const bulk = await client.request(m)
-      const errs = bulk?.data?.discountRedeemCodeBulkAdd?.userErrors ?? []
-      if (errs.length) {
+      }
+    `
+      const start = await client.request(m)
+      const errs = start?.data?.discountRedeemCodeBulkAdd?.userErrors || []
+      if (errs.length)
         throw new Error(
           `Error al iniciar bulkAdd: ${errs.map((e) => e.message).join("; ")}`
         )
+      const bulkId = start?.data?.discountRedeemCodeBulkAdd?.bulkCreation?.id
+      const statusQ = `
+      { discountRedeemCodeBulkCreation(id: "${this.gqlEscape(bulkId)}") {
+          id done importedCount failedCount
+        }
+      }`
+      // poll básico
+      let done = false,
+        imported = 0,
+        failedThis = 0
+      while (!done) {
+        const s = await client.request(statusQ)
+        const st = s?.data?.discountRedeemCodeBulkCreation
+        done = !!st?.done
+        imported = st?.importedCount ?? 0
+        failedThis = st?.failedCount ?? 0
+        if (!done) await new Promise((r) => setTimeout(r, 1000))
       }
-      const bulkId = bulk?.data?.discountRedeemCodeBulkAdd?.bulkCreation?.id
-      if (!bulkId) throw new Error("No se obtuvo el id del bulk creation")
-
-      const st = await this.waitBulkNoVars(bulkId)
-      created += st?.importedCount ?? 0
-      failed += st?.failedCount ?? 0
+      created += imported
+      failed += failedThis
     }
 
-    return { id: nodeId, created, failed, batches: batches.length }
+    return { id: nodeId, created, failed }
   }
 }
 
