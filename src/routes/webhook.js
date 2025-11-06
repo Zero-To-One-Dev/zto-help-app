@@ -866,14 +866,35 @@ router.post(
             const shopifyImpFromStore = new ShopifyImp(fromStore)
             const shopifyImpToStore = new ShopifyImp(toStore)
 
-            const discount = await shopifyImpFromStore.getDiscountWithAllCodes(
+            const source = await shopifyImpFromStore.getDiscountWithAllCodes(
               discountId
             )
 
-            console.log("Resumen:", {
-              title: discount.title,
-              totalCodes: discount.codes.length,
+            const basicInput = {
+              title: source.title,
+              startsAt: new Date().toISOString(),
+              customerGets: {
+                value: { percentage: 0.1 },
+                items: { all: true },
+              },
+              appliesOncePerCustomer: !!source.appliesOncePerCustomer,
+              usageLimit: source.usageLimit ?? null,
+            }
+
+            const result = await shopifyImpToStore.createDiscountWithCodes({
+              type: "DiscountCodeBasic", // o 'DiscountCodeBxgy' | 'DiscountCodeFreeShipping'
+              input: basicInput, // el input completo del tipo
+              codes: source.codes.map((c) => c.code), // TODOS los códigos
             })
+
+            console.log("Clonado OK:", result)
+
+            console.log("Resumen:", {
+              title: source.title,
+              totalCodes: source.codes.length,
+            })
+
+            break
           }
         }
       }
@@ -1223,7 +1244,6 @@ router.post("/counterdelivery/report", async (req, res) => {
   }
 })
 
-
 router.post("/counterdelivery/calls-report", async (req, res) => {
   try {
     const google = new GoogleImp()
@@ -1257,20 +1277,24 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
       : ""
 
     // Comprobar si la fecha de la orden esta entre 8:30 am y 5:15 pm
-    const inicio = new Date();
-    inicio.setHours(7, 30, 0, 0);
+    const inicio = new Date()
+    inicio.setHours(7, 30, 0, 0)
 
-    const fin = new Date();
-    fin.setHours(17, 15, 0, 0);
+    const fin = new Date()
+    fin.setHours(17, 15, 0, 0)
 
-    const fechaAComparar = new Date(createdAtForSheets);
+    const fechaAComparar = new Date(createdAtForSheets)
 
-    const estaEnHorarioLaboral = fechaAComparar >= inicio && fechaAComparar <= fin;
+    const estaEnHorarioLaboral =
+      fechaAComparar >= inicio && fechaAComparar <= fin
 
     console.log("Fechas: ", inicio, fin, fechaAComparar, estaEnHorarioLaboral)
 
     if (!estaEnHorarioLaboral) {
-      return res.status(200).json({ ok: false, error: "La fecha de la orden debe estar entre 8:30 am y 5:15 pm" });
+      return res.status(200).json({
+        ok: false,
+        error: "La fecha de la orden debe estar entre 8:30 am y 5:15 pm",
+      })
     }
 
     // A1 notation: hoja y columnas destino
@@ -1293,8 +1317,10 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
-        (orderPayload.customer_address || "") + ", " + (orderPayload.customer_city || ""),
-        orderPayload.customer_country || ""
+        (orderPayload.customer_address || "") +
+          ", " +
+          (orderPayload.customer_city || ""),
+        orderPayload.customer_country || "",
       ],
     ]
 
