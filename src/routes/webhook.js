@@ -1256,10 +1256,13 @@ router.post("/counterdelivery/report", async (req, res) => {
     // Construir la fórmula dinámica para la columna K
     const formula = `=SI(E${nextRow}="SIN CONFIRMAR";SI(MAX(0; 7 - (HOY() - ENTERO(C${nextRow})))=0;"Tiempo vencido";MAX(0; 7 - (HOY() - ENTERO(C${nextRow}))));"-")`
 
+    const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
+    const orderId = (orderPayload.order_id?.replace("gid://shopify/Order/", "")) || "-"
+
     // Fila a insertar
     const values = [
       [
-        orderNumber,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
         customerName,
         createdAtForSheets,
         ORDER_STATUS.default,
