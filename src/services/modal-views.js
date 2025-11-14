@@ -1,4 +1,4 @@
-export const getModalView = (callbackId, channelId) => {
+export const getModalView = (callbackId) => {
   const date = new Date()
   const formatedDate =
     date.getFullYear() +
@@ -6,7 +6,7 @@ export const getModalView = (callbackId, channelId) => {
     ("0" + (date.getMonth() + 1)).slice(-2) +
     "-" +
     ("0" + date.getDate()).slice(-2)
-  const storesUsa = [
+  const stores = [
     {
       name: "Vibro Sculpt",
       alias: "VS",
@@ -35,8 +35,6 @@ export const getModalView = (callbackId, channelId) => {
       name: "Hot Vita",
       alias: "HV",
     },
-  ]
-  const storesLatam = [
     {
       name: "Hot Shapers LATAM",
       alias: "HSLA",
@@ -87,7 +85,6 @@ export const getModalView = (callbackId, channelId) => {
     intelligems_test: {
       type: "modal",
       callback_id: callbackId,
-      channel_id: channelId,
       title: {
         type: "plain_text",
         text: "Intelligems Test",
@@ -175,7 +172,6 @@ export const getModalView = (callbackId, channelId) => {
     generate_coupon: {
       type: "modal",
       callback_id: callbackId,
-      channel_id: channelId,
       title: {
         type: "plain_text",
         text: "Generate Coupon",
@@ -264,12 +260,11 @@ export const getModalView = (callbackId, channelId) => {
     }))
   }
 
-  const optionsUsa = storesUsa.map(toOption)
-  const optionsLatam = storesLatam.map(toOption)
+  const options = stores.map(toOption)
 
-  setOptionsAt(modals.intelligems_test, 3, optionsUsa)
-  setOptionsAt(modals.generate_coupon, 1, optionsLatam)
-  setOptionsAt(modals.generate_coupon, 2, optionsLatam)
+  setOptionsAt(modals.intelligems_test, 3, options)
+  setOptionsAt(modals.generate_coupon, 1, options)
+  setOptionsAt(modals.generate_coupon, 2, options)
 
   return modals[callbackId]
 }
