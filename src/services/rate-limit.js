@@ -1,5 +1,5 @@
 import logger from '../../logger.js';
-import { SHOPS_ORIGIN } from '../app.js';
+import ConfigStores from '../services/config-stores.js';
 import MessageImp from '../implements/slack.imp.js'
 
 export async function rateLimitHandler(req, res) {
@@ -7,6 +7,7 @@ export async function rateLimitHandler(req, res) {
   const messageImp = new MessageImp();
   
   const route = req.originalUrl;
+  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
   const shopAlias = SHOPS_ORIGIN[req.get('origin')].shopAlias || req.body.shopAlias;
   const ip =
     req.headers['cf-connecting-ip'] ||

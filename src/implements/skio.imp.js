@@ -1,4 +1,4 @@
-import app from "../app.js"
+import ConfigStores from '../services/config-stores.js';
 import { gql, GraphQLClient } from "graphql-request"
 
 const SKIO_ENDPOINT = "https://graphql.skio.com/v1/graphql"
@@ -8,8 +8,10 @@ class SkioImp {
     this.shopAlias = shopAlias
   }
 
-  init() {
-    const { [`SKIO_API_KEY_${this.shopAlias}`]: SKIO_API_KEY } = app
+  async init() {
+    const STORES_INFORMATION = ConfigStores.getStoresInformation();
+    const SKIO_API_KEY = STORES_INFORMATION[this.shopAlias].skio_api_key;
+
     return new GraphQLClient(SKIO_ENDPOINT, {
       headers: {
         authorization: `API ${SKIO_API_KEY}`,
@@ -21,7 +23,7 @@ class SkioImp {
     let sellingPlanCondition = ""
     if (haveSellingPlan)
       sellingPlanCondition = "sellingPlanId: {_is_null: false}"
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
         query {
@@ -70,7 +72,7 @@ class SkioImp {
   }
 
   async getSubscriptionsByEmail(email) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
         query {
@@ -92,7 +94,7 @@ class SkioImp {
   }
 
   async cancelSubscription(cancelSessionId, subscription) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       mutation {
@@ -105,7 +107,7 @@ class SkioImp {
   }
 
   async subscriptionsByOrder(order) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       query {
@@ -121,7 +123,7 @@ class SkioImp {
   }
 
   async subscriptionsByContract(contract) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       query {
@@ -135,7 +137,7 @@ class SkioImp {
   }
 
   async applyDiscount(subscriptionId, code) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
         mutation {
@@ -151,7 +153,7 @@ class SkioImp {
   }
 
   async pauseSubscription(subscriptionId, unit = "DAY", value = 15.0) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
         mutation {
@@ -178,7 +180,7 @@ class SkioImp {
     city,
     zip
   ) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       mutation {
@@ -199,7 +201,7 @@ class SkioImp {
   }
 
   async getSubscriptionInfo(id) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       query {
@@ -216,7 +218,7 @@ class SkioImp {
   }
 
   async getSubscriptionByContract(platformId) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(gql`
       query {

@@ -1,4 +1,5 @@
-import app, { HOSTNAME } from "../app.js"
+import { HOSTNAME } from "../app.js";
+import ConfigStores from '../services/config-stores.js';
 import "@shopify/shopify-api/adapters/node"
 import { shopifyApi, Session, LogSeverity } from "@shopify/shopify-api"
 import logger from "../../logger.js"
@@ -8,12 +9,11 @@ class ShopifyImp {
     this.shopAlias = shopAlias
   }
 
-  init() {
-    const {
-      [`SHOPIFY_API_KEY_${this.shopAlias}`]: SHOPIFY_API_KEY,
-      [`SHOPIFY_API_SECRET_KEY_${this.shopAlias}`]: SHOPIFY_API_SECRET_KEY,
-      [`SHOPIFY_URL_${this.shopAlias}`]: SHOP_URL,
-    } = app
+  async init() {
+    const STORES_INFORMATION = await ConfigStores.getStoresInformation();
+    const SHOPIFY_API_KEY = STORES_INFORMATION[this.shopAlias].shopify_api_key;
+    const SHOPIFY_API_SECRET_KEY = STORES_INFORMATION[this.shopAlias].shopify_secret_key;
+    const SHOP_URL = STORES_INFORMATION[this.shopAlias].shopify_url;
 
     const shopify = shopifyApi({
       apiKey: SHOPIFY_API_KEY,
@@ -90,7 +90,7 @@ class ShopifyImp {
   }
 
   async getOrderById(id) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`
       query {
@@ -114,8 +114,33 @@ class ShopifyImp {
     ).data.order
   }
 
+  async getFirst10Orders() {
+    const client = await this.init()
+    return (
+      await client.request(`
+      query {
+        orders (first: 10) {
+          edges {
+            cursor
+            node {
+              id
+              name
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
+        }
+      }  
+    `)
+    ).data.orders.edges
+  }
+
   async getCustomerNameByEmail(email) {
-    const client = this.init()
+    const client = await this.init()
     const customerByIdentifier = (
       await client.request(`
       query {
@@ -130,7 +155,7 @@ class ShopifyImp {
   }
 
   async getSubscription(email, subscription) {
-    const client = this.init()
+    const client = await this.init()
     return (
       (
         await client.request(`
@@ -148,7 +173,7 @@ class ShopifyImp {
   }
 
   async cancelSubscription(subscription) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`
       mutation {
@@ -161,7 +186,7 @@ class ShopifyImp {
   }
 
   async createOrder(variables) {
-    const client = this.init()
+    const client = await this.init()
     const mutation = `
       mutation OrderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
         orderCreate(order: $order, options: $options) {
@@ -176,7 +201,7 @@ class ShopifyImp {
   }
 
   async updateOrder(input) {
-    const client = this.init()
+    const client = await this.init()
     const mutation = `
     mutation OrderUpdate($input: OrderInput!) {
       orderUpdate(input: $input) {
@@ -218,7 +243,7 @@ class ShopifyImp {
   }
 
   async createDraftOrder(input) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(
         `mutation draftOrderCreate($input: DraftOrderInput!) {
@@ -236,7 +261,7 @@ class ShopifyImp {
   }
 
   async getActiveOrders(email) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(
         `query {
@@ -281,7 +306,7 @@ class ShopifyImp {
   }
 
   async updateAddress(id, address1, address2, provinceCode, city, zip) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(
         `mutation {
@@ -302,7 +327,7 @@ class ShopifyImp {
   }
 
   async subscriptionProductsIdsBySubscriptionVariant(variantsQuery) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`query {
         productVariants (first: 100, query: "${variantsQuery}") {
@@ -324,7 +349,7 @@ class ShopifyImp {
     productSubscriptionMetafieldKey,
     productsSubQuery
   ) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`query {
         products(first: 100, query: "${productsSubQuery} AND status:ACTIVE") {
@@ -355,7 +380,7 @@ class ShopifyImp {
   }
 
   async sendDraftOrderInvoice(draftOrder) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`mutation {
         draftOrderInvoiceSend (id: "${draftOrder}") {
@@ -368,7 +393,7 @@ class ShopifyImp {
   }
 
   async getDraftOrder(draftOrder) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`query {
         draftOrder (id: "${draftOrder}") {
@@ -381,7 +406,7 @@ class ShopifyImp {
   }
 
   async deleteDraftOrder(draftOrder) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`mutation {
       draftOrderDelete (input: { id: "${draftOrder}" }) {
@@ -392,7 +417,7 @@ class ShopifyImp {
   }
 
   async getLineItemsByOrder(orderId) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`query {
         order (id: "${orderId}") {
@@ -418,7 +443,7 @@ class ShopifyImp {
   }
 
   async createDiscountCode(input) {
-    const client = this.init()
+    const client = await this.init()
     return (
       await client.request(`mutation {
     	discountCodeBasicCreate (basicCodeDiscount: ${input}) {
@@ -434,7 +459,7 @@ class ShopifyImp {
   }
 
   async getDiscountWithAllCodes(id) {
-    const client = this.init()
+    const client = await this.init()
     if (!id) throw new Error("Falta id del descuento")
 
     const toGid = (v) =>
@@ -539,7 +564,7 @@ class ShopifyImp {
   }
 
   async getDiscountWithAllCodes(id) {
-    const client = this.init()
+    const client = await this.init()
     if (!id) throw new Error("Falta id del descuento")
     const gid = String(id).startsWith("gid://")
       ? String(id)
@@ -678,7 +703,7 @@ class ShopifyImp {
     if (!input) throw new Error("Falta input del descuento")
     if (!codes?.length) throw new Error("Debes pasar al menos un código")
 
-    const client = this.init()
+    const client = await this.init()
     const normalized = codes
       .map((c) => (typeof c === "string" ? c : c?.code))
       .filter(Boolean)

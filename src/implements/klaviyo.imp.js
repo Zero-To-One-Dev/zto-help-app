@@ -1,19 +1,15 @@
 import Klaviyo from "klaviyo-node"
-import app from "../app.js"
+import ConfigStores from '../services/config-stores.js';
 
 class KlaviyoImp {
   constructor(shopAlias) {
-    this.shopAlias = shopAlias
+    this.shopAlias = shopAlias;
   }
 
-  init() {
-    const { [`KLAVIYO_TOKEN_${this.shopAlias}`]: KLAVIYO_TOKEN } = app
-    const client = new Klaviyo(KLAVIYO_TOKEN)
-    return client
-  }
-
-  sendEvent(name, email, properties) {
-    const client = this.init()
+  async sendEvent(name, email, properties) {
+    const STORES_INFORMATION = await ConfigStores.getStoresInformation();
+    const KLAVIYO_TOKEN = STORES_INFORMATION[this.shopAlias].klaviyo_token;
+    const client = new Klaviyo(KLAVIYO_TOKEN);
     client
       .track(
         name,
@@ -24,7 +20,10 @@ class KlaviyoImp {
       .catch((err) => console.error("Error:", err))
   }
 
-  async klaviyoFetch(path, options = {}, token) {
+  async klaviyoFetch(path, options = {}) {
+    const STORES_INFORMATION = await ConfigStores.getStoresInformation();
+    const KLAVIYO_PRIVATE_API_KEY = STORES_INFORMATION[this.shopAlias].klaviyo_private_api_key;
+
     const controller = new AbortController()
     const timeout = setTimeout(
       () => controller.abort(),
@@ -39,7 +38,7 @@ class KlaviyoImp {
         headers: {
           Accept: "application/vnd.api+json",
           "Content-Type": "application/vnd.api+json",
-          Authorization: `Klaviyo-API-Key ${token}`,
+          Authorization: `Klaviyo-API-Key ${KLAVIYO_PRIVATE_API_KEY}`,
           revision: KLAVIYO_REVISION,
           "Idempotency-Key": options.idempotencyKey ?? undefined, // used for POST /profiles
           ...(options.headers || {}),

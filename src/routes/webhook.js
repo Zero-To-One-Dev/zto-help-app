@@ -1,7 +1,7 @@
 import { Router } from "express"
 import express from "express"
 import logger from "../../logger.js"
-import app, { SHOPS_ORIGIN } from "../app.js"
+import ConfigStores from '../services/config-stores.js';
 import fs from "fs/promises"
 import bearerToken from "express-bearer-token"
 import Mailer from "../implements/nodemailer.imp.js"
@@ -79,13 +79,14 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
   let shopAlias,
     draftOrderId = ""
   try {
-    ;({ shopAlias, draftOrderId } = req.body)
-    const {
-      [`SHOP_NAME_${shopAlias}`]: shopName,
-      [`SHOP_COLOR_${shopAlias}`]: shopColor,
-      [`CONTACT_PAGE_${shopAlias}`]: contactPage,
-      [`EMAIL_SENDER_${shopAlias}`]: emailSender,
-    } = app
+    ;({ shopAlias, draftOrderId } = req.body);
+
+    const STORES_INFORMATION = await ConfigStores.getStoresInformation();
+    const shopName = STORES_INFORMATION[this.shopAlias].shopify_name;
+    const shopColor = STORES_INFORMATION[this.shopAlias].color;
+    const contactPage = STORES_INFORMATION[this.shopAlias].shopify_contact_page_url;
+    const emailSender = STORES_INFORMATION[this.shopAlias].email_sender;
+
     const mailer = new Mailer(shopAlias)
     const subscriptionImp = new SubscriptionImp(shopAlias)
     const draftOrder = `gid://shopify/DraftOrder/${draftOrderId}`
@@ -537,7 +538,7 @@ router.post("/create-cross-discount", authenticateToken, async (req, res) => {
     }
 
     const klaviyo = new KlaviyoImp(klaviyoShopAlias)
-    klaviyo.sendEvent("Cross discount", email, {
+    await klaviyo.sendEvent("Cross discount", email, {
       discountCode: code,
     })
     res.json({ message: "Cross discount sent successfully to Klaviyo" })
@@ -1004,18 +1005,10 @@ router.post(
  *  - 4xx/5xx    : validation or upstream errors, with structured JSON.
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
-  const klaviyo = new KlaviyoImp()
-  const { klaviyoToken } = req.body
+  const { storeName } = req.body;
+  const klaviyo = new KlaviyoImp(storeName);
 
   try {
-    if (!klaviyoToken) {
-      return res.status(500).json({
-        error: {
-          code: "server_misconfig",
-          message: "Klaviyo API key is not configured.",
-        },
-      })
-    }
 
     const { errors, listId, addToList, addIfDuplicate, profile } =
       validateCreateProfilePayload(req.body)
@@ -1050,8 +1043,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
         {
           method: "POST",
           body: createBody,
-        },
-        klaviyoToken
+        }
       )
 
       profileId = createRes.data?.data?.id
@@ -1109,8 +1101,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
             body: {
               data: [{ type: "profile", id: profileId }],
             },
-          },
-          klaviyoToken
+          }
         )
 
         // Klaviyo returns 204 No Content on success
