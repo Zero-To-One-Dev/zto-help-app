@@ -294,7 +294,7 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
 
 router.post("/status-server", async (req, res) => {
   const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
-  const storeName = SHOPS_ORIGIN[req.body.store_url] ?? SHOPS_ORIGIN[req.body.store_url].shopAlias;
+  const storeName = SHOPS_ORIGIN[req.body.store_url] ? SHOPS_ORIGIN[req.body.store_url].shopAlias : 'Not Found';
 
   return res.status(200).json({
     code: "status_message",
