@@ -9,7 +9,7 @@ class SkioImp {
   }
 
   async init() {
-    const STORES_INFORMATION = ConfigStores.getStoresInformation();
+    const STORES_INFORMATION = await ConfigStores.getStoresInformation();
     const SKIO_API_KEY = STORES_INFORMATION[this.shopAlias].skio_api_key;
 
     return new GraphQLClient(SKIO_ENDPOINT, {
