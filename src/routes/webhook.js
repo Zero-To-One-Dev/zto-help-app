@@ -293,13 +293,17 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
 });
 
 router.post("/status-server", async (req, res) => {
-    return res.status(200).json({
-      code: "status_message",
-      message: "Server works!",
-      host: req.get('host'),
-      host2: req.headers?.host,
-      origin: req.get('origin'),
-    })
+  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
+  const storeName = SHOPS_ORIGIN[req.body.store_url] ?? SHOPS_ORIGIN[req.body.store_url].shopAlias;
+
+  return res.status(200).json({
+    code: "status_message",
+    message: "Server works!",
+    host: req.get('host'),
+    host2: req.headers?.host,
+    origin: req.get('origin'),
+    storeName
+  })
 });
 
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
