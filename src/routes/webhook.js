@@ -290,7 +290,17 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
     console.error("Unexpected error:", error)
     return res.status(500).json({ message: "Internal server error" })
   }
-})
+});
+
+router.post("/status-server", async (req, res) => {
+    return res.status(200).json({
+      code: "status_message",
+      message: "Server works!",
+      host: req.get('host'),
+      host2: req.headers?.host,
+      origin: req.get('origin'),
+    })
+});
 
 router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
   try {
