@@ -1019,7 +1019,19 @@ router.post(
  *  - 4xx/5xx    : validation or upstream errors, with structured JSON.
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
-  const { storeName } = req.body;
+
+  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
+  const storeName = SHOPS_ORIGIN[req.body.store_url] ? SHOPS_ORIGIN[req.body.store_url].alias : undefined;
+
+  if(!storeName) {
+    return res.status(400).json({
+      error: {
+        code: "invalid_request",
+        message: "Store not found"
+      }
+    })
+  }
+  
   const klaviyo = new KlaviyoImp(storeName);
 
   try {
