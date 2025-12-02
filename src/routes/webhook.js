@@ -292,58 +292,6 @@ router.post("/pause-subscription", authenticateToken, async (req, res) => {
   }
 })
 
-router.post("/attentive-custom-event", authenticateToken, async (req, res) => {
-  try {
-    const { shop, subscriptionId, event } = req.body
-    const { attentiveKey, shopAlias } = SHOPS_ORIGIN[shop]
-    const subscriptionImp = new SubscriptionImp(shopAlias)
-    const subscription = await subscriptionImp.getSubscriptionByContract(
-      subscriptionId
-    )
-
-    if (!subscription) throw new Error("Subscription not found")
-
-    const eventData = {
-      type: event,
-      user: {
-        email: subscription.StorefrontUser.email,
-      },
-      properties: {
-        subscription_id: subscription.id,
-        subscription_status: subscription.status,
-      },
-    }
-
-    logger.info(`Sending event to Attentive: ${JSON.stringify(eventData)}`)
-    logger.info(`Attentive key: ${attentiveKey}`)
-
-    const response = await fetch(
-      "https://api.attentivemobile.com/v1/events/custom",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${attentiveKey}`,
-        },
-        body: JSON.stringify(eventData),
-      }
-    )
-
-    if (!response.ok) {
-      logger.error(JSON.stringify(response))
-      throw new Error(`Error en la API: ${response.statusText}`)
-    }
-
-    console.log("Evento enviado con éxito a Attentive")
-
-    res.json({ message: `Attentive event sent (${event})` })
-  } catch (err) {
-    console.log(err)
-    logger.error(err.message)
-    res.status(500).send({ message: err.message })
-  }
-})
-
 /**
  *  @openapi
  *  /webhook/draft-orders-expired-delete:
@@ -1005,7 +953,9 @@ router.post(
  *  - 4xx/5xx    : validation or upstream errors, with structured JSON.
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
-  const { storeName } = req.body;
+  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
+  const origin = SHOPS_ORIGIN[req.protocol + '://' + req.get('host')];
+  const storeName = origin.shopAlias;
   const klaviyo = new KlaviyoImp(storeName);
 
   try {
