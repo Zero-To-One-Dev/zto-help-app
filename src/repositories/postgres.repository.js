@@ -359,6 +359,50 @@ class PostgreSQLRepository {
         await client.end();
         return res.rowCount > 0;
     }
+
+    // EXTRA HEALTH
+    async createMember(memberInfo, status = 'CREATED') {
+        const client = await this.init();
+        const nn = v => (v === undefined ? null : v);
+        const query = {
+            name: 'create-member',
+            text: `
+                INSERT INTO members ( customer_id, status, firstname, lastname, birthday, gender, phone_number, phone_device, email, address, state, zipcode) 
+                VALUES ( $1, $2::status, $3, $4, $5, $6::gender, $7, $8::phone_device, $9, $10, $11, $12) ON CONFLICT (customer_id) DO NOTHING
+            `,
+            values: [
+                memberInfo.customer_id,
+                status,
+                nn(memberInfo.firstname),
+                nn(memberInfo.lastname),
+                nn(memberInfo.birthday),     // 'YYYY-MM-DD' (o Date → toISOString)
+                nn(memberInfo.gender),       // 'Male' | 'Female'
+                nn(memberInfo.phone_number),
+                nn(memberInfo.phone_device), // 'Android' | 'Apple'
+                nn(memberInfo.email),
+                nn(memberInfo.address),
+                nn(memberInfo.state),
+                nn(memberInfo.zipcode),
+            ],
+        }
+        const res = await client.query(query)
+        await client.end();
+        return res.rowCount > 0;
+    }
+
+    // npm i 
+
+    // async saveTicket(ticketId, ticketTags, status, retries) {
+    //     const client = await this.init()
+    //     const query = {
+    //         name: 'save-ticket',
+    //         text: 'INSERT INTO gorgias_tickets (ticket_id, tags, status, retries) VALUES ($1, $2, $3, $4) ON CONFLICT (ticket_id) DO NOTHING',
+    //         values: [ticketId, ticketTags, status, retries]
+    //     }
+    //     const res = await client.query(query)
+    //     await client.end()
+    //     return res.rowCount > 0;
+    // }
 }
 
 export default PostgreSQLRepository;
