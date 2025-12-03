@@ -10,6 +10,9 @@ class SkioImp {
 
   async init() {
     const STORES_INFORMATION = await ConfigStores.getStoresInformation();
+    if(!STORES_INFORMATION[this.shopAlias]) {
+      throw new Error(`Store with alias "${this.shopAlias}" not found in ConfigStore (Class SkioImp).`);
+    }
     const SKIO_API_KEY = STORES_INFORMATION[this.shopAlias].skio_api_key;
 
     return new GraphQLClient(SKIO_ENDPOINT, {
