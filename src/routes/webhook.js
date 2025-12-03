@@ -82,10 +82,10 @@ router.post("/draft-order-paid", authenticateToken, async (req, res) => {
     ;({ shopAlias, draftOrderId } = req.body);
 
     const STORES_INFORMATION = await ConfigStores.getStoresInformation();
-    const shopName = STORES_INFORMATION[this.shopAlias].shopify_name;
-    const shopColor = STORES_INFORMATION[this.shopAlias].color;
-    const contactPage = STORES_INFORMATION[this.shopAlias].shopify_contact_page_url;
-    const emailSender = STORES_INFORMATION[this.shopAlias].email_sender;
+    const shopName = STORES_INFORMATION[shopAlias].shopify_name;
+    const shopColor = STORES_INFORMATION[shopAlias].color;
+    const contactPage = STORES_INFORMATION[shopAlias].shopify_contact_page_url;
+    const emailSender = STORES_INFORMATION[shopAlias].email_sender;
 
     const mailer = new Mailer(shopAlias)
     const subscriptionImp = new SubscriptionImp(shopAlias)
