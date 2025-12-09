@@ -1,6 +1,6 @@
 import express from 'express';
 import logger from '../../logger.js';
-import { SHOPS_ORIGIN } from '../app.js';
+import ConfigStores from '../services/config-stores.js';
 import { EmailSubscriptionSchema, EmailAddressSchema } from '../schemas/email.js';
 import Mailer from '../implements/nodemailer.imp.js';
 import handleError from '../middlewares/error-handle.js';
@@ -41,6 +41,7 @@ const messageImp = new MessageImp();
  */
 router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (req, res) => {
     let shopAlias, email, subscription, shopName, emailSender = '';
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
     try {
         ({ shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
         ({ email, subscription } = req.body);
@@ -105,6 +106,7 @@ router.post('/subscription/send', handleError(EmailSubscriptionSchema), async (r
  */
 router.post('/address/send', handleError(EmailAddressSchema), async (req, res) => {
     let shopAlias, email, shopName, emailSender = '';
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
     try {
         ({ shopAlias, shopName, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
         ({ email } = req.body);

@@ -4,7 +4,7 @@ import DBRepository from '../repositories/postgres.repository.js';
 import { getActiveDraftOrder } from '../services/draft-orders.js';
 import handleError from '../middlewares/error-handle.js';
 import logger from '../../logger.js';
-import { SHOPS_ORIGIN } from '../app.js';
+import ConfigStores from '../services/config-stores.js';
 import { isExpired } from '../services/token.js';
 import ShopifyImp from '../implements/shopify.imp.js';
 import MessageImp from '../implements/slack.imp.js';
@@ -41,6 +41,7 @@ const messageImp = new MessageImp();
 router.post('/exists', handleError(DraftOrderSchema), async (req, res) => {
   let shopAlias, email, token, subscription = '';
   try {
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
     ({ shopAlias } = SHOPS_ORIGIN[req.get('origin')]);
     ({ email, token, subscription } = req.body);
 

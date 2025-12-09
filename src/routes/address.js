@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { Router } from 'express';
 import logger from '../../logger.js';
-import { SHOPS_ORIGIN } from '../app.js';
+import ConfigStores from '../services/config-stores.js';
 import { isExpired } from '../services/token.js';
 import Mailer from '../implements/nodemailer.imp.js';
 import ShopifyImp from '../implements/shopify.imp.js';
@@ -36,6 +36,7 @@ const dbRepository = new DBRepository();
 router.post('/update', handleError(AddressSchema), async (req, res) => {
     let shopAlias, shopName, shopColor, emailSender, email, token, id, address1, address2, provinceCode, province, city, zip = '';
     try {
+        const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
         ({ shopAlias, shopName, shopColor, contactPage, emailSender } = SHOPS_ORIGIN[req.get('origin')]);
         ({ email, token, id, address1, address2, provinceCode, province, city, zip } = req.body);
         const mailer = new Mailer(shopAlias);

@@ -36,15 +36,51 @@ export const getModalView = (callbackId) => {
       alias: "HV",
     },
     {
-      name: "Vibro Sculpt Colombia",
-      alias: "VSCOL",
+      name: "Hot Shapers LATAM",
+      alias: "HSLA",
     },
     {
-      name: "Vibro Sculpt Relief",
-      alias: "VSRELIEF",
+      name: "Hot Shapers Colombia",
+      alias: "HSCO",
+    },
+    {
+      name: "Hot Shapers Mexico",
+      alias: "HSMX",
+    },
+    {
+      name: "Redu Sculpt LATAM",
+      alias: "RSLA",
+    },
+    {
+      name: "Redu Sculpt Colombia",
+      alias: "RSCO",
+    },
+    {
+      name: "Redu Sculpt Mexico",
+      alias: "RSMX",
+    },
+    {
+      name: "Vibro Sculpt LATAM",
+      alias: "VSLA",
+    },
+    {
+      name: "Vibro Sculpt Colombia",
+      alias: "VSCO",
+    },
+    {
+      name: "Vibro Sculpt Mexico",
+      alias: "VSMX",
+    },
+    {
+      name: "Vibro Sculpt Chile",
+      alias: "VSCL",
+    },
+    {
+      name: "Vibro Sculpt Ecuador",
+      alias: "VSECU",
     },
   ]
-  
+
   const modals = {
     intelligems_test: {
       type: "modal",
@@ -132,17 +168,103 @@ export const getModalView = (callbackId) => {
           },
         },
       ],
-    }
-  }
-  for (const store of stores) {
-    modals.intelligems_test.blocks[3].element.options.push({
-      text: {
+    },
+    generate_coupon: {
+      type: "modal",
+      callback_id: callbackId,
+      title: {
         type: "plain_text",
-        text: store.name,
+        text: "Generate Coupon",
         emoji: true,
       },
-      value: store.alias,
-    })
+      submit: {
+        type: "plain_text",
+        text: "Generate",
+        emoji: true,
+      },
+      close: {
+        type: "plain_text",
+        text: "Cancel",
+        emoji: true,
+      },
+      blocks: [
+        {
+          type: "input",
+          element: {
+            type: "plain_text_input",
+            action_id: "plain_text_input-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "Discount ID",
+            emoji: true,
+          },
+          optional: false,
+        },
+        {
+          type: "input",
+          element: {
+            type: "static_select",
+            placeholder: {
+              type: "plain_text",
+              text: "Select a store",
+              emoji: true,
+            },
+            options: [],
+            action_id: "static_select-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "From",
+            emoji: true,
+          },
+          optional: false,
+        },
+        {
+          type: "input",
+          element: {
+            type: "static_select",
+            placeholder: {
+              type: "plain_text",
+              text: "Select a store",
+              emoji: true,
+            },
+            options: [],
+            action_id: "static_select-action",
+          },
+          label: {
+            type: "plain_text",
+            text: "To",
+            emoji: true,
+          },
+          optional: false,
+        },
+      ],
+    },
   }
+
+  const toOption = ({ name, alias }) => ({
+    text: { type: "plain_text", text: String(name).slice(0, 75), emoji: true },
+    value: String(alias).slice(0, 75),
+  })
+
+  const setOptionsAt = (modal, blockIndex, options) => {
+    const block = modal?.blocks?.[blockIndex]
+    if (!block?.element) {
+      console.warn(`Bloque ${blockIndex} no encontrado o sin element`)
+      return
+    }
+    block.element.options = options.map((o) => ({
+      ...o,
+      text: { ...o.text },
+    }))
+  }
+
+  const options = stores.map(toOption)
+
+  setOptionsAt(modals.intelligems_test, 3, options)
+  setOptionsAt(modals.generate_coupon, 1, options)
+  setOptionsAt(modals.generate_coupon, 2, options)
+
   return modals[callbackId]
 }

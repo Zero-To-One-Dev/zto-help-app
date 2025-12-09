@@ -1,6 +1,6 @@
 import { Router } from "express"
 import logger from "../../logger.js"
-import { SHOPS_ORIGIN } from "../app.js"
+import ConfigStores from '../services/config-stores.js';
 import { isExpired } from "../services/token.js"
 import ShopifyImp from "../implements/shopify.imp.js"
 import handleError from "../middlewares/error-handle.js"
@@ -50,7 +50,8 @@ router.post(
       email,
       token,
       subscription,
-      cancelSessionId = ""
+      cancelSessionId = "";
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
     try {
       ;({ shopAlias, productFakeVariantId, productSubscriptionMetafieldKey } =
         SHOPS_ORIGIN[req.get("origin")])
@@ -319,7 +320,8 @@ router.post(
 router.post("/address/validate", handleError(TokenSchema), async (req, res) => {
   let shopAlias,
     email,
-    token = ""
+    token = "";
+  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
   try {
     shopAlias = SHOPS_ORIGIN[req.get("origin")]
     ;({ email, token } = req.body)

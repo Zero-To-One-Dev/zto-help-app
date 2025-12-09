@@ -16,6 +16,13 @@ app.use('/draft-order', draftOrder);
 app.use('/subscriptions', subscriptions);
 app.use('/testing', testing);
 
-app.listen(PORT, () => {
-  logger.info(`Listening on port ${PORT}`)
-})
+const args = process.argv.slice(2);
+if(args[0] === 'console') {
+  const modulo = await import(`./src/commands/${args[1]}.js`);
+  const args2 = process.argv.slice(2);
+  modulo.execute(args2);
+} else {
+  app.listen(PORT, () => {
+    logger.info(`Listening on port ${PORT}`)
+  });
+}
