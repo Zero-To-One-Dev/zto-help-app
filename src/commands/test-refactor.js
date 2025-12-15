@@ -2,6 +2,8 @@ import KlaviyoImp from '../implements/klaviyo.imp.js';
 import NodemailerMailerImp from '../implements/nodemailer.imp.js';
 import ConfigStores from '../services/config-stores.js';
 import ShopifyImp from '../implements/shopify.imp.js';
+import SkioImp from '../implements/skio.imp.js';
+
 import path from 'node:path';
 import fs from 'fs';
 
@@ -100,6 +102,20 @@ export async function execute(args) {
     } else {
         console.log('-------------------------------------');
         console.log('CONFIGURACIÓN DE SHOPIFY INCOMPLETA');
+        console.log('-------------------------------------');
+    }
+
+    try{
+        const skioImp = new SkioImp(shopAlias);
+        console.log(`Ejecutando API de SKIO...`);
+        const result = await skioImp.getSubscriptionsByEmail(email);
+        console.log('-------------------------------------');
+        console.log("SKIO FUNCIONANDO CORRECTAMENTE ");
+        console.log('-------------------------------------');
+    }catch(err){
+        console.log(err);
+        console.log('-------------------------------------');
+        console.log('CONFIGURACIÓN DE SKIO INCOMPLETA');
         console.log('-------------------------------------');
     }
 }
