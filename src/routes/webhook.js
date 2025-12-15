@@ -1273,6 +1273,9 @@ router.post("/counterdelivery/report", async (req, res) => {
     // Construir la fórmula dinámica para la columna K
     const formula = `=SI(E${nextRow}="SIN CONFIRMAR";SI(MAX(0; 7 - (HOY() - ENTERO(C${nextRow})))=0;"Tiempo vencido";MAX(0; 7 - (HOY() - ENTERO(C${nextRow}))));"-")`
 
+    // Construir la fórmula dinámica para la columna L
+    const formula2 = `=SI.ERROR(BUSCARV($A${nextRow};'CHATPRO CONFIRMATIONS'!$A:$V;2;FALSO);"NO INFO")`
+
     const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
     const orderId = (orderPayload.order_id?.replace("gid://shopify/Order/", "")) || "-"
 
@@ -1290,11 +1293,11 @@ router.post("/counterdelivery/report", async (req, res) => {
         "", // I (vacía)
         "", // J (vacía)
         formula, // K (fórmula)
+        formula2, // L (fórmula)
       ],
     ]
 
-    await google.appendValues(spreadsheetId, `${sheetName}!A:K`, values)
-
+    await google.appendValues(spreadsheetId, `${sheetName}!A:L`, values)
     res.json({ ok: true, row: nextRow })
   } catch (err) {
     console.error(err)
