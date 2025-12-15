@@ -1244,9 +1244,10 @@ router.post("/counterdelivery/report", async (req, res) => {
       default: "-",
     }
 
-    const orderNumber = orderPayload.order || ""
+    const orderName = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
+    const customerPhone = orderPayload.phone.toString() || ""
 
     const createdAtForSheets = rawCreatedAt
       ? new Date(rawCreatedAt)
@@ -1270,19 +1271,18 @@ router.post("/counterdelivery/report", async (req, res) => {
     const allValues = await google.getValues(spreadsheetId, `${sheetName}!A:A`)
     const nextRow = allValues ? allValues.length + 1 : 2
 
-    // Construir la fórmula dinámica para la columna K
+    // Construir las fórmulas dinámicas para las columnas K y L
     const formula = `=SI(E${nextRow}="SIN CONFIRMAR";SI(MAX(0; 7 - (HOY() - ENTERO(C${nextRow})))=0;"Tiempo vencido";MAX(0; 7 - (HOY() - ENTERO(C${nextRow}))));"-")`
-
-    // Construir la fórmula dinámica para la columna L
     const formula2 = `=SI.ERROR(BUSCARV($A${nextRow};'CHATPRO CONFIRMATIONS'!$A:$V;2;FALSO);"NO INFO")`
 
     const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
     const orderId = (orderPayload.order_id?.replace("gid://shopify/Order/", "")) || "-"
+    const orderNumber = (orderPayload.order || "").match(/\d+$/)?.[0] || ""
 
     // Fila a insertar
     const values = [
       [
-        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderName}")`,
         customerName,
         createdAtForSheets,
         ORDER_STATUS.default,
@@ -1294,10 +1294,12 @@ router.post("/counterdelivery/report", async (req, res) => {
         "", // J (vacía)
         formula, // K (fórmula)
         formula2, // L (fórmula)
+        customerPhone, // M (teléfono)
+        orderNumber, // N (número de orden)
       ],
     ]
 
-    await google.appendValues(spreadsheetId, `${sheetName}!A:L`, values)
+    await google.appendValues(spreadsheetId, `${sheetName}!A:N`, values)
     res.json({ ok: true, row: nextRow })
   } catch (err) {
     console.error(err)
@@ -1310,7 +1312,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const google = new GoogleImp()
     const orderPayload = req.body
 
-    const orderNumber = orderPayload.order || ""
+    const orderName = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
 
@@ -1363,7 +1365,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
 
     const values = [
       [
-        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderName}")`,
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
