@@ -1843,54 +1843,45 @@ router.post("/order/from-draft", async (req, res) => {
       })
     }
 
-    // 2. Completar el draft order (paymentPending=true para COD)
-    const completedDraft = await shopifyImp.completeDraftOrder(draftOrderId, true)
-
-    if (!completedDraft?.order) {
-      return res.status(500).json({
-        ok: false,
-        message: "Draft order completed but no order was created",
-        draftOrder: completedDraft,
-      })
-    }
-
-    const createdOrder = completedDraft.order
-
-    // 3. Actualizar la orden con tags y nota indicando origen + COD
+    // 2. Crear la orden usando orderCreate con transacción COD
     const baseTags = ["from-draft-order", `draft:${draftOrderDetails.name}`, "COD"]
     const allTags = [...new Set([...baseTags, ...addTags])]
 
     const baseNote = `[Created from Draft Order: ${draftOrderDetails.name}] [Payment: Cash on Delivery (COD)]`
     const fullNote = note ? `${baseNote}\n${note}` : baseNote
 
-    // Si la orden ya tiene nota, concatenarla
-    const existingNote = createdOrder.note || ""
-    const finalNote = existingNote ? `${existingNote}\n${fullNote}` : fullNote
-
-    const updateInput = {
-      id: createdOrder.id,
+    const createdOrder = await shopifyImp.createOrderFromDraftData(draftOrderDetails, {
       tags: allTags,
-      note: finalNote,
-      customAttributes: [
-        { key: "payment_gateway_names", value: "Cash on Delivery (COD)" },
-        { key: "origin_draft_order_id", value: draftOrderDetails.id },
-        { key: "origin_draft_order_name", value: draftOrderDetails.name },
-      ],
+      note: fullNote,
+      gatewayName: "Cash on Delivery (COD)"
+    })
+
+    if (!createdOrder) {
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to create order from draft order",
+      })
     }
 
-    const updatedOrder = await shopifyImp.updateOrder(updateInput)
+    // 3. Eliminar el draft order ya que fue procesado
+    try {
+      await shopifyImp.deleteDraftOrder(draftOrderDetails.id)
+    } catch (deleteErr) {
+      console.warn("Warning: Could not delete draft order after creating order:", deleteErr.message)
+      // No fallar el request si no se puede eliminar el draft
+    }
 
     return res.status(200).json({
       ok: true,
       message: "Order created successfully from draft order",
       data: {
         draftOrder: {
-          id: completedDraft.id,
-          name: completedDraft.name,
-          status: completedDraft.status,
+          id: draftOrderDetails.id,
+          name: draftOrderDetails.name,
+          status: "COMPLETED", // Ya fue procesado
         },
         order: {
-          ...updatedOrder,
+          ...createdOrder,
           payment_gateway_names: ["Cash on Delivery (COD)"],
         },
       },

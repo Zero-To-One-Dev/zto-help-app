@@ -594,6 +594,176 @@ class ShopifyImp {
     return payload.draftOrder
   }
 
+  /**
+   * Crea una orden a partir de un draft order con payment gateway específico (COD)
+   * @param {object} draftOrderDetails - Detalles del draft order (de getDraftOrderDetails)
+   * @param {object} options - Opciones adicionales { tags, note, gatewayName }
+   * @returns {Promise<object>} - Orden creada
+   */
+  async createOrderFromDraftData(draftOrderDetails, options = {}) {
+    const client = await this.init()
+    const {
+      tags = [],
+      note = "",
+      gatewayName = "Cash on Delivery (COD)"
+    } = options
+
+    // Construir line items desde el draft order
+    const lineItems = draftOrderDetails.lineItems.edges.map(({ node }) => ({
+      variantId: node.variant?.id,
+      quantity: node.quantity,
+    })).filter(item => item.variantId) // Solo incluir items con variant
+
+    // Construir shipping address
+    const shippingAddr = draftOrderDetails.shippingAddress
+    const shippingAddress = shippingAddr ? {
+      firstName: shippingAddr.firstName,
+      lastName: shippingAddr.lastName,
+      address1: shippingAddr.address1,
+      address2: shippingAddr.address2 || undefined,
+      city: shippingAddr.city,
+      provinceCode: shippingAddr.provinceCode,
+      countryCode: shippingAddr.countryCodeV2,
+      zip: shippingAddr.zip,
+      phone: shippingAddr.phone || undefined,
+    } : undefined
+
+    // Construir billing address
+    const billingAddr = draftOrderDetails.billingAddress
+    const billingAddress = billingAddr ? {
+      firstName: billingAddr.firstName,
+      lastName: billingAddr.lastName,
+      address1: billingAddr.address1,
+      address2: billingAddr.address2 || undefined,
+      city: billingAddr.city,
+      provinceCode: billingAddr.provinceCode,
+      countryCode: billingAddr.countryCodeV2,
+      zip: billingAddr.zip,
+      phone: billingAddr.phone || undefined,
+    } : undefined
+
+    // Calcular el total para la transacción
+    const totalAmount = draftOrderDetails.totalPriceSet?.shopMoney?.amount || "0"
+    const currencyCode = draftOrderDetails.currencyCode || "USD"
+
+    // Construir nota final
+    const draftNote = draftOrderDetails.note2 || ""
+    const finalNote = [draftNote, note].filter(Boolean).join("\n")
+
+    // Construir tags finales
+    const draftTags = draftOrderDetails.tags || []
+    const allTags = [...new Set([...draftTags, ...tags])]
+
+    // Custom attributes del draft + origen
+    const customAttributes = [
+      ...(draftOrderDetails.customAttributes || []),
+      { key: "origin_draft_order_id", value: draftOrderDetails.id },
+      { key: "origin_draft_order_name", value: draftOrderDetails.name },
+    ]
+
+    // Construir el input de la orden
+    const orderInput = {
+      lineItems,
+      email: draftOrderDetails.email || undefined,
+      phone: draftOrderDetails.phone || undefined,
+      shippingAddress,
+      billingAddress,
+      note: finalNote || undefined,
+      tags: allTags.length > 0 ? allTags : undefined,
+      customAttributes,
+      taxExempt: draftOrderDetails.taxExempt || false,
+      // Transacción con el gateway COD
+      transactions: [
+        {
+          kind: "SALE",
+          status: "PENDING",
+          gateway: gatewayName,
+          amount: totalAmount,
+        }
+      ],
+      // Shipping line si existe
+      ...(draftOrderDetails.shippingLine ? {
+        shippingLines: [{
+          title: draftOrderDetails.shippingLine.title,
+          priceSet: {
+            shopMoney: {
+              amount: draftOrderDetails.shippingLine.originalPriceSet?.shopMoney?.amount || "0",
+              currencyCode,
+            }
+          }
+        }]
+      } : {}),
+    }
+
+    const mutation = `
+      mutation OrderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
+        orderCreate(order: $order, options: $options) {
+          order {
+            id
+            name
+            displayFinancialStatus
+            tags
+            note
+            createdAt
+            totalPriceSet {
+              shopMoney { amount currencyCode }
+            }
+            shippingAddress {
+              firstName
+              lastName
+              address1
+              address2
+              city
+              province
+              zip
+              country
+              phone
+            }
+            customAttributes {
+              key
+              value
+            }
+            lineItems(first: 100) {
+              edges {
+                node {
+                  title
+                  quantity
+                  variant {
+                    id
+                    title
+                  }
+                }
+              }
+            }
+          }
+          userErrors { field message }
+        }
+      }
+    `
+
+    const variables = {
+      order: orderInput,
+      options: {
+        inventoryBehaviour: "DECREMENT_IGNORING_POLICY"
+      }
+    }
+
+    const res = await client.request(mutation, { variables })
+    const payload = res.data?.orderCreate
+
+    if (!payload) {
+      throw new Error("orderCreate sin payload de respuesta")
+    }
+    if (payload.userErrors && payload.userErrors.length) {
+      const details = payload.userErrors
+        .map((e) => `${e.field?.join(".") || "general"}: ${e.message}`)
+        .join(" | ")
+      throw new Error(`Shopify userErrors: ${details}`)
+    }
+
+    return payload.order
+  }
+
   async deleteDraftOrder(draftOrder) {
     const client = await this.init()
     return (
