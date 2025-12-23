@@ -405,6 +405,208 @@ class ShopifyImp {
     ).data.draftOrder
   }
 
+  /**
+   * Obtiene los detalles completos de un draft order para crear una orden
+   * @param {string} draftOrderId - GID o ID del draft order
+   * @returns {Promise<object>} - Datos completos del draft order
+   */
+  async getDraftOrderDetails(draftOrderId) {
+    const client = await this.init()
+    const gid = String(draftOrderId).startsWith("gid://")
+      ? draftOrderId
+      : `gid://shopify/DraftOrder/${draftOrderId}`
+
+    const query = `
+      query {
+        draftOrder(id: "${gid}") {
+          id
+          name
+          status
+          note2
+          tags
+          email
+          phone
+          taxExempt
+          taxesIncluded
+          currencyCode
+          subtotalPriceSet {
+            shopMoney { amount currencyCode }
+          }
+          totalPriceSet {
+            shopMoney { amount currencyCode }
+          }
+          totalTax
+          shippingAddress {
+            firstName
+            lastName
+            address1
+            address2
+            city
+            province
+            provinceCode
+            country
+            countryCodeV2
+            zip
+            phone
+          }
+          billingAddress {
+            firstName
+            lastName
+            address1
+            address2
+            city
+            province
+            provinceCode
+            country
+            countryCodeV2
+            zip
+            phone
+          }
+          customer {
+            id
+            email
+            firstName
+            lastName
+            phone
+          }
+          lineItems(first: 100) {
+            edges {
+              node {
+                id
+                title
+                quantity
+                originalUnitPriceSet {
+                  shopMoney { amount currencyCode }
+                }
+                discountedUnitPriceSet {
+                  shopMoney { amount currencyCode }
+                }
+                variant {
+                  id
+                  title
+                  sku
+                  price
+                }
+                product {
+                  id
+                  title
+                }
+              }
+            }
+          }
+          shippingLine {
+            title
+            originalPriceSet {
+              shopMoney { amount currencyCode }
+            }
+          }
+          appliedDiscount {
+            title
+            value
+            valueType
+            amount
+          }
+          customAttributes {
+            key
+            value
+          }
+        }
+      }
+    `
+
+    const res = await client.request(query)
+    return res.data?.draftOrder
+  }
+
+  /**
+   * Completa un draft order y lo convierte en una orden real
+   * @param {string} draftOrderId - GID o ID del draft order
+   * @param {string} paymentPending - Si el pago está pendiente (para COD)
+   * @returns {Promise<object>} - Orden creada
+   */
+  async completeDraftOrder(draftOrderId, paymentPending = true) {
+    const client = await this.init()
+    const gid = String(draftOrderId).startsWith("gid://")
+      ? draftOrderId
+      : `gid://shopify/DraftOrder/${draftOrderId}`
+
+    const mutation = `
+      mutation draftOrderComplete($id: ID!, $paymentPending: Boolean) {
+        draftOrderComplete(id: $id, paymentPending: $paymentPending) {
+          draftOrder {
+            id
+            name
+            status
+            order {
+              id
+              name
+              displayFinancialStatus
+              tags
+              note
+              createdAt
+              totalPriceSet {
+                shopMoney { amount currencyCode }
+              }
+              shippingAddress {
+                firstName
+                lastName
+                address1
+                address2
+                city
+                province
+                zip
+                country
+                phone
+              }
+              customer {
+                id
+                email
+                firstName
+                lastName
+              }
+              lineItems(first: 100) {
+                edges {
+                  node {
+                    title
+                    quantity
+                    variant {
+                      id
+                      title
+                    }
+                  }
+                }
+              }
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `
+
+    const variables = {
+      id: gid,
+      paymentPending
+    }
+
+    const res = await client.request(mutation, { variables })
+    const payload = res.data?.draftOrderComplete
+
+    if (!payload) {
+      throw new Error("draftOrderComplete sin payload de respuesta")
+    }
+    if (payload.userErrors && payload.userErrors.length) {
+      const details = payload.userErrors
+        .map((e) => `${e.field?.join(".") || "general"}: ${e.message}`)
+        .join(" | ")
+      throw new Error(`Shopify userErrors: ${details}`)
+    }
+
+    return payload.draftOrder
+  }
+
   async deleteDraftOrder(draftOrder) {
     const client = await this.init()
     return (

@@ -1796,6 +1796,111 @@ router.put("/order", async (req, res) => {
   }
 })
 
+router.post("/order/from-draft", async (req, res) => {
+  try {
+    const { store_url, draftOrderId, addTags = [], note } = req.body
+
+    // Validar campos requeridos
+    if (!store_url || !draftOrderId) {
+      return res.status(400).json({
+        ok: false,
+        message: "Missing required fields: store_url, draftOrderId",
+      })
+    }
+
+    // Obtener el alias de la tienda
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin()
+    const storeName = SHOPS_ORIGIN[store_url]?.alias
+
+    if (!storeName) {
+      return res.status(400).json({
+        ok: false,
+        error: {
+          code: "invalid_request",
+          message: "Store not found",
+        },
+      })
+    }
+
+    const shopifyImp = new ShopifyImp(storeName)
+
+    // 1. Obtener detalles del draft order para validar que existe
+    const draftOrderDetails = await shopifyImp.getDraftOrderDetails(draftOrderId)
+
+    if (!draftOrderDetails) {
+      return res.status(404).json({
+        ok: false,
+        message: `Draft order not found: ${draftOrderId}`,
+      })
+    }
+
+    // Verificar que el draft order no haya sido completado ya
+    if (draftOrderDetails.status === "COMPLETED") {
+      return res.status(400).json({
+        ok: false,
+        message: `Draft order ${draftOrderDetails.name} has already been completed`,
+        draftOrderStatus: draftOrderDetails.status,
+      })
+    }
+
+    // 2. Completar el draft order (paymentPending=true para COD)
+    const completedDraft = await shopifyImp.completeDraftOrder(draftOrderId, true)
+
+    if (!completedDraft?.order) {
+      return res.status(500).json({
+        ok: false,
+        message: "Draft order completed but no order was created",
+        draftOrder: completedDraft,
+      })
+    }
+
+    const createdOrder = completedDraft.order
+
+    // 3. Actualizar la orden con tags y nota indicando origen + COD
+    const baseTags = ["from-draft-order", `draft:${draftOrderDetails.name}`, "COD"]
+    const allTags = [...new Set([...baseTags, ...addTags])]
+
+    const baseNote = `[Created from Draft Order: ${draftOrderDetails.name}] [Payment: Cash on Delivery (COD)]`
+    const fullNote = note ? `${baseNote}\n${note}` : baseNote
+
+    // Si la orden ya tiene nota, concatenarla
+    const existingNote = createdOrder.note || ""
+    const finalNote = existingNote ? `${existingNote}\n${fullNote}` : fullNote
+
+    const updateInput = {
+      id: createdOrder.id,
+      tags: allTags,
+      note: finalNote,
+      customAttributes: [
+        { key: "payment_gateway_names", value: "Cash on Delivery (COD)" },
+        { key: "origin_draft_order_id", value: draftOrderDetails.id },
+        { key: "origin_draft_order_name", value: draftOrderDetails.name },
+      ],
+    }
+
+    const updatedOrder = await shopifyImp.updateOrder(updateInput)
+
+    return res.status(200).json({
+      ok: true,
+      message: "Order created successfully from draft order",
+      data: {
+        draftOrder: {
+          id: completedDraft.id,
+          name: completedDraft.name,
+          status: completedDraft.status,
+        },
+        order: {
+          ...updatedOrder,
+          payment_gateway_names: ["Cash on Delivery (COD)"],
+        },
+      },
+    })
+  } catch (err) {
+    console.error("Error in /order-from-draft:", err)
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
 router.post("/dropi-report-campaign", async (req, res) => {
   try {
     const google = new GoogleImp()
