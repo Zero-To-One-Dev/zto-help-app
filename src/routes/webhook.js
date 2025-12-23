@@ -1844,10 +1844,9 @@ router.post("/order/from-draft", async (req, res) => {
     }
 
     // 2. Crear la orden usando orderCreate con transacción COD
-    const baseTags = ["from-draft-order", `draft:${draftOrderDetails.name}`, "COD"]
-    const allTags = [...new Set([...baseTags, ...addTags])]
+    const allTags = [...new Set([...addTags])]
 
-    const baseNote = `[Created from Draft Order: ${draftOrderDetails.name}] [Payment: Cash on Delivery (COD)]`
+    const baseNote = `[Created from Draft Order: ${draftOrderDetails.name}]`
     const fullNote = note ? `${baseNote}\n${note}` : baseNote
 
     const createdOrder = await shopifyImp.createOrderFromDraftData(draftOrderDetails, {
