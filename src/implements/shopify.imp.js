@@ -462,13 +462,6 @@ class ShopifyImp {
             zip
             phone
           }
-          customer {
-            id
-            email
-            firstName
-            lastName
-            phone
-          }
           lineItems(first: 100) {
             edges {
               node {
@@ -557,12 +550,6 @@ class ShopifyImp {
                 zip
                 country
                 phone
-              }
-              customer {
-                id
-                email
-                firstName
-                lastName
               }
               lineItems(first: 100) {
                 edges {
