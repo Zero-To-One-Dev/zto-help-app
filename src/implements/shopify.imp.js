@@ -671,14 +671,18 @@ class ShopifyImp {
       note: finalNote || undefined,
       tags: allTags.length > 0 ? allTags : undefined,
       customAttributes,
-      taxExempt: draftOrderDetails.taxExempt || false,
       // Transacción con el gateway COD
       transactions: [
         {
           kind: "SALE",
           status: "PENDING",
           gateway: gatewayName,
-          amount: totalAmount,
+          amountSet: {
+            shopMoney: {
+              amount: totalAmount,
+              currencyCode,
+            }
+          }
         }
       ],
       // Shipping line si existe
