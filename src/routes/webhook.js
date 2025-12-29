@@ -1247,7 +1247,7 @@ router.post("/counterdelivery/report", async (req, res) => {
     const orderName = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
-    const customerPhone = `'${orderPayload.phone.toString() || ""}`
+    const customerPhone = `'${orderPayload?.phone?.toString() || ""}`
 
     const createdAtForSheets = rawCreatedAt
       ? new Date(rawCreatedAt)
