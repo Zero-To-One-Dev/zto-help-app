@@ -6,6 +6,7 @@ import webhook from './src/routes/webhook.js'
 import draftOrder from './src/routes/draft-order.js'
 import subscriptions from './src/routes/subscriptions.js'
 import testing from './src/routes/testing.js'
+import codHub from './src/cod-hub/index.js'
 import logger from './logger.js'
 
 app.use('/email', email);
@@ -15,6 +16,7 @@ app.use('/webhook', webhook);
 app.use('/draft-order', draftOrder);
 app.use('/subscriptions', subscriptions);
 app.use('/testing', testing);
+app.use('/cod-hub', codHub);
 
 const args = process.argv.slice(2);
 if(args[0] === 'console') {
