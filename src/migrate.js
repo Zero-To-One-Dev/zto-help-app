@@ -22,15 +22,22 @@ const __dirname = path.dirname(__filename);
 // ============================================
 // Agregar aquí cada nuevo módulo que tenga migraciones
 
+// Módulo de autenticación (debe ejecutarse primero por dependencias)
+migrator.registerMigrationModule(
+  'auth',
+  path.resolve(__dirname, 'modules', 'auth', 'migrations')
+);
+
+// Módulo COD Hub (depende de auth para FKs a auth_users)
 migrator.registerMigrationModule(
   'cod-hub',
-  path.resolve(__dirname, 'cod-hub', 'migrations')
+  path.resolve(__dirname, 'modules', 'cod-hub', 'migrations')
 );
 
 // Ejemplo para futuros módulos:
 // migrator.registerMigrationModule(
 //   'inventory',
-//   path.resolve(__dirname, 'inventory', 'migrations')
+//   path.resolve(__dirname, 'modules', 'inventory', 'migrations')
 // );
 
 // ============================================
