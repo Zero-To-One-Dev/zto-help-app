@@ -236,6 +236,48 @@ class SkioImp {
     `)
     ).Subscriptions[0]
   }
+
+  // async updateNextBillingDate(subscriptionId, UpdateNextBillingDateInput) {
+  //   const client = await this.init()
+  //   return (
+  //     await client.request(gql`
+  //     mutation {
+  //       updateNextBillingDate (input: {
+  //         subscriptionId: "${subscriptionId}",
+  //         UpdateNextBillingDateInput: "${UpdateNextBillingDateInput}"
+  //       }) {
+  //         message
+  //         ok
+  //       }
+  //     }
+
+  //   `)
+  //   ).updateNextBillingDate.ok
+  // }
+  async updateNextBillingDate(subscriptionId, date) {
+    const client = await this.init();
+
+    const query = gql`
+      mutation updateNextBillingDate($input: UpdateNextBillingDateInput!) {
+        updateNextBillingDate(input: $input) {
+          message
+          ok
+        }
+      }
+    `;
+
+    const variables = {
+      input: {
+        subscriptionId, // uuid
+        date,           // string
+      },
+    };
+
+    const res = await client.request(query, variables);
+    return res.updateNextBillingDate; // { ok, message }
+  }
 }
+
+
 
 export default SkioImp

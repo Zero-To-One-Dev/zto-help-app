@@ -20,9 +20,9 @@ Member.init({
     allowNull: true
   },
   customer_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     unique: true,
-    allowNull: true
+    allowNull: true,
   },
   status: {
     type: DataTypes.ENUM,
@@ -35,7 +35,7 @@ Member.init({
     type: DataTypes.STRING,
   },
   birthday: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
   },
   gender: {
     type: DataTypes.ENUM,
@@ -89,14 +89,15 @@ ProductSubscription.init({
     unique: true,
   },
   pdid: {
-    type: DataTypes.STRING,
-    unique: true,
+    type: DataTypes.INTEGER,
+    defaultValue: 45750
   },
   dtEffective: {
     type: DataTypes.DATE,
   },  
   bPaid: {
-    type: DataTypes.BOOLEAN
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   dtBilling: {
     type: DataTypes.DATE,
@@ -110,6 +111,7 @@ ProductSubscription.init({
   status: {
     type: DataTypes.ENUM,
     values: ['ACTIVE', 'ON_HOLD', 'CANCEL'],
+    defaultValue: 'ACTIVE'
   },
 }, {
   sequelize,

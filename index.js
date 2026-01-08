@@ -3,6 +3,7 @@ import email from './src/routes/email.js'
 import token from './src/routes/token.js'
 import address from './src/routes/address.js'
 import webhook from './src/routes/webhook.js'
+import extrahealth from './src/routes/extrahealth.js'
 import draftOrder from './src/routes/draft-order.js'
 import subscriptions from './src/routes/subscriptions.js'
 import testing from './src/routes/testing.js'
@@ -15,6 +16,7 @@ app.use('/webhook', webhook);
 app.use('/draft-order', draftOrder);
 app.use('/subscriptions', subscriptions);
 app.use('/testing', testing);
+app.use('/extra-health', extrahealth);
 
 const args = process.argv.slice(2);
 if(args[0] === 'console') {
