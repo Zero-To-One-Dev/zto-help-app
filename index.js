@@ -6,6 +6,9 @@ import webhook from './src/routes/webhook.js'
 import draftOrder from './src/routes/draft-order.js'
 import subscriptions from './src/routes/subscriptions.js'
 import testing from './src/routes/testing.js'
+// Módulos independientes
+import authModule from './src/modules/auth/index.js'
+import codHubModule from './src/modules/cod-hub/index.js'
 import logger from './logger.js'
 
 app.use('/email', email);
@@ -15,6 +18,9 @@ app.use('/webhook', webhook);
 app.use('/draft-order', draftOrder);
 app.use('/subscriptions', subscriptions);
 app.use('/testing', testing);
+// Montar módulos
+app.use('/auth', authModule);
+app.use('/cod-hub', codHubModule);
 
 const args = process.argv.slice(2);
 if(args[0] === 'console') {

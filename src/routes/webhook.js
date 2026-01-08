@@ -1020,8 +1020,7 @@ router.post(
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
 
-  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
-  const storeName = SHOPS_ORIGIN[req.body.store_url] ? SHOPS_ORIGIN[req.body.store_url].alias : undefined;
+  const storeName = (await ConfigStores.getShopsOrigin(req.body.store_url))?.alias ;
 
   if(!storeName) {
     return res.status(400).json({
@@ -1031,6 +1030,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
       }
     })
   }
+  console.log("Store name:", storeName);
   
   const klaviyo = new KlaviyoImp(storeName);
 

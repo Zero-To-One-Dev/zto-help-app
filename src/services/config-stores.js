@@ -6,11 +6,12 @@ export default class ConfigStores {
     static SHOPS_ORIGIN = null;
     static STORES_INFORMATION = null;
 
-    static async getShopsOrigin() {
+    static async getShopsOrigin(urlDomain = null) {
         if(!this.repo) {
             this.repo = new PostgresShopStoresRepository();
         }
-        return await this.repo.getAllWithKey();
+        const allStores = await this.repo.getAllWithKey();
+        return urlDomain ? allStores[urlDomain] || null : allStores;
     }
 
     static async getStoresInformation() {
