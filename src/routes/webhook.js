@@ -1020,8 +1020,7 @@ router.post(
  */
 router.post("/add-profile-to-klaviyo-list", async (req, res) => {
 
-  const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin();
-  const storeName = SHOPS_ORIGIN[req.body.store_url] ? SHOPS_ORIGIN[req.body.store_url].alias : undefined;
+  const storeName = (await ConfigStores.getShopsOrigin(req.body.store_url))?.alias ;
 
   if(!storeName) {
     return res.status(400).json({
@@ -1031,6 +1030,7 @@ router.post("/add-profile-to-klaviyo-list", async (req, res) => {
       }
     })
   }
+  console.log("Store name:", storeName);
   
   const klaviyo = new KlaviyoImp(storeName);
 
@@ -1244,9 +1244,10 @@ router.post("/counterdelivery/report", async (req, res) => {
       default: "-",
     }
 
-    const orderNumber = orderPayload.order || ""
+    const orderName = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
+    const customerPhone = `'${orderPayload?.phone?.toString() || ""}`
 
     const createdAtForSheets = rawCreatedAt
       ? new Date(rawCreatedAt)
@@ -1270,16 +1271,18 @@ router.post("/counterdelivery/report", async (req, res) => {
     const allValues = await google.getValues(spreadsheetId, `${sheetName}!A:A`)
     const nextRow = allValues ? allValues.length + 1 : 2
 
-    // Construir la fórmula dinámica para la columna K
+    // Construir las fórmulas dinámicas para las columnas K y L
     const formula = `=SI(E${nextRow}="SIN CONFIRMAR";SI(MAX(0; 7 - (HOY() - ENTERO(C${nextRow})))=0;"Tiempo vencido";MAX(0; 7 - (HOY() - ENTERO(C${nextRow}))));"-")`
+    const formula2 = `=SI.ERROR(BUSCARV($A${nextRow};'CHATPRO CONFIRMATIONS'!$A:$V;2;FALSO);"NO INFO")`
 
     const store = ((orderPayload.store)?.replace(".myshopify.com", "")) || "";
     const orderId = (orderPayload.order_id?.replace("gid://shopify/Order/", "")) || "-"
+    const orderNumber = (orderPayload.order || "").match(/\d+$/)?.[0] || ""
 
     // Fila a insertar
     const values = [
       [
-        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderName}")`,
         customerName,
         createdAtForSheets,
         ORDER_STATUS.default,
@@ -1290,11 +1293,13 @@ router.post("/counterdelivery/report", async (req, res) => {
         "", // I (vacía)
         "", // J (vacía)
         formula, // K (fórmula)
+        formula2, // L (fórmula)
+        customerPhone, // M (teléfono)
+        orderNumber, // N (número de orden)
       ],
     ]
 
-    await google.appendValues(spreadsheetId, `${sheetName}!A:K`, values)
-
+    await google.appendValues(spreadsheetId, `${sheetName}!A:N`, values)
     res.json({ ok: true, row: nextRow })
   } catch (err) {
     console.error(err)
@@ -1307,7 +1312,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
     const google = new GoogleImp()
     const orderPayload = req.body
 
-    const orderNumber = orderPayload.order || ""
+    const orderName = orderPayload.order || ""
     const customerName = orderPayload.customer
     const rawCreatedAt = orderPayload.created_at || null
 
@@ -1360,7 +1365,7 @@ router.post("/counterdelivery/calls-report", async (req, res) => {
 
     const values = [
       [
-        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderNumber}")`,
+        `=HIPERVINCULO("https://admin.shopify.com/store/${store}/orders/${orderId}"; "${orderName}")`,
         customerName,
         createdAtForSheets,
         orderPayload.customer_phone || "",
@@ -1787,6 +1792,101 @@ router.put("/order", async (req, res) => {
 
     return res.status(200).json({ ok: true, order })
   } catch (err) {
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
+router.post("/order/from-draft", async (req, res) => {
+  try {
+    const { store_url, draftOrderId, addTags = [], note } = req.body
+
+    // Validar campos requeridos
+    if (!store_url || !draftOrderId) {
+      return res.status(400).json({
+        ok: false,
+        message: "Missing required fields: store_url, draftOrderId",
+      })
+    }
+
+    // Obtener el alias de la tienda
+    const SHOPS_ORIGIN = await ConfigStores.getShopsOrigin()
+    const storeName = SHOPS_ORIGIN[store_url]?.alias
+
+    if (!storeName) {
+      return res.status(400).json({
+        ok: false,
+        error: {
+          code: "invalid_request",
+          message: "Store not found",
+        },
+      })
+    }
+
+    const shopifyImp = new ShopifyImp(storeName)
+
+    // 1. Obtener detalles del draft order para validar que existe
+    const draftOrderDetails = await shopifyImp.getDraftOrderDetails(draftOrderId)
+
+    if (!draftOrderDetails) {
+      return res.status(404).json({
+        ok: false,
+        message: `Draft order not found: ${draftOrderId}`,
+      })
+    }
+
+    // Verificar que el draft order no haya sido completado ya
+    if (draftOrderDetails.status === "COMPLETED") {
+      return res.status(400).json({
+        ok: false,
+        message: `Draft order ${draftOrderDetails.name} has already been completed`,
+        draftOrderStatus: draftOrderDetails.status,
+      })
+    }
+
+    // 2. Crear la orden usando orderCreate con transacción COD
+    const allTags = [...new Set([...addTags])]
+
+    const baseNote = `[Created from Draft Order: ${draftOrderDetails.name}]`
+    const fullNote = note ? `${baseNote}\n${note}` : baseNote
+
+    const createdOrder = await shopifyImp.createOrderFromDraftData(draftOrderDetails, {
+      tags: allTags,
+      note: fullNote,
+      gatewayName: "Cash on Delivery (COD)"
+    })
+
+    if (!createdOrder) {
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to create order from draft order",
+      })
+    }
+
+    // 3. Eliminar el draft order ya que fue procesado
+    try {
+      await shopifyImp.deleteDraftOrder(draftOrderDetails.id)
+    } catch (deleteErr) {
+      console.warn("Warning: Could not delete draft order after creating order:", deleteErr.message)
+      // No fallar el request si no se puede eliminar el draft
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "Order created successfully from draft order",
+      data: {
+        draftOrder: {
+          id: draftOrderDetails.id,
+          name: draftOrderDetails.name,
+          status: "COMPLETED", // Ya fue procesado
+        },
+        order: {
+          ...createdOrder,
+          payment_gateway_names: ["Cash on Delivery (COD)"],
+        },
+      },
+    })
+  } catch (err) {
+    console.error("Error in /order-from-draft:", err)
     res.status(500).json({ ok: false, error: err.message })
   }
 })
