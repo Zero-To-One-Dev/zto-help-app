@@ -1,6 +1,7 @@
 import { models } from '../models/index.js';
 import sequelize from '../../../config/sequelize.js';
 import { Op } from 'sequelize';
+import ConfigStores from '../../../services/config-stores.js';
 
 const { CodOrder, User, CancelReason } = models;
 
@@ -16,13 +17,26 @@ class CodOrderRepository {
    * Buscar por ID
    */
   async findById(id) {
-    return await CodOrder.findByPk(id, {
+    const order = await CodOrder.findByPk(id, {
       include: [
         { model: User, as: 'confirmedByUser', attributes: ['id', 'name', 'email'] },
         { model: User, as: 'updatedByUser', attributes: ['id', 'name', 'email'] },
         { model: CancelReason, as: 'cancelReason' }
       ]
     });
+
+    if (!order) return null;
+
+    // Obtener shopify_url usando ConfigStores
+    const storesInfo = await ConfigStores.getStoresInformation();
+    const store = Object.values(storesInfo).find(s => s.id === order.store_id);
+
+    // Agregar shopify_url al objeto order
+    if (store) {
+      order.dataValues.store_shopify_url = store.shopify_url;
+    }
+
+    return order;
   }
 
   /**
@@ -58,7 +72,7 @@ class CodOrderRepository {
 
     const offset = (page - 1) * limit;
 
-    return await CodOrder.findAndCountAll({
+    const result = await CodOrder.findAndCountAll({
       where,
       limit,
       offset,
@@ -68,6 +82,22 @@ class CodOrderRepository {
         { model: CancelReason, as: 'cancelReason', attributes: ['id', 'reason'] }
       ]
     });
+
+    // Obtener shopify_url para todas las órdenes usando ConfigStores
+    if (result.rows.length > 0) {
+      const storesInfo = await ConfigStores.getStoresInformation();
+      const storeMap = Object.values(storesInfo).reduce((acc, store) => {
+        acc[store.id] = store.shopify_url;
+        return acc;
+      }, {});
+
+      // Agregar shopify_url a cada orden
+      result.rows.forEach(order => {
+        order.dataValues.store_shopify_url = storeMap[order.store_id];
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -88,7 +118,7 @@ class CodOrderRepository {
 
     if (storeId) where.store_id = storeId;
 
-    return await CodOrder.findAndCountAll({
+    const result = await CodOrder.findAndCountAll({
       where,
       limit,
       offset,
@@ -97,6 +127,22 @@ class CodOrderRepository {
         { model: User, as: 'confirmedByUser', attributes: ['id', 'name'] }
       ]
     });
+
+    // Obtener shopify_url para todas las órdenes usando ConfigStores
+    if (result.rows.length > 0) {
+      const storesInfo = await ConfigStores.getStoresInformation();
+      const storeMap = Object.values(storesInfo).reduce((acc, store) => {
+        acc[store.id] = store.shopify_url;
+        return acc;
+      }, {});
+
+      // Agregar shopify_url a cada orden
+      result.rows.forEach(order => {
+        order.dataValues.store_shopify_url = storeMap[order.store_id];
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -106,7 +152,10 @@ class CodOrderRepository {
     const orden = await CodOrder.findByPk(id);
     if (!orden) return null;
     
-    return await orden.update(data);
+    await orden.update(data);
+    
+    // Retornar con datos completos incluyendo shopify_url
+    return await this.findById(id);
   }
 
   /**

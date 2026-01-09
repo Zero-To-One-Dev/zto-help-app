@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validationResult } from 'express-validator';
 import CodOrderService from '../services/codOrder.service.js';
+import { OrderStatus, DeliveryStatus, Country } from '../models/CodOrder.model.js';
 import logger from '../../../../logger.js';
 // Usar authenticate del módulo auth compartido
 import { authenticate } from '../../auth/middlewares/auth.middleware.js';
@@ -27,6 +28,58 @@ const validate = (req, res, next) => {
   }
   next();
 };
+
+/**
+ * @route   GET /cod-hub/enums/order-status
+ * @desc    Obtener valores ENUM de order_status
+ * @access  Public
+ */
+router.get('/enums/order-status', (req, res) => {
+  res.json({
+    success: true,
+    data: Object.values(OrderStatus)
+  });
+});
+
+/**
+ * @route   GET /cod-hub/enums/delivery-status
+ * @desc    Obtener valores ENUM de delivery_status
+ * @access  Public
+ */
+router.get('/enums/delivery-status', (req, res) => {
+  res.json({
+    success: true,
+    data: Object.values(DeliveryStatus)
+  });
+});
+
+/**
+ * @route   GET /cod-hub/enums/countries
+ * @desc    Obtener valores ENUM de countries
+ * @access  Public
+ */
+router.get('/enums/countries', (req, res) => {
+  res.json({
+    success: true,
+    data: Object.values(Country)
+  });
+});
+
+/**
+ * @route   GET /cod-hub/enums
+ * @desc    Obtener todos los ENUMs
+ * @access  Public
+ */
+router.get('/enums', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      orderStatus: Object.values(OrderStatus),
+      deliveryStatus: Object.values(DeliveryStatus),
+      countries: Object.values(Country)
+    }
+  });
+});
 
 /**
  * @route   GET /cod-hub/orders

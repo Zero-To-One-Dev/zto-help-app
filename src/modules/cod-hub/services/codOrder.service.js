@@ -7,6 +7,36 @@ const repository = new CodOrderRepository();
 const storeRepository = new StoreRepository();
 const cancelReasonRepository = new CancelReasonRepository();
 
+/**
+ * Helper para formatear order_url del admin de Shopify
+ * @param {string} shopifyUrl - URL de la tienda (ej: "storename.myshopify.com")
+ * @param {string|number} shopifyOrderId - ID de la orden en Shopify
+ * @returns {string} - URL del admin de Shopify
+ */
+function formatOrderUrl(shopifyUrl, shopifyOrderId) {
+  if (!shopifyUrl || !shopifyOrderId) return null;
+  
+  // Extraer el nombre de la tienda (storename de storename.myshopify.com)
+  const storeName = shopifyUrl.replace(/^https?:\/\//, '').split('.')[0];
+  
+  return `https://admin.shopify.com/store/${storeName}/orders/${shopifyOrderId}`;
+}
+
+/**
+ * Agregar order_url a una orden
+ */
+function addOrderUrl(order) {
+  if (!order) return null;
+  
+  const orderJson = order.toJSON ? order.toJSON() : order;
+  
+  if (orderJson.store_shopify_url && orderJson.shopify_order_id) {
+    orderJson.order_url = formatOrderUrl(orderJson.store_shopify_url, orderJson.shopify_order_id);
+  }
+  
+  return orderJson;
+}
+
 class CodOrderService {
   /**
    * Crear orden COD desde webhook de Shopify/Dropi
@@ -39,13 +69,16 @@ class CodOrderService {
 
       if (existing) {
         logger.warn(`[CodOrderService] Order already exists: ${orderData.order_name}`);
-        return { created: false, order: existing };
+        return { created: false, order: addOrderUrl(existing) };
       }
 
       const order = await repository.create(orderDataWithStoreId);
       logger.info(`[CodOrderService] Order created: ${order.order_name} for store ${store.alias}`);
       
-      return { created: true, order };
+      // Obtener order completa con shopify_url para generar order_url
+      const fullOrder = await repository.findById(order.id);
+      
+      return { created: true, order: addOrderUrl(fullOrder) };
     } catch (error) {
       logger.error(`[CodOrderService] Error creating order: ${error.message}`);
       throw error;
@@ -60,7 +93,7 @@ class CodOrderService {
     if (!order) {
       throw new Error('Order not found');
     }
-    return order;
+    return addOrderUrl(order);
   }
 
   /**
@@ -70,7 +103,7 @@ class CodOrderService {
     const { count, rows } = await repository.findAll(filters);
     
     return {
-      orders: rows,
+      orders: rows.map(order => addOrderUrl(order)),
       pagination: {
         total: count,
         page: filters.page || 1,
@@ -87,7 +120,7 @@ class CodOrderService {
     const { count, rows } = await repository.search(searchTerm, filters);
     
     return {
-      orders: rows,
+      orders: rows.map(order => addOrderUrl(order)),
       pagination: {
         total: count,
         page: filters.page || 1,
@@ -113,7 +146,7 @@ class CodOrderService {
     const updated = await repository.confirm(orderId, userId);
     logger.info(`[CodOrderService] Order ${orderId} confirmed by user ${userId}`);
     
-    return updated;
+    return addOrderUrl(updated);
   }
 
   /**
@@ -150,7 +183,7 @@ class CodOrderService {
     const updated = await repository.updateStatus(orderId, orderStatus, deliveryStatus, userId);
     logger.info(`[CodOrderService] Order ${orderId} delivery status updated to ${deliveryStatus}`);
     
-    return updated;
+    return addOrderUrl(updated);
   }
 
   /**
@@ -179,7 +212,7 @@ class CodOrderService {
     const updated = await repository.cancel(orderId, cancelReasonId, userId);
     logger.info(`[CodOrderService] Order ${orderId} cancelled by user ${userId} with reason ${cancelReasonId}`);
     
-    return updated;
+    return addOrderUrl(updated);
   }
 
   /**
@@ -198,7 +231,7 @@ class CodOrderService {
     const updated = await repository.markAsDelivered(orderId, userId);
     logger.info(`[CodOrderService] Order ${orderId} marked as delivered by user ${userId}`);
     
-    return updated;
+    return addOrderUrl(updated);
   }
 
   /**
