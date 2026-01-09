@@ -3,13 +3,24 @@ import sequelize from '../../../config/sequelize.js';
 import { Op } from 'sequelize';
 import ConfigStores from '../../../services/config-stores.js';
 
-const { CodOrder, User, CancelReason } = models;
+const { CodOrder, User, CancelReason, CodStore } = models;
 
 class CodOrderRepository {
   /**
    * Crear una nueva orden COD
    */
   async create(data) {
+    // Verificar que el store esté activo antes de crear la orden
+    if (data.cod_store_id) {
+      const codStore = await CodStore.findByPk(data.cod_store_id);
+      if (!codStore) {
+        throw new Error('CodStore no encontrado');
+      }
+      if (!codStore.is_active) {
+        throw new Error('No se pueden crear órdenes para un store inactivo');
+      }
+    }
+    
     return await CodOrder.create(data);
   }
 

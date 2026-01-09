@@ -33,11 +33,11 @@ const CodOrder = sequelize.define('CodOrder', {
     primaryKey: true,
     autoIncrement: true
   },
-  store_id: {
+  cod_store_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'stores',
+      model: 'cod_stores',
       key: 'id'
     },
     onUpdate: 'CASCADE',
@@ -129,8 +129,8 @@ const CodOrder = sequelize.define('CodOrder', {
   indexes: [
     { 
       unique: true, 
-      fields: ['store_id', 'shopify_order_id'],
-      name: 'cod_orders_store_shopify_unique'
+      fields: ['cod_store_id', 'shopify_order_id'],
+      name: 'cod_orders_cod_store_shopify_unique'
     },
     { fields: ['order_status'] },
     { fields: ['delivery_status'] },
